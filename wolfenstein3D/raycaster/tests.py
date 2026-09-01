@@ -67,7 +67,7 @@ def renderer_test():
     map_ = Map((30, 30), wall_width=16)
     map_.set_random(10, 3)
     map_.set_random(10, 2)
-    screen = pygame.display.set_mode((1000, 1000))
+    screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
@@ -108,7 +108,7 @@ def texture_tests():
     screen = pygame.display.set_mode((128, 128))
     tex = WALL_TEXTURES[0]
     for i, c in enumerate(tex.columns):
-        screen.blit(tex.get_column(i, 1, 128-i), (i, 0))
+        screen.blit(tex.get_column(i, 1, 128-i, 1), (i, 0))
         pygame.display.flip()
         time.sleep(0.001)
 
@@ -118,10 +118,10 @@ def main():
     observer_test()
     map_test()
     raycaster_test()
-    # profiler.enable()
+    profiler.enable()
     renderer_test()
-    # profiler.disable()
-    # profiler.dump_stats("raycaster.prof")
+    profiler.disable()
+    profiler.dump_stats("raycaster.prof")
 
 
 if __name__ == "__main__":

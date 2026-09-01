@@ -26,8 +26,23 @@ class Texture:
             for x in range(self.width)
         ]
 
-    def get_column(self, i, repeat, height):
-        return pygame.transform.scale(self.columns[i], (repeat, height))
+        self.shade_cache = {}
+
+    def get_column(self, i, repeat, height, shade_factor):
+        scaled = pygame.transform.scale(
+            self.shade(shade_factor, i), (repeat, height))
+        return scaled
+
+    def shade(self, factor, i):
+        factor = max(0.0, min(1.0, factor))
+        multiplier = round(255 * factor)
+
+        shaded = self.columns[i].copy()
+        shaded.fill(
+            (multiplier, multiplier, multiplier),
+            special_flags=pygame.BLEND_RGB_MULT,
+        )
+        return shaded
 
 
 def init_wall_textures():
