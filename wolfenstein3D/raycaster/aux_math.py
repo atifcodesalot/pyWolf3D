@@ -19,6 +19,9 @@ def plain_normalize(vec):
 def plain_sub(v1, v2):
     return (v2[0] - v1[0], v2[1] - v1[1])
 
+def plain_add(v1, v2):
+    return (v2[0] + v1[0], v2[1] + v1[1])
+
 def rotate_vector_angle(vec, angle):
     rm = ROT_MATRIX(angle)
     return rm.dot(vec)

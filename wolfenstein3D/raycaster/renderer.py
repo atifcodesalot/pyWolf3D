@@ -69,29 +69,35 @@ class RayRenderer:
     def draw_sprite(self, sprite: Sprite):
         hh = self.height // 2
         o = self.raycaster.observer
-        db = self.raycaster.distance_buffer
         projected = sprite.project(o)
         if not self.sprite_is_visible(projected, sprite):
             return
         screen_pos = sprite.screen_pos(self, projected)
         perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
-        length = self.distance_to_height(perp_dist, scaler=10)
+        height_to_draw = self.distance_to_height(perp_dist, scaler=10)
+        width_to_draw = height_to_draw//2
         sw = sprite.width
-        start = screen_pos - (length//2) * self.repeat
-        skip = sw / length
-        for i in range(int(length)):
+        start = screen_pos - (width_to_draw // 2) * self.repeat
+        skip = sw / width_to_draw
+        db = self.raycaster.distance_buffer
+        for i in range(int(width_to_draw)):
             col_pos = start + (i * self.repeat)
             # if the column isn't in screen width 
-            if col_pos > self.width or col_pos < 0:
+            if col_pos > self.width - 1 or col_pos < 0:
                 continue
             # if there is a wall that is closer
             if db[int(col_pos // self.repeat)] < perp_dist:
                 continue
-            column = sprite.get_column(int(i*skip), self.repeat, length, 1)
+            column = sprite.get_column(int(i*skip), self.repeat, height_to_draw, 1)
             self.pgsurface.blit(
-                column, (col_pos, hh - length//2))
+                column, (col_pos, hh - height_to_draw//2))
+            
+    def sort_sprites(self):
+        get_y = lambda s: s.to_observer_space(self.raycaster.observer)[1]
+        self.sprites = sorted(self.sprites, key=get_y)
 
     def render_sprites(self):
+        self.sort_sprites()
         for sprite in self.sprites:
             self.draw_sprite(sprite)
 
@@ -108,3 +114,8 @@ class RayRenderer:
     def render(self, light: PointLight):
         self.render_walls(light)
         self.render_sprites()
+
+
+class GUIRenderer:
+    def __init__(self):
+        pass

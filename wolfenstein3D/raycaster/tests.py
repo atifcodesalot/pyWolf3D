@@ -114,6 +114,43 @@ def texture_tests():
         time.sleep(0.001)
 
 
+def sprite_tests():
+    import random
+    o = Observer((300, 300), look_dir=[-1, 0], ray_count=300, fov=60)
+    map_ = Map((30, 30), wall_width=16)
+    screen = pygame.display.set_mode((600, 600))
+    sw, sh = screen.get_size()
+    raycaster = Raycaster(o, map_)
+    renderer = RayRenderer(raycaster, screen)
+    for sprite in SPRITES.values():
+        randangle = math.radians(random.choice(range(0, 360, 6)))
+        sprite.pos = (20 * math.cos(randangle) + 300,
+                      20 * math.sin(randangle) + 300)
+        renderer.add_sprite(sprite)
+    bird_view = pygame.Surface(
+        (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
+    bw_scale = 0.25
+    clock = pygame.time.Clock()
+    light = PointLight(o.pos)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+        light.pos = o.pos
+        screen.fill((0, 0, 0))
+        renderer.cast()
+        renderer.render(light)
+        screen.blit(pygame.transform.scale(
+            bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
+        bird_view.fill((0, 0, 0))
+        raycaster.render_bird_view(pygame, bird_view)
+        pygame.display.flip()
+        clock.tick(60)
+        o.rotate(1)
+
+
 def main():
     texture_tests()
     observer_test()
@@ -123,6 +160,7 @@ def main():
     renderer_test()
     profiler.disable()
     profiler.dump_stats("raycaster.prof")
+    sprite_tests()
 
 
 if __name__ == "__main__":
