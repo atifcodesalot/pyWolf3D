@@ -5,10 +5,10 @@ from .renderer import RayRenderer, PointLight
 from .textures import *
 import cProfile
 import pygame
+from .sprites import *
 
 
 profiler = cProfile.Profile()
-
 
 
 def observer_test():
@@ -18,8 +18,6 @@ def observer_test():
     except AssertionError:
         print("Ray count mismatch")
         print(f"Expected {o.ray_count}, got {len(o.directions)}")
-
-    # print(o.left_dir, o.directions[-1])
 
 
 def map_test():
@@ -55,7 +53,7 @@ def raycaster_test():
         screen.fill((0, 0, 0))
 
         raycaster.raycast()
-        o.rotate(2)
+        o.rotate(1)
 
         raycaster.render_bird_view(pygame, screen)
         pygame.display.flip()
@@ -71,18 +69,20 @@ def renderer_test():
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
+    SPRITES["fake_hitler.png"].pos = (25, 25)
+    renderer.add_sprite(SPRITES["fake_hitler.png"])
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
     bw_scale = 0.25
     clock = pygame.time.Clock()
     light = PointLight(o.pos)
-    
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
-            
+
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_LEFT]:
             o.rotate(-2)
@@ -102,7 +102,8 @@ def renderer_test():
         raycaster.render_bird_view(pygame, bird_view)
         pygame.display.flip()
         clock.tick(60)
-        
+
+
 def texture_tests():
     import time
     screen = pygame.display.set_mode((128, 128))

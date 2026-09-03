@@ -11,7 +11,9 @@ class Observer:
     def __init__(self, pos, look_dir=[1, 0], fov=120, ray_count=200):
         self.pos = list(pos)
         self.look_dir = plain_normalize(look_dir)
+        self.left = get_perp(self.look_dir)
         self.fov = math.radians(fov)
+        self.vp_length = math.tan(self.fov / 2)
         self.ray_count = ray_count
         self.directions = []
         self.gap = self.fov / (self.ray_count - 1)
@@ -26,7 +28,9 @@ class Observer:
             self.directions.append(vec.tolist())
 
     def rotate(self, angle):
-        self.look_dir = rotate_vector_angle(self.look_dir, math.radians(angle))
+        rm = ROT_MATRIX(math.radians(angle))
+        self.look_dir = rm.dot(self.look_dir)
+        self.left = rm.dot(self.left)
         self.update_directions()
 
     def translate(self, tvec):
@@ -77,8 +81,7 @@ class Map:
         import random
         w, h = self.size
         for _ in range(amount):
-            self.raw[random.randint(0, h-1)]\
-                [random.randint(0, w-1)] = num
+            self.raw[random.randint(0, h-1)][random.randint(0, w-1)] = num
 
 
 class Raycaster:
@@ -161,3 +164,10 @@ class Raycaster:
                 pygame.draw.aaline(pgsurface, (255, 255, 255),
                                    self.observer.pos, coll[0])
                 pygame.draw.circle(pgsurface, (0, 0, 255), coll[0], 2)
+
+        pygame.draw.line(pgsurface, (0, 255, 0), self.observer.pos,
+                         (self.observer.pos[0] + self.observer.left[0] * 20,
+                          self.observer.pos[1] + self.observer.left[1] * 20))
+        pygame.draw.line(pgsurface, (255, 0, 0), self.observer.pos,
+                         (self.observer.pos[0] + self.observer.look_dir[0] * 20,
+                          self.observer.pos[1] + self.observer.look_dir[1] * 20))
