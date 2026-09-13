@@ -40,7 +40,13 @@ def init_sprites():
     SPRITES = {}
     for entry in os.scandir(SPRITE_PATH):
         if entry.is_file():
+            if entry.name == "objects.png":
+                objects_ = Image.open(entry.path)
+                for i in range(0, 40):
+                    SPRITES[f"object{i}"] = Sprite(objects_.crop((
+                        i*64, 0, (i+1) * 64, 64)), None)
             print(Image.open(entry.path))
             SPRITES[entry.name] = Sprite(Image.open(entry.path), None)
-            
+
+
 init_sprites()

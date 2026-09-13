@@ -26,10 +26,8 @@ class RayRenderer:
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
         self.column_width = self.width // self.raycaster.observer.ray_count
-        self.max_distance = self.raycaster.map.max_distance
         self.wall_width = raycaster.map.wall_width
         self.repeat = self.width // self.raycaster.observer.ray_count
-
         self.sprites = []
 
     def add_sprite(self, sprite: Sprite):

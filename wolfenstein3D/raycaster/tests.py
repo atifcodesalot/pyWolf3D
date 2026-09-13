@@ -70,7 +70,14 @@ def renderer_test():
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
     SPRITES["fake_hitler.png"].pos = (25, 25)
+    SPRITES["object29"].pos = (30, 30)
+    SPRITES["object30"].pos = (35, 30)
+    SPRITES["object31"].pos = (30, 35)
     renderer.add_sprite(SPRITES["fake_hitler.png"])
+    renderer.add_sprite(SPRITES["object29"])
+    renderer.add_sprite(SPRITES["object30"])
+    renderer.add_sprite(SPRITES["object31"])
+                        
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
     bw_scale = 0.25
@@ -122,10 +129,10 @@ def sprite_tests():
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
-    for sprite in SPRITES.values():
-        randangle = math.radians(random.choice(range(0, 360, 6)))
-        sprite.pos = (20 * math.cos(randangle) + 300,
-                      20 * math.sin(randangle) + 300)
+    for sprite in list(SPRITES.values())[:5]:
+        randangle = math.radians(random.choice(range(0, 360, 30)))
+        sprite.pos = (25 * math.cos(randangle) + 300,
+                      25 * math.sin(randangle) + 300)
         renderer.add_sprite(sprite)
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
