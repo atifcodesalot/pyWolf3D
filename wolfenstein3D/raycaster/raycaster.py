@@ -65,7 +65,6 @@ class Raycaster:
         self.collisions.clear()
         w = self.map.wall_width
         o = self.observer
-        colls = list()
         for ray_dir in self.observer.directions:
             track = self.observer.pos.copy()
             # get signs of the ray direction
@@ -86,8 +85,9 @@ class Raycaster:
                 if not self.map.in_boundary(track):
                     # if the track is out of the map end
                     # and it has not collided with a filled rect
-                    colls.append(None)
+                    self.collisions.append(None)
                     break
+                
                 mags = self.get_mags_for_step(track, rx, ry, xnn, ynn)
                 mag = min(mags, key=abs)
                 vertical = mags.index(mag)

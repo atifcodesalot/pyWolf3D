@@ -60,7 +60,7 @@ class RayRenderer:
         o = self.raycaster.observer
         shw = sprite.width // 2
         vpl = o.vp_length
-        on_vp = vpl + shw > projected[0] > -vpl - shw 
+        on_vp = vpl + shw > projected[0] > -vpl - shw
         in_front = plain_dot(o.look_dir, plain_sub(o.pos, sprite.pos)) > 0
         return on_vp and in_front
 
@@ -80,18 +80,19 @@ class RayRenderer:
         db = self.raycaster.distance_buffer
         for i in range(int(width_to_draw)):
             col_pos = start + (i * self.repeat)
-            # if the column isn't in screen width 
+            # if the column isn't in screen width
             if col_pos > self.width - 1 or col_pos < 0:
                 continue
             # if there is a wall that is closer
             if db[int(col_pos // self.repeat)] < perp_dist:
                 continue
-            column = sprite.get_column(int(i*skip), self.repeat, height_to_draw, 1)
+            column = sprite.get_column(
+                int(i*skip), self.repeat, height_to_draw, 1)
             self.pgsurface.blit(
                 column, (col_pos, hh - height_to_draw//2))
-            
+
     def sort_sprites(self):
-        get_y = lambda s: s.to_observer_space(self.raycaster.observer)[1]
+        def get_y(s): return s.to_observer_space(self.raycaster.observer)[1]
         self.sprites = sorted(self.sprites, key=get_y)
 
     def render_sprites(self):

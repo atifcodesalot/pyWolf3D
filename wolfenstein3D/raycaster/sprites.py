@@ -33,6 +33,9 @@ class Sprite(Texture):
 
     def translate(self, tvec):
         self.pos = plain_add(self.pos, tvec)
+        
+    def shade(self, _, i):
+        return self.columns[i]
 
 
 def init_sprites():
