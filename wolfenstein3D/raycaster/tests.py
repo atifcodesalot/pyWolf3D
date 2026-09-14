@@ -52,7 +52,7 @@ def raycaster_test():
                 return
         screen.fill((0, 0, 0))
 
-        colls,db = raycaster.raycast()
+        colls, db = raycaster.raycast()
         o.rotate(1)
 
         raycaster.render_bird_view(colls, pygame, screen)
@@ -73,8 +73,8 @@ def renderer_test():
     renderer.add_sprite(SPRITES["object29"], pos=(30, 25))
     renderer.add_sprite(SPRITES["object30"], pos=(35, 30))
     renderer.add_sprite(SPRITES["object31"], pos=(30, 35))
-    renderer.add_sprite(SPRITES["object31"], pos=(50, 55))
-    renderer.add_sprite(SPRITES["object31"], pos=(65, 55))
+    renderer.add_sprite(SPRITES["object35"], pos=(50, 55))
+    renderer.add_sprite(SPRITES["object32"], pos=(65, 55))
     renderer.add_sprite(SPRITES["object32"], pos=(100, 55))
     renderer.add_sprite(SPRITES["object34"], pos=(200, 55))
 
@@ -131,9 +131,8 @@ def sprite_tests():
     renderer = RayRenderer(raycaster, screen)
     for sprite in list(SPRITES.values())[:5]:
         randangle = math.radians(random.choice(range(0, 360, 30)))
-        sprite.pos = (25 * math.cos(randangle) + 300,
-                      25 * math.sin(randangle) + 300)
-        renderer.add_sprite(sprite)
+        renderer.add_sprite(sprite, (25 * math.cos(randangle) + 300,
+                                     25 * math.sin(randangle) + 300))
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
     bw_scale = 0.25
