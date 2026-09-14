@@ -16,10 +16,10 @@ class WolfDoor:
 
 # map class, creates a simple 2D array for map layout
 # 0: empty, nonzero: wall with texture
-class Map:
+class WolfMap:
     DOOR = 0xd00f
 
-    def __init__(self, size, array=None, wall_width=20):
+    def __init__(self, size=(64, 64), array=None, wall_width=20):
         self.size = size
         if array is None:
             self.construct_map()
@@ -30,7 +30,7 @@ class Map:
 
         self.abs_size = self.size[0] * \
             self.wall_width, self.size[1] * self.wall_width
-            
+
         self.doors = {}
 
     def construct_map(self):
@@ -39,7 +39,6 @@ class Map:
         for _ in range(h):
             self.raw.append([0]*w)
         self.construct_outer_walls()
-        
 
     def construct_outer_walls(self):
         w, h = self.size
@@ -48,13 +47,21 @@ class Map:
         for i in range(h):
             self.raw[i][0] = 1
             self.raw[i][-1] = 1
-            
+
+    def to_block_pos(self, x, y):
+        return int(x // self.wall_width), int(y // self.wall_width)
+
+    def get_door(self, coor):
+        pos = self.to_block_pos(*coor)
+        return self.doors[pos]
+
     def add_door(self, pos, horizontal):
         self.raw[pos[1]][pos[0]] = self.DOOR
         self.doors[pos] = WolfDoor(pos, 1, horizontal=horizontal)
 
     def get_cell(self, coor):
-        return self.raw[int(coor[1] // self.wall_width)][int(coor[0] // self.wall_width)]
+        pos = self.to_block_pos(*coor)
+        return self.raw[pos[1]][pos[0]]
 
     def in_boundary(self, coor):
         return 0 <= coor[0] < self.abs_size[0] and\
