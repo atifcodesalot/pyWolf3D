@@ -3,7 +3,7 @@
 import math
 import numpy as np
 from .aux_math import *
-from wolf.mapeditor import WolfMap, WolfDoor
+from wolf.maps import WolfMap, WolfDoor
 
 
 # observer class,
