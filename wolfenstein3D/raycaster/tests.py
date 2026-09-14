@@ -21,7 +21,7 @@ def observer_test():
 
 
 def map_test():
-    map = Map((30, 30), wall_width=10)
+    map = WolfMap((30, 30), wall_width=10)
     assert map.raw
 
     try:
@@ -39,7 +39,7 @@ def map_test():
 
 def raycaster_test():
     o = Observer((100, 100), look_dir=[-1, 0], ray_count=80)
-    map_ = Map((30, 30), wall_width=16)
+    map_ = WolfMap((30, 30), wall_width=16)
     map_.set_random(50)
     screen = pygame.display.set_mode(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
@@ -62,7 +62,7 @@ def raycaster_test():
 
 def renderer_test():
     o = Observer((100, 100), look_dir=[-1, 0], ray_count=300, fov=60)
-    map_ = Map((30, 30), wall_width=16)
+    map_ = WolfMap((30, 30), wall_width=16)
     map_.set_random(10, 3)
     map_.set_random(10, 2)
     screen = pygame.display.set_mode((600, 600))
@@ -124,7 +124,7 @@ def texture_tests():
 def sprite_tests():
     import random
     o = Observer((300, 300), look_dir=[-1, 0], ray_count=300, fov=60)
-    map_ = Map((30, 30), wall_width=16)
+    map_ = WolfMap((30, 30), wall_width=16)
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)

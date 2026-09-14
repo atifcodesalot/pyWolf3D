@@ -3,7 +3,7 @@
 import math
 import numpy as np
 from .aux_math import *
-from wolf.mapeditor import Map
+from wolf.mapeditor import WolfMap, WolfDoor
 
 
 # observer class,
@@ -39,11 +39,10 @@ class Observer:
         self.pos[1] += tvec[1]
 
 
-
 class Raycaster:
     atol = 0.000001
 
-    def __init__(self, observer: Observer, map: Map):
+    def __init__(self, observer: Observer, map: WolfMap):
         self.observer = observer
         self.map = map
 
@@ -57,6 +56,9 @@ class Raycaster:
         dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
         mags = [dx / rx, dy / ry]
         return mags
+
+    def handle_door(self, door: WolfDoor, vert_intercept: bool):
+        pass
 
     def raycast(self):
         db = []
@@ -73,19 +75,16 @@ class Raycaster:
                 rx = 1e-10
             if ry == 0:
                 ry = 1e-10
-            #
-            dxs = sign(rx)
-            dys = sign(ry)
             # x is non negative
-            xnn = dxs + 1
+            xnn = sign(rx) + 1
             # y is non negative
-            ynn = dys + 1
+            ynn = sign(ry) + 1
             while True:
                 if not self.map.in_boundary(track):
                     # if the track is out of the map end
                     # and it has not collided with a filled rect
                     break
-                
+
                 mags = self.get_mags_for_step(track, rx, ry, xnn, ynn)
                 mag = min(mags, key=abs)
                 vertical = mags.index(mag)
@@ -94,10 +93,12 @@ class Raycaster:
 
                 xb = hw if not xnn and not vertical else 0
                 yb = hw if not ynn and vertical else 0
-
-                if (cell := self.map.get_cell(
-                    (track[0] - xb,
-                     track[1] - yb))):
+                biased_pos = self.map.to_block_pos(
+                    track[0] - xb, track[1] - yb)
+                if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
+                    if cell == self.map.DOOR:
+                        self.handle_door(self.map.get_door(
+                            biased_pos), vert_intercept=vertical)
                     colls.append((track, vertical, cell))
                     to_track = plain_sub(o.pos, track)
                     db.append(
