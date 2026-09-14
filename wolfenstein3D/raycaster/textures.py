@@ -14,6 +14,7 @@ class Texture:
         image = image.convert("RGBA")
 
         self.width, self.height = image.size
+        self.half_height = self.height // 2
 
         self.surface = pygame.image.frombytes(
             image.tobytes(),
@@ -28,9 +29,18 @@ class Texture:
 
         self.shade_cache = {}
 
-    def get_column(self, i, repeat, height, shade_factor):
+    def get_column(self, i, repeat, height, shade_factor, screen_height):
+        column = self.shade(shade_factor, i)
+
+        if height > screen_height:
+            # clip before scaling
+            off = screen_height / height * self.half_height
+            column = column.subsurface(
+                (0, self.half_height - off, 1, off*2))
+            height = screen_height
+
         scaled = pygame.transform.scale(
-            self.shade(shade_factor, i), (repeat, height))
+            column, (repeat, height))
         return scaled
 
     def shade(self, factor, i):

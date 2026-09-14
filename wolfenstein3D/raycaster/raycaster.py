@@ -46,8 +46,6 @@ class Raycaster:
     def __init__(self, observer: Observer, map: Map):
         self.observer = observer
         self.map = map
-        self.collisions = []
-        self.distance_buffer = []
 
     def get_mags_for_step(self, track, rx, ry, xnn, ynn):
         w = self.map.wall_width
@@ -61,9 +59,10 @@ class Raycaster:
         return mags
 
     def raycast(self):
-        self.distance_buffer.clear()
-        self.collisions.clear()
+        db = []
+        colls = []
         w = self.map.wall_width
+        hw = w // 2
         o = self.observer
         for ray_dir in self.observer.directions:
             track = self.observer.pos.copy()
@@ -85,7 +84,6 @@ class Raycaster:
                 if not self.map.in_boundary(track):
                     # if the track is out of the map end
                     # and it has not collided with a filled rect
-                    self.collisions.append(None)
                     break
                 
                 mags = self.get_mags_for_step(track, rx, ry, xnn, ynn)
@@ -94,20 +92,20 @@ class Raycaster:
                 track[0] += rx * mag
                 track[1] += ry * mag
 
-                xb = w // 2 if not xnn and not vertical else 0
-                yb = w // 2 if not ynn and vertical else 0
+                xb = hw if not xnn and not vertical else 0
+                yb = hw if not ynn and vertical else 0
 
                 if (cell := self.map.get_cell(
                     (track[0] - xb,
                      track[1] - yb))):
-                    self.collisions.append((track, vertical, cell))
-                    to_track = (track[0] - o.pos[0],
-                                track[1] - o.pos[1])
-                    self.distance_buffer.append(
+                    colls.append((track, vertical, cell))
+                    to_track = plain_sub(o.pos, track)
+                    db.append(
                         plain_dot(to_track, o.look_dir))
                     break
+        return colls, db
 
-    def render_bird_view(self, pygame, pgsurface):
+    def render_bird_view(self, colls, pygame, pgsurface):
         m = self.map
         ww = m.wall_width
         for b in range(m.size[0]):
@@ -115,7 +113,7 @@ class Raycaster:
                 if m.raw[b][a]:
                     pygame.draw.rect(pgsurface, (255, 0, 0),
                                      (a*ww, b*ww, ww, ww))
-        for coll in self.collisions:
+        for coll in colls:
             if coll is not None:
                 pygame.draw.aaline(pgsurface, (255, 255, 255),
                                    self.observer.pos, coll[0])

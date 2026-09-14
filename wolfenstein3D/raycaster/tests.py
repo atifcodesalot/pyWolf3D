@@ -52,10 +52,10 @@ def raycaster_test():
                 return
         screen.fill((0, 0, 0))
 
-        raycaster.raycast()
+        colls,db = raycaster.raycast()
         o.rotate(1)
 
-        raycaster.render_bird_view(pygame, screen)
+        raycaster.render_bird_view(colls, pygame, screen)
         pygame.display.flip()
         clock.tick(60)
 
@@ -106,7 +106,7 @@ def renderer_test():
         screen.blit(pygame.transform.scale(
             bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
         bird_view.fill((0, 0, 0))
-        raycaster.render_bird_view(pygame, bird_view)
+        raycaster.render_bird_view(renderer.colls, pygame, bird_view)
         pygame.display.flip()
         clock.tick(60)
 
@@ -116,7 +116,7 @@ def texture_tests():
     screen = pygame.display.set_mode((128, 128))
     tex = WALL_TEXTURES[0]
     for i, c in enumerate(tex.columns):
-        screen.blit(tex.get_column(i, 1, 128-i, 1), (i, 0))
+        screen.blit(tex.get_column(i, 1, 128-i, 1, 128), (i, 0))
         pygame.display.flip()
         time.sleep(0.001)
 
@@ -152,7 +152,7 @@ def sprite_tests():
         screen.blit(pygame.transform.scale(
             bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
         bird_view.fill((0, 0, 0))
-        raycaster.render_bird_view(pygame, bird_view)
+        raycaster.render_bird_view(renderer.colls, pygame, bird_view)
         pygame.display.flip()
         clock.tick(60)
         o.rotate(1)

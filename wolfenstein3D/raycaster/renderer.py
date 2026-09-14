@@ -39,7 +39,7 @@ class RayRenderer:
         return (self.height / d) * scaler
 
     def cast(self):
-        self.raycaster.raycast()
+        self.colls, self.db = self.raycaster.raycast()
 
     def lamberts_cosine(self, coll, light: PointLight):
         pos, vertical, _ = coll
@@ -54,7 +54,7 @@ class RayRenderer:
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (texture.width - 1)
         return texture.get_column(round(ci),
-                                  int(repeat), int(height), factor)
+                                  int(repeat), int(height), factor, self.height)
 
     def sprite_is_visible(self, projected, sprite) -> bool:
         o = self.raycaster.observer
@@ -73,23 +73,23 @@ class RayRenderer:
         screen_pos = sprite.screen_pos(self, projected)
         perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
         height_to_draw = self.distance_to_height(perp_dist, scaler=10)
-        width_to_draw = height_to_draw//2
+        width_to_draw = height_to_draw // 2
         sw = sprite.width
         start = screen_pos - (width_to_draw // 2) * self.repeat
         skip = sw / width_to_draw
-        db = self.raycaster.distance_buffer
+        visible_height = min(self.height, height_to_draw)
         for i in range(int(width_to_draw)):
             col_pos = start + (i * self.repeat)
             # if the column isn't in screen width
             if col_pos > self.width - 1 or col_pos < 0:
                 continue
             # if there is a wall that is closer
-            if db[int(col_pos // self.repeat)] < perp_dist:
+            if self.db[int(col_pos // self.repeat)] < perp_dist:
                 continue
             column = sprite.get_column(
-                int(i*skip), self.repeat, height_to_draw, 1)
+                int(i*skip), self.repeat, height_to_draw, 1, self.height)
             self.pgsurface.blit(
-                column, (col_pos, hh - height_to_draw//2))
+                column, (col_pos, hh - visible_height//2))
 
     def sort_sprites(self):
         def get_y(s): return s.to_observer_space(self.raycaster.observer)[1]
@@ -102,12 +102,13 @@ class RayRenderer:
 
     def render_walls(self, light):
         hh = self.height // 2
-        for i, d in enumerate(self.raycaster.distance_buffer):
-            coll = self.raycaster.collisions[i]
+        for i, d in enumerate(self.db):
+            coll = self.colls[i]
             start = self.repeat * i
             chh = self.distance_to_height(d, scaler=10) // 2
             cosine = self.lamberts_cosine(coll, light)
             column = self.get_wall_col(coll, self.repeat, chh*2, cosine)
+            chh = min(chh, hh)
             self.pgsurface.blit(column, (start, hh - chh))
 
     def render(self, light: PointLight):
