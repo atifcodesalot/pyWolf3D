@@ -69,15 +69,15 @@ def renderer_test():
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
-    SPRITES["fake_hitler.png"].pos = (25, 25)
-    SPRITES["object29"].pos = (30, 30)
-    SPRITES["object30"].pos = (35, 30)
-    SPRITES["object31"].pos = (30, 35)
-    renderer.add_sprite(SPRITES["fake_hitler.png"])
-    renderer.add_sprite(SPRITES["object29"])
-    renderer.add_sprite(SPRITES["object30"])
-    renderer.add_sprite(SPRITES["object31"])
-                        
+    renderer.add_sprite(SPRITES["fake_hitler.png"], pos=(25, 25))
+    renderer.add_sprite(SPRITES["object29"], pos=(30, 25))
+    renderer.add_sprite(SPRITES["object30"], pos=(35, 30))
+    renderer.add_sprite(SPRITES["object31"], pos=(30, 35))
+    renderer.add_sprite(SPRITES["object31"], pos=(50, 55))
+    renderer.add_sprite(SPRITES["object31"], pos=(65, 55))
+    renderer.add_sprite(SPRITES["object32"], pos=(100, 55))
+    renderer.add_sprite(SPRITES["object34"], pos=(200, 55))
+
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
     bw_scale = 0.25

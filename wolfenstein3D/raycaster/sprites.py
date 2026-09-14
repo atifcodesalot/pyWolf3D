@@ -12,6 +12,7 @@ class Sprite(Texture):
     def __init__(self, image, pos):
         super().__init__(image)
         self.pos = pos
+        self.image = image
 
     def to_observer_space(self, observer: Observer):
         to_self = plain_sub(self.pos, observer.pos)
@@ -36,6 +37,11 @@ class Sprite(Texture):
         
     def shade(self, _, i):
         return self.columns[i]
+    
+    def copy(self, pos):
+        copied = self.__new__(self.__class__)
+        copied.__init__(self.image, pos=pos)
+        return copied
 
 
 def init_sprites():

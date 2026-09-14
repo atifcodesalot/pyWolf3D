@@ -30,10 +30,11 @@ class RayRenderer:
         self.repeat = self.width // self.raycaster.observer.ray_count
         self.sprites = []
 
-    def add_sprite(self, sprite: Sprite):
-        if type(sprite) is not Sprite:
+    def add_sprite(self, sprite_src: Sprite, pos):
+        if type(sprite_src) is not Sprite:
             raise TypeError("Expected Sprite object")
-        self.sprites.append(sprite)
+        copy = sprite_src.copy(pos=pos)
+        self.sprites.append(copy)
 
     def distance_to_height(self, d, scaler):
         return (self.height / d) * scaler
