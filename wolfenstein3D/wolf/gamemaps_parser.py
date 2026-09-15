@@ -1,59 +1,64 @@
 
-
-# return n bytes little endian from data
-def get_n_bytes_LI(start, n, data: bytearray):
-    result = 0
-    for i in range(n):
-        result <<= 8
-        result |= data[start + (n - 1 - i)]
-    return result
+from .maps import WolfMap
+from raycaster.sprites import SPRITES
+from os import path
 
 
-class Parser:
-    def __init__(self, mapheader: bytearray, maptemp: bytearray):
-        self.mapheader = mapheader
-        self.maptemp = maptemp
-        self.get_magic_marker()
-        self.parse()
+SPRITES_MAPPING = {
+    23:  0,  # Water puddle
+    24:  1,  # Green barrel
+    25:  2,  # Table with chairs
+    26:  3,  # Floor lamp
+    27:  4,  # Chandelier
+    28:  5,  # Hanging skeleton
+    29:  6,  # Dog food
+    30:  7,  # Pillar
+    31:  8,  # Potted tree
+    32:  9,  # Skeleton on floor
+    33: 10,  # Sink
+    34: 11,  # Potted plant
+    35: 12,  # Urn
+    36: 13,  # Empty table
+    37: 14,  # Ceiling light
+    38: 15,  # Hanging kitchen utensils
+    39: 16,  # Armour
+    40: 17,  # Empty hanging cage
+    41: 18,  # Hanging cage with skeleton
+    42: 19,  # Skeleton remains
+    43: 20,  # Gold key
+    44: 21,  # Silver key
+    45: 22,  # Bed
+    46: 23,  # Basket
+    47: 24,  # Food
+    48: 25,  # First-aid kit
+    49: 26,  # Ammunition
+    50: 27,  # Machine gun
+    51: 28,  # Chaingun
+    52: 29,  # Cross
+    53: 30,  # Chalice
+    54: 31,  # Treasure chest
+    55: 32,  # Crown
+    56: 33,  # Extra life
+    57: 34,  # Bloody remains
+    58: 35,  # Wooden barrel
+    59: 36,  # Well with water
+    60: 37,  # Empty well
+    61: 38,  # Blood pool
+    62: 39,  # Flag
+    63: 40,  # "Call Apogee" slot — appears blank in your sheet
+    64: 41,  # Debris 1
+    65: 42,  # Debris 2
+    66: 43,  # Debris 3
+    67: 44,  # Hanging pots
+    68: 45,  # Stove
+    69: 46,  # Spear rack
+    70: 47,  # Vines
+}
 
-    def parse(self):
-        self.level_offsets = [get_n_bytes_LI(
-            2 + 4*i, 4, self.mapheader) for i in range(100)]
-        self.planes = [(self.get_level_plane(i, 0), self.get_level_plane(i, 1))
-                       for i in range(10)]
-
-    def decompress(self, plane):
-        decompressed = []
-        i = 0
-        while i < len(plane):
-            entry = get_n_bytes_LI(i, 2, plane)
-            if entry == self.magic_marker:
-                repeat = get_n_bytes_LI(i + 2, 2, plane)
-                value = get_n_bytes_LI(i + 4, 2, plane)
-                decompressed += [value,] * repeat
-                i += 6
-                continue
-            decompressed.append(entry)
-            i += 2
-        return decompressed
-
-    def get_level_header(self, level_i):
-        pos = self.level_offsets[level_i]
-        return self.maptemp[pos: pos + 38]
-
-    def get_level_plane(self, level_i, plane_i):
-        header = self.get_level_header(level_i)
-        plane_size = get_n_bytes_LI(12+2*plane_i, 2, header)
-        pos = self.level_offsets[level_i] + 38
-        return self.maptemp[pos: pos + plane_size]
-
-    def get_magic_marker(self):
-        self.magic_marker = get_n_bytes_LI(0, 2, self.mapheader)
-
-
-WALL_TEXTURES = {
+WALL_TEXTURE_MAPPING = {
     # DOS GAMEMAPS ID : my atlas index
 
+    0x00: -1,   # renderer subtracts 1 from tiles, -1 is for empty.
     0x01: 0,   # grey stone
     0x02: 0,   # grey stone
     0x03: 2,   # grey stone + flag
@@ -124,3 +129,94 @@ WALL_TEXTURES = {
     0x64: 34,  # elevator door
     0x65: 34,
 }
+
+
+# return n bytes little endian from data
+def get_n_bytes_LI(start, n, data: bytearray):
+    result = 0
+    for i in range(n):
+        result <<= 8
+        result |= data[start + (n - 1 - i)]
+    return result
+
+
+class Parser:
+    def __init__(self, mapheader: bytearray, maptemp: bytearray, level_count=10):
+        self.mapheader = mapheader
+        self.maptemp = maptemp
+        self.get_magic_marker()
+        self.levels = level_count
+        self.parse()
+
+    def parse(self):
+        dcmp = self.decompress
+        self.level_offsets = [get_n_bytes_LI(
+            2 + 4*i, 4, self.mapheader) for i in range(self.levels)]
+        self.planes = [(dcmp(self.get_level_plane(i, 0)), dcmp(self.get_level_plane(i, 1)))
+                       for i in range(self.levels)]
+
+    def decompress(self, plane):
+        decompressed = []
+        # skip the uncompressed size header
+        i = 2
+        #
+        while i < len(plane):
+            entry = get_n_bytes_LI(i, 2, plane)
+            if entry == self.magic_marker:
+                repeat = get_n_bytes_LI(i + 2, 2, plane)
+                value = get_n_bytes_LI(i + 4, 2, plane)
+                decompressed += [value,] * repeat
+                i += 6
+                continue
+            decompressed.append(entry)
+            i += 2
+        return decompressed
+
+    def get_level_header(self, level_i):
+        pos = self.level_offsets[level_i]
+        return self.maptemp[pos: pos + 38]
+
+    def get_level_plane(self, level_i, plane_i):
+        header = self.get_level_header(level_i)
+        plane_size = get_n_bytes_LI(12+2*plane_i, 2, header)
+        offset = get_n_bytes_LI(plane_i * 4, 4, header)
+        return self.maptemp[offset: offset + plane_size]
+
+    def get_magic_marker(self):
+        self.magic_marker = get_n_bytes_LI(0, 2, self.mapheader)
+
+    def to_wolfmap(self, level_i) -> WolfMap:
+        walls = self.planes[level_i][0]
+        sprites = self.planes[level_i][1]
+        walls = [walls[i*64: (i+1)*64] for i in range(64)]
+        for i, row in enumerate(walls):
+            walls[i] = [WALL_TEXTURE_MAPPING.get(wall, -1) + 1 for wall in row]
+
+        wolfmap = WolfMap(array=walls)
+        ww = wolfmap.wall_width
+
+        for i, sprite in enumerate(sprites):
+            if not sprite or sprite not in SPRITES_MAPPING:
+                continue
+            myindex = SPRITES_MAPPING[sprite]
+            if myindex not in SPRITES:
+                continue
+            sprite_src = SPRITES[myindex]
+            pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
+            wolfmap.add_sprite(sprite_src, pos)
+
+        return wolfmap
+
+
+def get_shareware_maps():
+    global SHAREWARE_MAPS
+    maphead = open(path.join("maps", "MAPHEAD.WL1"), "rb")
+    maptemp = open(path.join("maps", "MAPTEMP.WL1"), "rb")
+    parser = Parser(maphead.read(), maptemp.read(), level_count=10)
+    SHAREWARE_MAPS = [parser.to_wolfmap(i) for i in range(10)]
+    print(SHAREWARE_MAPS[0].sprites[0].pos)
+    maphead.close()
+    maptemp.close()
+
+
+get_shareware_maps()
