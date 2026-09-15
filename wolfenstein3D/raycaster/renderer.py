@@ -28,13 +28,6 @@ class RayRenderer:
         self.column_width = self.width // self.raycaster.observer.ray_count
         self.wall_width = raycaster.map.wall_width
         self.repeat = self.width // self.raycaster.observer.ray_count
-        self.sprites = []
-
-    def add_sprite(self, sprite_src: Sprite, pos):
-        if type(sprite_src) is not Sprite:
-            raise TypeError("Expected Sprite object")
-        copy = sprite_src.copy(pos=pos)
-        self.sprites.append(copy)
 
     def distance_to_height(self, d, scaler):
         return (self.height / d) * scaler
@@ -94,11 +87,13 @@ class RayRenderer:
 
     def sort_sprites(self):
         def get_y(s): return s.to_observer_space(self.raycaster.observer)[1]
-        self.sprites = sorted(self.sprites, key=get_y)
+        sorted_sprites = sorted(self.raycaster.map.sprites, key=get_y)
+        return sorted_sprites
+        
 
     def render_sprites(self):
-        self.sort_sprites()
-        for sprite in self.sprites:
+        sorted_sprites = self.sort_sprites()
+        for sprite in sorted_sprites:
             self.draw_sprite(sprite)
 
     def render_walls(self, light):

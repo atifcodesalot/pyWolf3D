@@ -6,6 +6,7 @@ from .textures import *
 import cProfile
 import pygame
 from .sprites import *
+from wolf.gamemaps_parser import SHAREWARE_MAPS
 
 
 profiler = cProfile.Profile()
@@ -62,21 +63,11 @@ def raycaster_test():
 
 def renderer_test():
     o = Observer((100, 100), look_dir=[-1, 0], ray_count=200, fov=60)
-    map_ = WolfMap((30, 30), wall_width=16)
-    map_.set_random(10, 3)
-    map_.set_random(10, 2)
+    map_ = SHAREWARE_MAPS[0]
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
-    renderer.add_sprite(SPRITES["characters/fake_hitler.png"], pos=(25, 25))
-    renderer.add_sprite(SPRITES["object29"], pos=(30, 25))
-    renderer.add_sprite(SPRITES["object30"], pos=(35, 30))
-    renderer.add_sprite(SPRITES["object31"], pos=(30, 35))
-    renderer.add_sprite(SPRITES["object35"], pos=(50, 55))
-    renderer.add_sprite(SPRITES["object32"], pos=(65, 55))
-    renderer.add_sprite(SPRITES["object32"], pos=(100, 55))
-    renderer.add_sprite(SPRITES["object34"], pos=(200, 55))
 
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
@@ -131,7 +122,7 @@ def sprite_tests():
     renderer = RayRenderer(raycaster, screen)
     for sprite in list(SPRITES.values())[:5]:
         randangle = math.radians(random.choice(range(0, 360, 30)))
-        renderer.add_sprite(sprite, (25 * math.cos(randangle) + 300,
+        map_.add_sprite(sprite, (25 * math.cos(randangle) + 300,
                                      25 * math.sin(randangle) + 300))
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))

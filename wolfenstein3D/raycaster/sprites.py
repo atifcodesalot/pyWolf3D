@@ -1,7 +1,6 @@
 
 
 from .textures import Texture, os, Image
-from .raycaster import Observer
 from .aux_math import plain_dot, plain_sub, plain_add
 
 
@@ -14,12 +13,12 @@ class Sprite(Texture):
         self.pos = pos
         self.image = image
 
-    def to_observer_space(self, observer: Observer):
+    def to_observer_space(self, observer):
         to_self = plain_sub(self.pos, observer.pos)
         return (plain_dot(to_self, observer.left),
                 plain_dot(to_self, observer.look_dir))
 
-    def project(self, observer: Observer):
+    def project(self, observer):
         view = self.to_observer_space(observer)
         # guard against 0
         w = 0.0001 if view[1] == 0 else view[1]
@@ -52,9 +51,8 @@ def init_sprites():
             if entry.name == "objects.png":
                 objects_ = Image.open(entry.path)
                 for i in range(0, 40):
-                    SPRITES[f"object{i}"] = Sprite(objects_.crop((
+                    SPRITES[i] = Sprite(objects_.crop((
                         i*64, 0, (i+1) * 64, 64)), None)
-            print(Image.open(entry.path))
             SPRITES[entry.name] = Sprite(Image.open(entry.path), None)
         if entry.is_dir():
             for entry2 in os.scandir(entry.path):

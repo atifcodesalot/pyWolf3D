@@ -1,7 +1,6 @@
 
 
 import math
-import numpy as np
 from .aux_math import *
 from wolf.maps import WolfMap, WolfDoor
 
