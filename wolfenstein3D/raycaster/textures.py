@@ -75,3 +75,4 @@ def init_textures():
 
 
 init_textures()
+print(WALL_TEXTURES)

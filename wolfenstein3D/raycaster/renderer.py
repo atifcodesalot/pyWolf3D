@@ -74,7 +74,7 @@ class RayRenderer:
         screen_pos = sprite.screen_pos(self, projected)
         perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
         height_to_draw = self.distance_to_height(perp_dist, scaler=10)
-        width_to_draw = height_to_draw // 2
+        width_to_draw = height_to_draw // 3
         sw = sprite.width
         start = screen_pos - (width_to_draw // 2) * self.repeat
         skip = sw / width_to_draw

@@ -52,7 +52,7 @@ def raycaster_test():
                 return
         screen.fill((0, 0, 0))
 
-        colls, db = raycaster.raycast()
+        colls, _ = raycaster.raycast()
         o.rotate(1)
 
         raycaster.render_bird_view(colls, pygame, screen)
@@ -61,7 +61,7 @@ def raycaster_test():
 
 
 def renderer_test():
-    o = Observer((100, 100), look_dir=[-1, 0], ray_count=300, fov=60)
+    o = Observer((100, 100), look_dir=[-1, 0], ray_count=200, fov=60)
     map_ = WolfMap((30, 30), wall_width=16)
     map_.set_random(10, 3)
     map_.set_random(10, 2)
@@ -69,7 +69,7 @@ def renderer_test():
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
     renderer = RayRenderer(raycaster, screen)
-    renderer.add_sprite(SPRITES["fake_hitler.png"], pos=(25, 25))
+    renderer.add_sprite(SPRITES["characters/fake_hitler.png"], pos=(25, 25))
     renderer.add_sprite(SPRITES["object29"], pos=(30, 25))
     renderer.add_sprite(SPRITES["object30"], pos=(35, 30))
     renderer.add_sprite(SPRITES["object31"], pos=(30, 35))

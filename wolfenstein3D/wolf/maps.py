@@ -1,4 +1,7 @@
 
+from .gamemaps_parser import *
+from os import path
+
 
 class WolfDoor:
     def __init__(self, pos, opening: float, horizontal=True):
@@ -72,3 +75,10 @@ class WolfMap:
         w, h = self.size
         for _ in range(amount):
             self.raw[random.randint(0, h-1)][random.randint(0, w-1)] = num
+
+
+def get_wolfmap(map_index):
+    maphead = path.join('.', 'wolf', 'maps', 'MAPHEAD.WL1')
+    maptemp = path.join('.', 'wolf', 'maps', 'MAPTEMP.WL1')
+    parser = Parser(maphead, maptemp)
+    

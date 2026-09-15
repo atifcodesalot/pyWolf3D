@@ -56,6 +56,11 @@ def init_sprites():
                         i*64, 0, (i+1) * 64, 64)), None)
             print(Image.open(entry.path))
             SPRITES[entry.name] = Sprite(Image.open(entry.path), None)
+        if entry.is_dir():
+            for entry2 in os.scandir(entry.path):
+                if entry2.is_file():
+                    SPRITES[entry.name + "/" + entry2.name] = Sprite(
+                        Image.open(entry2.path), None)
 
 
 init_sprites()
