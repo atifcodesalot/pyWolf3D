@@ -4,7 +4,7 @@ from raycaster.sprites import SPRITES
 from os import path
 
 
-SPRITES_MAPPING = {
+OBJ_SPRITES_MAPPING = {
     23:  0,  # Water puddle
     24:  1,  # Green barrel
     25:  2,  # Table with chairs
@@ -120,7 +120,7 @@ WALL_TEXTURE_MAPPING = {
 
     # Doors
     0x5A: 31,  # regular door, orientation A
-    0x5B: 31,  # regular door, orientation B
+    0x5B: 31 << 1,  # regular door, orientation B
     0x5C: 32,  # gold-key door
     0x5D: 32,
     0x5E: 33,  # silver-key door
@@ -196,9 +196,9 @@ class Parser:
         ww = wolfmap.wall_width
 
         for i, sprite in enumerate(sprites):
-            if not sprite or sprite not in SPRITES_MAPPING:
+            if not sprite or sprite not in OBJ_SPRITES_MAPPING:
                 continue
-            myindex = SPRITES_MAPPING[sprite]
+            myindex = OBJ_SPRITES_MAPPING[sprite]
             if myindex not in SPRITES:
                 continue
             sprite_src = SPRITES[myindex]

@@ -64,6 +64,7 @@ def raycaster_test():
 def renderer_test():
     o = Observer((100, 100), look_dir=[-1, 0], ray_count=200, fov=60)
     map_ = SHAREWARE_MAPS[0]
+    print(map_.doors)
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)

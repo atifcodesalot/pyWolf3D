@@ -1,6 +1,7 @@
 
 from raycaster.sprites import Sprite
 
+
 class WolfDoor:
     def __init__(self, pos, opening: float, horizontal=True):
         self.pos = pos
@@ -11,30 +12,33 @@ class WolfDoor:
     def is_open(self):
         return self.openning == 1
 
-    def slide(self):
-        self.opening += 0.01
+    def slide_open(self):
+        self.opening = (self.opening + 0.01) % 1
+
+    def slide_close(self):
+        self.opening = (self.opening - 0.01) % 1
 
 
 # map class, creates a simple 2D array for map layout
 # 0: empty, nonzero: wall with texture
 class WolfMap:
-    DOOR = 0xd00f
+    DOOR = [0x1f + 1, (0x1f << 1) + 1]
 
     def __init__(self, size=(64, 64), array=None, wall_width=20):
         self.size = size
+        self.doors = {}
         if array is None:
             self.construct_map()
         else:
             self.raw = array
+            self.init_doors()
 
         self.wall_width = wall_width
 
         self.abs_size = self.size[0] * \
             self.wall_width, self.size[1] * self.wall_width
-
-        self.doors = {}
         self.sprites = []
-        
+
     def add_sprite(self, sprite_src: Sprite, pos):
         if type(sprite_src) is not Sprite:
             raise TypeError("Expected Sprite object")
@@ -64,8 +68,15 @@ class WolfMap:
         return self.doors[pos]
 
     def add_door(self, pos, horizontal):
-        self.raw[pos[1]][pos[0]] = self.DOOR
         self.doors[pos] = WolfDoor(pos, 1, horizontal=horizontal)
+
+    def init_doors(self):
+        self.doors.clear()
+        for j, row in enumerate(self.raw):
+            for i, entry in enumerate(row):
+                if entry in self.DOOR:
+                    self.add_door((i, j),
+                                  horizontal=entry >> 1 == 0xf)
 
     def get_cell(self, coor):
         pos = self.to_block_pos(*coor)

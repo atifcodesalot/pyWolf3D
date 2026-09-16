@@ -110,8 +110,3 @@ class RayRenderer:
     def render(self, light: PointLight):
         self.render_walls(light)
         self.render_sprites()
-
-
-class GUIRenderer:
-    def __init__(self):
-        pass

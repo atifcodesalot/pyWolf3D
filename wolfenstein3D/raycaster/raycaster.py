@@ -45,19 +45,25 @@ class Raycaster:
         self.observer = observer
         self.map = map
 
-    def get_mags_for_step(self, track, rx, ry, xnn, ynn):
+    def get_mags_for_step(self, trace, rx, ry, xnn, ynn):
         w = self.map.wall_width
         # determine offset direction
-        dx = w - (track[0] % w) if xnn else -(track[0] % w)
-        dy = w - (track[1] % w) if ynn else -(track[1] % w)
+        dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
+        dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
         #
         dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
         dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
         mags = [dx / rx, dy / ry]
         return mags
 
-    def handle_door(self, door: WolfDoor, vert_intercept: bool):
-        pass
+    def handle_door(self, trace, door: WolfDoor, vert_intercept: int):
+        # the ray hits from the door's side
+        if not (vert_intercept ^ door.horizontal):
+            return True
+        #
+        ww = self.map.wall_width
+        offset = trace[vert_intercept] % ww
+        return (offset / ww) < door.opening
 
     def raycast(self):
         db = []
@@ -66,7 +72,7 @@ class Raycaster:
         hw = w // 2
         o = self.observer
         for ray_dir in self.observer.directions:
-            track = self.observer.pos.copy()
+            trace = self.observer.pos.copy()
             # get signs of the ray direction
             rx, ry = ray_dir
             # guard against zero division
@@ -79,29 +85,34 @@ class Raycaster:
             # y is non negative
             ynn = sign(ry) + 1
             while True:
-                if not self.map.in_boundary(track):
-                    # if the track is out of the map end
+                if not self.map.in_boundary(trace):
+                    # if the trace is out of the map end
                     # and it has not collided with a filled rect
                     break
 
-                mags = self.get_mags_for_step(track, rx, ry, xnn, ynn)
+                mags = self.get_mags_for_step(trace, rx, ry, xnn, ynn)
                 mag = min(mags, key=abs)
                 vertical = mags.index(mag)
-                track[0] += rx * mag
-                track[1] += ry * mag
+                trace[0] += rx * mag
+                trace[1] += ry * mag
 
                 xb = hw if not xnn and not vertical else 0
                 yb = hw if not ynn and vertical else 0
                 biased_pos = self.map.to_block_pos(
-                    track[0] - xb, track[1] - yb)
+                    trace[0] - xb, trace[1] - yb)
                 if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
                     if cell == self.map.DOOR:
-                        self.handle_door(self.map.get_door(
-                            biased_pos), vert_intercept=vertical)
-                    colls.append((track, vertical, cell))
-                    to_track = plain_sub(o.pos, track)
+                        door_hit = self.handle_door(
+                            self.map.get_door(biased_pos),
+                            vert_intercept=vertical)
+                        if door_hit:
+                            colls.append((trace, vertical, cell))
+                            break
+
+                    colls.append((trace, vertical, cell))
+                    to_trace = plain_sub(o.pos, trace)
                     db.append(
-                        plain_dot(to_track, o.look_dir))
+                        plain_dot(to_trace, o.look_dir))
                     break
         return colls, db
 

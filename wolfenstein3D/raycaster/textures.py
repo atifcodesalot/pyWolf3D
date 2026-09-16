@@ -57,16 +57,18 @@ class Texture:
 
 def init_wall_textures():
     global WALL_TEXTURES
-    WALL_TEXTURES = []
+    # 100 slot texture table
+    WALL_TEXTURES = [None]*100
     wall_size = (128, 128)
     ww, wh = wall_size
     texture_layout = (6, 6)
     walls = Image.open(os.path.join(TEXTURE_PATH, 'wallmap.png'))
-    for i in range(texture_layout[0]):
-        for j in range(texture_layout[1]):
-            WALL_TEXTURES.append(
-                Texture(walls.crop((i*ww, j*wh, (i+1)*ww, (j+1)*wh)))
-            )
+    for j in range(texture_layout[1]):
+        for i in range(texture_layout[0]):
+            WALL_TEXTURES[i + j*texture_layout[0]
+                          ] = Texture(walls.crop((i*ww, j*wh, (i+1)*ww, (j+1)*wh)))
+
+    WALL_TEXTURES[31 << 1] = WALL_TEXTURES[31]
 
 
 def init_textures():
