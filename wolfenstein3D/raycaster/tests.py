@@ -62,8 +62,8 @@ def raycaster_test():
 
 
 def renderer_test():
-    o = Observer((100, 100), look_dir=[-1, 0], ray_count=300, fov=60)
-    map_ = SHAREWARE_MAPS[0]
+    o = Observer((100, 100), look_dir=[-1, 0], ray_count=200, fov=60)
+    map_ = SHAREWARE_MAPS[5]
     for door in map_.doors.values():
         door.opening = 0.5
     screen = pygame.display.set_mode((600, 600))
@@ -83,6 +83,7 @@ def renderer_test():
                 pygame.quit()
                 return
 
+
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_LEFT]:
             o.rotate(-2)
@@ -92,6 +93,9 @@ def renderer_test():
             o.translate((o.look_dir[0]*2, o.look_dir[1]*2))
         if pressed[pygame.K_DOWN]:
             o.translate((-o.look_dir[0]*2, -o.look_dir[1]*2))
+        if pressed[pygame.K_x]:
+            for door in map_.doors.values():
+                door.slide_open()
         light.pos = o.pos
         screen.fill((0, 0, 0))
         renderer.cast()
@@ -101,7 +105,7 @@ def renderer_test():
         bird_view.fill((0, 0, 0))
         raycaster.render_bird_view(renderer.colls, pygame, bird_view)
         pygame.display.flip()
-        clock.tick(100)
+        clock.tick(50)
 
 
 def texture_tests():
@@ -116,7 +120,7 @@ def texture_tests():
 
 def sprite_tests():
     import random
-    o = Observer((300, 300), look_dir=[-1, 0], ray_count=300, fov=60)
+    o = Observer((300, 300), look_dir=[-1, 0], ray_count=200, fov=60)
     map_ = WolfMap((30, 30), wall_width=16)
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
@@ -146,7 +150,7 @@ def sprite_tests():
         bird_view.fill((0, 0, 0))
         raycaster.render_bird_view(renderer.colls, pygame, bird_view)
         pygame.display.flip()
-        clock.tick(100)
+        clock.tick(60)
         o.rotate(1)
 
 

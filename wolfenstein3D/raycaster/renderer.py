@@ -44,13 +44,21 @@ class RayRenderer:
 
     def lamberts_cosine(self, coll, light: PointLight):
         pos, vertical, _ = coll
-        n = BASIS[vertical]
+        n = BASIS[~vertical + 2]
         light_to_coll = plain_sub(pos, light.pos)
         light_to_coll = plain_normalize(light_to_coll)
         return abs(plain_dot(n, light_to_coll))
 
     def get_wall_col(self, coll, repeat, height, factor):
-        offset = coll[0][~coll[1] + 2] % self.wall_width
+        vertical = coll[1]
+        m = self.raycaster.map
+        offset = coll[0][vertical] % self.wall_width
+        # if it is a door, take the opening into account
+        if coll[2] in m.DOOR:
+            door = m.get_door(m.to_block_pos(*coll[0]))
+            if door:
+                offset = m.wall_width * door.opening - offset
+                
         texture = WALL_TEXTURES[coll[2] - 1]
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (texture.width - 1)

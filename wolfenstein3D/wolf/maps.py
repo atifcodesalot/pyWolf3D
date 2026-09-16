@@ -13,10 +13,10 @@ class WolfDoor:
         return self.openning == 1
 
     def slide_open(self):
-        self.opening = (self.opening + 0.01) % 1
+        self.opening = (self.opening - 0.01) % 1
 
     def slide_close(self):
-        self.opening = (self.opening - 0.01) % 1
+        self.opening = (self.opening + 0.01) % 1
 
 
 # map class, creates a simple 2D array for map layout
@@ -63,8 +63,8 @@ class WolfMap:
     def to_block_pos(self, x, y):
         return int(x // self.wall_width), int(y // self.wall_width)
 
-    def get_door(self, coor):
-        return self.doors[coor]
+    def get_door(self, coor) -> WolfDoor:
+        return self.doors.get(coor, None)
 
     def add_door(self, pos, horizontal):
         self.doors[pos] = WolfDoor(pos, 1, horizontal=horizontal)

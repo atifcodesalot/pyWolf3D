@@ -45,7 +45,7 @@ class Raycaster:
         self.observer = observer
         self.map = map
 
-    def get_mags_for_step(self, trace, rx, ry, xnn, ynn):
+    def mags_for_step(self, trace, rx, ry, xnn, ynn):
         w = self.map.wall_width
         # determine offset direction
         dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
@@ -56,15 +56,45 @@ class Raycaster:
         mags = [dx / rx, dy / ry]
         return mags
 
-    def handle_door(self, trace, door: WolfDoor, vert_intercept: int):
+    def mags_for_half_step(self, trace, rx, ry, xnn, ynn, xhalf, yhalf):
+        w = self.map.wall_width
+        if xhalf:
+            dx = w / 2 if xnn else -w / 2
+        else:
+            dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
+
+        if yhalf:
+            dy = w / 2 if ynn else -w / 2
+        else:
+            dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
+
+        dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
+        dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
+        mags = [dx / rx, dy / ry]
+        return mags
+
+    def handle_door(self, trace, door: WolfDoor,
+                    vert_intercept: int, *details):
         # the ray hits from the door's side
-        if (vert_intercept ^ door.horizontal):
-            return True
+        if not (vert_intercept ^ door.horizontal):
+            return vert_intercept, self.map.DOOR[0], trace, True
         #
         ww = self.map.wall_width
-        offset = ww - (trace[~vert_intercept + 2] % ww)
-        return (offset / ww) < door.opening
-
+        hstep_mags = self.mags_for_half_step(
+            trace, *details, xhalf=vert_intercept, yhalf=not vert_intercept)
+        mag = min(hstep_mags, key=abs)
+        halfstep_horizontal = hstep_mags.index(mag)
+        trace[0] += details[0] * mag
+        trace[1] += details[1] * mag
+        offset = trace[vert_intercept] % ww
+        door_hit = (offset / ww) < door.opening
+        cell = self.map.DOOR[0]
+        side_hit = (halfstep_horizontal ^ door.horizontal)
+        if side_hit:
+            # if a side hit, return door interior sprite
+            cell = 36
+        return ~halfstep_horizontal + 2, cell, trace, door_hit or side_hit
+ 
     def get_dist(self, trace):
         to_trace = plain_sub(self.observer.pos, trace)
         return plain_dot(to_trace, self.observer.look_dir)
@@ -89,25 +119,28 @@ class Raycaster:
             # y is non negative
             ynn = sign(ry) + 1
             while True:
-                mags = self.get_mags_for_step(trace, rx, ry, xnn, ynn)
+                mags = self.mags_for_step(trace, rx, ry, xnn, ynn)
                 mag = min(mags, key=abs)
-                vertical = mags.index(mag)
+                horizontal = mags.index(mag)
+                vertical = ~horizontal + 2
                 trace[0] += rx * mag
                 trace[1] += ry * mag
 
-                xb = hw if not xnn and not vertical else 0
-                yb = hw if not ynn and vertical else 0
+                xb = hw if not xnn and not horizontal else 0
+                yb = hw if not ynn and horizontal else 0
                 biased_pos = self.map.to_block_pos(
                     trace[0] - xb, trace[1] - yb)
                 if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
                     if cell in self.map.DOOR:
-                        door_hit = self.handle_door(
+                        door_obj = self.map.get_door(biased_pos)
+                        dvertical, dcell, dtrace, dhit = self.handle_door(
                             trace,
-                            self.map.get_door(biased_pos),
-                            vert_intercept=vertical)
-                        if door_hit:
-                            db.append(self.get_dist(trace))
-                            colls.append((trace, vertical, cell))
+                            door_obj,
+                            vertical,
+                            rx, ry, xnn, ynn)
+                        if dhit:
+                            db.append(self.get_dist(dtrace))
+                            colls.append((dtrace, dvertical, dcell))
                             break
                         else:
                             continue
