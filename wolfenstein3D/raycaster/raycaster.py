@@ -58,12 +58,16 @@ class Raycaster:
 
     def handle_door(self, trace, door: WolfDoor, vert_intercept: int):
         # the ray hits from the door's side
-        if not (vert_intercept ^ door.horizontal):
+        if (vert_intercept ^ door.horizontal):
             return True
         #
         ww = self.map.wall_width
-        offset = trace[vert_intercept] % ww
+        offset = ww - (trace[~vert_intercept + 2] % ww)
         return (offset / ww) < door.opening
+
+    def get_dist(self, trace):
+        to_trace = plain_sub(self.observer.pos, trace)
+        return plain_dot(to_trace, self.observer.look_dir)
 
     def raycast(self):
         db = []
@@ -85,11 +89,6 @@ class Raycaster:
             # y is non negative
             ynn = sign(ry) + 1
             while True:
-                if not self.map.in_boundary(trace):
-                    # if the trace is out of the map end
-                    # and it has not collided with a filled rect
-                    break
-
                 mags = self.get_mags_for_step(trace, rx, ry, xnn, ynn)
                 mag = min(mags, key=abs)
                 vertical = mags.index(mag)
@@ -101,18 +100,19 @@ class Raycaster:
                 biased_pos = self.map.to_block_pos(
                     trace[0] - xb, trace[1] - yb)
                 if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
-                    if cell == self.map.DOOR:
+                    if cell in self.map.DOOR:
                         door_hit = self.handle_door(
+                            trace,
                             self.map.get_door(biased_pos),
                             vert_intercept=vertical)
                         if door_hit:
+                            db.append(self.get_dist(trace))
                             colls.append((trace, vertical, cell))
                             break
-
+                        else:
+                            continue
+                    db.append(self.get_dist(trace))
                     colls.append((trace, vertical, cell))
-                    to_trace = plain_sub(o.pos, trace)
-                    db.append(
-                        plain_dot(to_trace, o.look_dir))
                     break
         return colls, db
 
@@ -121,9 +121,13 @@ class Raycaster:
         ww = m.wall_width
         for b in range(m.size[0]):
             for a in range(m.size[1]):
-                if m.raw[b][a]:
-                    pygame.draw.rect(pgsurface, (255, 0, 0),
+                if (cell := m.raw[b][a]):
+                    color = (255, 0, 0)
+                    if cell in self.map.DOOR:
+                        color = (0, 255, 0)
+                    pygame.draw.rect(pgsurface, color,
                                      (a*ww, b*ww, ww, ww))
+
         for coll in colls:
             if coll is not None:
                 pygame.draw.aaline(pgsurface, (255, 255, 255),

@@ -64,8 +64,7 @@ class WolfMap:
         return int(x // self.wall_width), int(y // self.wall_width)
 
     def get_door(self, coor):
-        pos = self.to_block_pos(*coor)
-        return self.doors[pos]
+        return self.doors[coor]
 
     def add_door(self, pos, horizontal):
         self.doors[pos] = WolfDoor(pos, 1, horizontal=horizontal)
@@ -76,7 +75,7 @@ class WolfMap:
             for i, entry in enumerate(row):
                 if entry in self.DOOR:
                     self.add_door((i, j),
-                                  horizontal=entry >> 1 == 0xf)
+                                  horizontal=entry >> 1 == 0x1f)
 
     def get_cell(self, coor):
         pos = self.to_block_pos(*coor)

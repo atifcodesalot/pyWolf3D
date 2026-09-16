@@ -192,7 +192,7 @@ class Parser:
         for i, row in enumerate(walls):
             walls[i] = [WALL_TEXTURE_MAPPING.get(wall, -1) + 1 for wall in row]
 
-        wolfmap = WolfMap(array=walls)
+        wolfmap = WolfMap(array=walls, wall_width=14)
         ww = wolfmap.wall_width
 
         for i, sprite in enumerate(sprites):

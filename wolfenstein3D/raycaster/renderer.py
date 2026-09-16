@@ -21,13 +21,20 @@ class DirectionLight:
 
 
 class RayRenderer:
-    def __init__(self, raycaster: Raycaster, pgsurface: pygame.Surface):
+    def __init__(self, raycaster: Raycaster, pgsurface: pygame.Surface,
+                 topcolor="#282828", bottomcolor="#707070"):
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
         self.column_width = self.width // self.raycaster.observer.ray_count
         self.wall_width = raycaster.map.wall_width
         self.repeat = self.width // self.raycaster.observer.ray_count
+        self.topcolor = topcolor
+        self.bottomcolor = bottomcolor
+        self.bottrect = pygame.Rect(0, self.height//2, self.width, self.height//2)
+        self.toprect = pygame.Rect(0, 0, self.width, self.height//2)
+        
+        self.sprite_wh_ratio = 2
 
     def distance_to_height(self, d, scaler):
         return (self.height / d) * scaler
@@ -44,7 +51,7 @@ class RayRenderer:
 
     def get_wall_col(self, coll, repeat, height, factor):
         offset = coll[0][~coll[1] + 2] % self.wall_width
-        texture = WALL_TEXTURES[coll[2]-1]
+        texture = WALL_TEXTURES[coll[2] - 1]
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (texture.width - 1)
         return texture.get_column(round(ci),
@@ -67,7 +74,7 @@ class RayRenderer:
         screen_pos = sprite.screen_pos(self, projected)
         perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
         height_to_draw = self.distance_to_height(perp_dist, scaler=10)
-        width_to_draw = height_to_draw // 3
+        width_to_draw = height_to_draw // self.sprite_wh_ratio
         sw = sprite.width
         start = screen_pos - (width_to_draw // 2) * self.repeat
         skip = sw / width_to_draw
@@ -89,7 +96,6 @@ class RayRenderer:
         def get_y(s): return s.to_observer_space(self.raycaster.observer)[1]
         sorted_sprites = sorted(self.raycaster.map.sprites, key=get_y)
         return sorted_sprites
-        
 
     def render_sprites(self):
         sorted_sprites = self.sort_sprites()
@@ -108,5 +114,7 @@ class RayRenderer:
             self.pgsurface.blit(column, (start, hh - chh))
 
     def render(self, light: PointLight):
+        self.pgsurface.fill(self.topcolor, rect=self.toprect)
+        self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
         self.render_walls(light)
         self.render_sprites()

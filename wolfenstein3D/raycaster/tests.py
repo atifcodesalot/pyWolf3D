@@ -40,7 +40,7 @@ def map_test():
 
 def raycaster_test():
     o = Observer((100, 100), look_dir=[-1, 0], ray_count=80)
-    map_ = WolfMap((30, 30), wall_width=16)
+    map_ = WolfMap((30, 30), wall_width=8)
     map_.set_random(50)
     screen = pygame.display.set_mode(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
@@ -62,9 +62,10 @@ def raycaster_test():
 
 
 def renderer_test():
-    o = Observer((100, 100), look_dir=[-1, 0], ray_count=200, fov=60)
+    o = Observer((100, 100), look_dir=[-1, 0], ray_count=300, fov=60)
     map_ = SHAREWARE_MAPS[0]
-    print(map_.doors)
+    for door in map_.doors.values():
+        door.opening = 0.5
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
@@ -100,7 +101,7 @@ def renderer_test():
         bird_view.fill((0, 0, 0))
         raycaster.render_bird_view(renderer.colls, pygame, bird_view)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(100)
 
 
 def texture_tests():
@@ -145,7 +146,7 @@ def sprite_tests():
         bird_view.fill((0, 0, 0))
         raycaster.render_bird_view(renderer.colls, pygame, bird_view)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(100)
         o.rotate(1)
 
 
@@ -154,10 +155,10 @@ def main():
     observer_test()
     map_test()
     raycaster_test()
-    profiler.enable()
+    # profiler.enable()
     renderer_test()
-    profiler.disable()
-    profiler.dump_stats("raycaster.prof")
+    # profiler.disable()
+    # profiler.dump_stats("raycaster.prof")
     sprite_tests()
 
 
