@@ -15,14 +15,14 @@ class Sprite(Texture):
 
     def to_observer_space(self, observer):
         to_self = plain_sub(self.pos, observer.pos)
-        return (plain_dot(to_self, observer.left),
+        self.ospace = (plain_dot(to_self, observer.left),
                 plain_dot(to_self, observer.look_dir))
+        return self.ospace[1]
 
-    def project(self, observer):
-        view = self.to_observer_space(observer)
+    def project(self):
         # guard against 0
-        w = 0.0001 if view[1] == 0 else view[1]
-        return (view[0] / w, 1)
+        w = 0.0001 if self.ospace[1] == 0 else self.ospace[1]
+        return (self.ospace[0] / w, 1)
 
     # takes RayRenderer object
     def screen_pos(self, renderer, projected):

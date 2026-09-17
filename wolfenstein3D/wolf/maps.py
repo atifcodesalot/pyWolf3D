@@ -38,12 +38,21 @@ class WolfMap:
         self.abs_size = self.size[0] * \
             self.wall_width, self.size[1] * self.wall_width
         self.sprites = []
+        self.sprite_lookup = {}
 
     def add_sprite(self, sprite_src: Sprite, pos):
         if type(sprite_src) is not Sprite:
             raise TypeError("Expected Sprite object")
+        # copy and add a sprite from sprite_src
         copy = sprite_src.copy(pos=pos)
         self.sprites.append(copy)
+        # save to lookup for deletion
+        self.sprite_lookup[self.to_block_pos(*pos)] = copy
+        
+    def delete_sprite(self, pos):
+        sprite = self.sprite_lookup[pos]
+        self.sprites.remove(sprite)
+        del self.sprite_lookup[pos]
 
     def construct_map(self):
         self.raw = list()

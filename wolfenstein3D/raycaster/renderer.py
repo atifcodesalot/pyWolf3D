@@ -21,8 +21,8 @@ class DirectionLight:
 
 
 class RayRenderer:
-    def __init__(self, raycaster: Raycaster, pgsurface: pygame.Surface,
-                 topcolor="#282828", bottomcolor="#707070"):
+    def __init__(self, raycaster: Raycaster,
+                 pgsurface: pygame.Surface, topcolor, bottomcolor):
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
@@ -31,9 +31,10 @@ class RayRenderer:
         self.repeat = self.width // self.raycaster.observer.ray_count
         self.topcolor = topcolor
         self.bottomcolor = bottomcolor
-        self.bottrect = pygame.Rect(0, self.height//2, self.width, self.height//2)
+        self.bottrect = pygame.Rect(
+            0, self.height//2, self.width, self.height//2)
         self.toprect = pygame.Rect(0, 0, self.width, self.height//2)
-        
+
         self.sprite_wh_ratio = 2
 
     def distance_to_height(self, d, scaler):
@@ -58,7 +59,7 @@ class RayRenderer:
             door = m.get_door(m.to_block_pos(*coll[0]))
             if door:
                 offset = m.wall_width * door.opening - offset
-                
+
         texture = WALL_TEXTURES[coll[2] - 1]
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (texture.width - 1)
@@ -74,35 +75,43 @@ class RayRenderer:
         return on_vp and in_front
 
     def draw_sprite(self, sprite: Sprite):
-        hh = self.height // 2
-        o = self.raycaster.observer
-        projected = sprite.project(o)
+        projected = sprite.project()
         if not self.sprite_is_visible(projected, sprite):
             return
+        h = self.height
+        hh = h // 2
+        o = self.raycaster.observer
         screen_pos = sprite.screen_pos(self, projected)
         perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
+
         height_to_draw = self.distance_to_height(perp_dist, scaler=10)
         width_to_draw = height_to_draw // self.sprite_wh_ratio
-        sw = sprite.width
-        start = screen_pos - (width_to_draw // 2) * self.repeat
-        skip = sw / width_to_draw
+
+        skip = sprite.width / width_to_draw
         visible_height = min(self.height, height_to_draw)
+
+        r = self.repeat
+        ystart = hh - visible_height // 2
+        xstart = screen_pos - (width_to_draw // 2) * r
+        w_1 = self.width - 1
+
         for i in range(int(width_to_draw)):
-            col_pos = start + (i * self.repeat)
+            col_pos = xstart + (i * r)
             # if the column isn't in screen width
-            if col_pos > self.width - 1 or col_pos < 0:
+            if col_pos > w_1 or col_pos < 0:
                 continue
             # if there is a wall that is closer
-            if self.db[int(col_pos // self.repeat)] < perp_dist:
+            if self.db[int(col_pos // r)] < perp_dist:
                 continue
             column = sprite.get_column(
-                int(i*skip), self.repeat, height_to_draw, 1, self.height)
+                int(i*skip), r, height_to_draw, 1, h)
             self.pgsurface.blit(
-                column, (col_pos, hh - visible_height//2))
+                column, (col_pos, ystart))
 
     def sort_sprites(self):
-        def get_y(s): return s.to_observer_space(self.raycaster.observer)[1]
-        sorted_sprites = sorted(self.raycaster.map.sprites, key=get_y)
+        sorted_sprites = sorted(
+            self.raycaster.map.sprites,
+            key=lambda s: s.to_observer_space(self.raycaster.observer))
         return sorted_sprites
 
     def render_sprites(self):
@@ -124,5 +133,6 @@ class RayRenderer:
     def render(self, light: PointLight):
         self.pgsurface.fill(self.topcolor, rect=self.toprect)
         self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
+        self.cast()
         self.render_walls(light)
         self.render_sprites()
