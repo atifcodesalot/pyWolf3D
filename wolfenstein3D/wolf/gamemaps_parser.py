@@ -1,17 +1,34 @@
 
-from .maps import WolfMap
+from .maps import WolfMap, WolfItem
 from raycaster.sprites import SPRITES
 from os import path
 
 
-OBJ_SPRITES_MAPPING = {
+ITEM_SPRITES_MAPPING = {
+    29:  6,  # Dog food
+    43: 20,  # Gold key
+    44: 21,  # Silver key
+    47: 24,  # Food
+    48: 25,  # First-aid kit
+    49: 26,  # Ammunition
+    50: 27,  # Machine gun
+    51: 28,  # Chaingun
+    52: 29,  # Cross
+    53: 30,  # Chalice
+    54: 31,  # Treasure chest
+    55: 32,  # Crown
+    56: 33,  # Extra life
+    57: 34,  # Bloody remains
+    61: 38,  # Blood pool
+}
+
+DECORATION_SPRITES_MAPPING = {
     23:  0,  # Water puddle
     24:  1,  # Green barrel
     25:  2,  # Table with chairs
     26:  3,  # Floor lamp
     27:  4,  # Chandelier
     28:  5,  # Hanging skeleton
-    29:  6,  # Dog food
     30:  7,  # Pillar
     31:  8,  # Potted tree
     32:  9,  # Skeleton on floor
@@ -25,27 +42,13 @@ OBJ_SPRITES_MAPPING = {
     40: 17,  # Empty hanging cage
     41: 18,  # Hanging cage with skeleton
     42: 19,  # Skeleton remains
-    43: 20,  # Gold key
-    44: 21,  # Silver key
     45: 22,  # Bed
     46: 23,  # Basket
-    47: 24,  # Food
-    48: 25,  # First-aid kit
-    49: 26,  # Ammunition
-    50: 27,  # Machine gun
-    51: 28,  # Chaingun
-    52: 29,  # Cross
-    53: 30,  # Chalice
-    54: 31,  # Treasure chest
-    55: 32,  # Crown
-    56: 33,  # Extra life
-    57: 34,  # Bloody remains
     58: 35,  # Wooden barrel
     59: 36,  # Well with water
     60: 37,  # Empty well
-    61: 38,  # Blood pool
     62: 39,  # Flag
-    63: 40,  # "Call Apogee" slot — appears blank in your sheet
+    63: 40,  # "Call Apogee" slot — blank in your sheet
     64: 41,  # Debris 1
     65: 42,  # Debris 2
     66: 43,  # Debris 3
@@ -54,6 +57,30 @@ OBJ_SPRITES_MAPPING = {
     69: 46,  # Spear rack
     70: 47,  # Vines
 }
+
+BLOCKING_SPRITES = [
+    1,   # Green barrel
+    2,   # Table with chairs
+    3,   # Floor lamp
+    5,   # Hanging skeleton
+    7,   # Pillar
+    8,   # Potted tree
+    10,  # Sink
+    11,  # Potted plant
+    12,  # Urn
+    13,  # Empty table
+    16,  # Armour
+    17,  # Empty hanging cage
+    18,  # Hanging cage with skeleton
+    22,  # Bed
+    35,  # Wooden barrel
+    36,  # Well with water
+    37,  # Empty well
+    39,  # Flag
+    40,  # "Call Apogee" — blocks even if your sheet has it blank
+    45,  # Stove
+    46,  # Spear rack
+]
 
 WALL_TEXTURE_MAPPING = {
     # DOS GAMEMAPS ID : my atlas index
@@ -196,14 +223,27 @@ class Parser:
         ww = wolfmap.wall_width
 
         for i, sprite in enumerate(sprites):
-            if not sprite or sprite not in OBJ_SPRITES_MAPPING:
+            if not sprite:
                 continue
-            myindex = OBJ_SPRITES_MAPPING[sprite]
+            item = False
+            if sprite in ITEM_SPRITES_MAPPING:
+                myindex = ITEM_SPRITES_MAPPING[sprite]
+                item = True
+            elif sprite in DECORATION_SPRITES_MAPPING:
+                myindex = DECORATION_SPRITES_MAPPING[sprite]
+            else:
+                continue
             if myindex not in SPRITES:
                 continue
             sprite_src = SPRITES[myindex]
+            sprite_src.blocking = myindex in BLOCKING_SPRITES
             pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
-            wolfmap.add_sprite(sprite_src, pos)
+            if item:
+                wolfmap.add_item(WolfItem(sprite_src, pos))
+            else:
+                # it is a decoration
+                wolfmap.add_sprite(sprite_src, pos)
+            
 
         return wolfmap
 

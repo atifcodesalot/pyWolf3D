@@ -8,10 +8,11 @@ SPRITE_PATH = os.path.join('.', 'sprites')
 
 
 class Sprite(Texture):
-    def __init__(self, image, pos):
+    def __init__(self, image, pos, blocking):
         super().__init__(image)
         self.pos = pos
         self.image = image
+        self.blocking = blocking
 
     def to_observer_space(self, observer):
         to_self = plain_sub(self.pos, observer.pos)
@@ -39,7 +40,7 @@ class Sprite(Texture):
     
     def copy(self, pos):
         copied = self.__new__(self.__class__)
-        copied.__init__(self.image, pos=pos)
+        copied.__init__(self.image, pos=pos, blocking=self.blocking)
         return copied
 
 
@@ -52,13 +53,13 @@ def init_sprites():
                 objects_ = Image.open(entry.path)
                 for i in range(0, 40):
                     SPRITES[i] = Sprite(objects_.crop((
-                        i*64, 0, (i+1) * 64, 64)), None)
-            SPRITES[entry.name] = Sprite(Image.open(entry.path), None)
+                        i*64, 0, (i+1) * 64, 64)), None, None)
+            SPRITES[entry.name] = Sprite(Image.open(entry.path), None, None)
         if entry.is_dir():
             for entry2 in os.scandir(entry.path):
                 if entry2.is_file():
                     SPRITES[entry.name + "/" + entry2.name] = Sprite(
-                        Image.open(entry2.path), None)
+                        Image.open(entry2.path), None, None)
 
 
 init_sprites()

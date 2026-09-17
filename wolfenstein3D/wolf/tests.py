@@ -35,10 +35,13 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_quick(self):
-        player = WolfPlayer((10, 10), SHAREWARE_MAPS[0])
+        player = WolfPlayer((340, 400), SHAREWARE_MAPS[0])
+        for door in player.map.doors.values():
+            door.opening = 0
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
+        renderer.sprite_wh_ratio = 2
         game = WolfGame(player, renderer, [])
         raycaster = game.renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)
@@ -46,12 +49,12 @@ class WolfGameTest(unittest.TestCase):
         self.assertEqual(map_.size, (64, 64))
         bird_view = pygame.Surface(
             (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
-        bw_scale = 0.25
+        bw_scale = 0.5
         while True:
             game.heartbeat()
             screen.blit(pygame.transform.scale(
                                     bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
-            
+            bird_view.fill((0, 0, 0))
             raycaster.render_bird_view(renderer.colls, pygame, bird_view)
             pygame.display.flip()
 

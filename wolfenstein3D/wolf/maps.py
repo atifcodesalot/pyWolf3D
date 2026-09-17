@@ -2,6 +2,31 @@
 from raycaster.sprites import Sprite
 
 
+BLOCKING_SPRITES = [
+    1,   # Green barrel
+    2,   # Table with chairs
+    3,   # Floor lamp
+    5,   # Hanging skeleton
+    7,   # Pillar
+    8,   # Potted tree
+    10,  # Sink
+    11,  # Potted plant
+    12,  # Urn
+    13,  # Empty table
+    16,  # Armour
+    17,  # Empty hanging cage
+    18,  # Hanging cage with skeleton
+    22,  # Bed
+    35,  # Wooden barrel
+    36,  # Well with water
+    37,  # Empty well
+    39,  # Flag
+    40,  # "Call Apogee" — blocks even if your sheet has it blank
+    45,  # Stove
+    46,  # Spear rack
+]
+
+
 class WolfDoor:
     def __init__(self, pos, opening: float, horizontal=True):
         self.pos = pos
@@ -17,6 +42,15 @@ class WolfDoor:
 
     def slide_close(self):
         self.opening = (self.opening + 0.01) % 1
+
+
+class WolfItem:
+    def __init__(self, sprite_src: Sprite, pos):
+        self.sprite = sprite_src.copy(pos)
+        self.pos = pos
+
+    def effect(self, player):
+        pass
 
 
 # map class, creates a simple 2D array for map layout
@@ -37,8 +71,11 @@ class WolfMap:
 
         self.abs_size = self.size[0] * \
             self.wall_width, self.size[1] * self.wall_width
+
         self.sprites = []
         self.sprite_lookup = {}
+
+        self.items = {}
 
     def add_sprite(self, sprite_src: Sprite, pos):
         if type(sprite_src) is not Sprite:
@@ -48,12 +85,21 @@ class WolfMap:
         self.sprites.append(copy)
         # save to lookup for deletion
         self.sprite_lookup[self.to_block_pos(*pos)] = copy
-        
+
     def delete_sprite(self, pos):
         sprite = self.sprite_lookup[pos]
         self.sprites.remove(sprite)
         del self.sprite_lookup[pos]
-
+        
+    def add_item(self, item: WolfItem):
+        self.items[item.pos] = item
+        self.sprites.append(item.sprite)
+        
+    def pop_item(self, pos):
+        item = self.items.pop(pos)
+        self.delete_sprite(item.sprite)
+        return item
+        
     def construct_map(self):
         self.raw = list()
         w, h = self.size
@@ -89,6 +135,21 @@ class WolfMap:
     def get_cell(self, coor):
         pos = self.to_block_pos(*coor)
         return self.raw[pos[1]][pos[0]]
+    
+    def cell_occupied(self, coor):
+        pos = self.to_block_pos(*coor)
+        cell = self.raw[pos[1]][pos[0]]
+        if not cell:
+            if pos in self.sprite_lookup:
+                sprite = self.sprite_lookup[pos]
+                return sprite.blocking
+            else:
+                return False
+        if cell in self.DOOR:
+            door = self.get_door(pos)
+            return door.opening != 0
+        return True
+            
 
     def in_boundary(self, coor):
         return 0 <= coor[0] < self.abs_size[0] and\

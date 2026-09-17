@@ -16,14 +16,22 @@ class WolfPlayer(Observer):
         self.map = map
         self.health = health
         self.weapon = weapon
-        self.pace = 1
+        self.pace = 2
         self.rot_pace = 3
 
     def move_forward(self):
-        self.translate(plain_mul(self.look_dir, self.pace))
+        self.displace(plain_mul(self.look_dir, self.pace))
 
     def move_backward(self):
-        self.translate(plain_mul(self.look_dir, -self.pace*1.2))
+        self.displace(disp=plain_mul(self.look_dir, -self.pace*1.2))
+        
+    # collide with occupied cells
+    def displace(self, disp):
+        new_pos = plain_add(self.pos, plain_mul(disp, 4))
+        if self.map.cell_occupied(new_pos):
+            print(f"can't displace to {new_pos}")
+            return
+        self.translate(disp)
 
     def turn_cc(self):
         self.rotate(self.rot_pace)
@@ -36,6 +44,10 @@ class WolfPlayer(Observer):
 
     def shoot(self):
         pass
+
+    def get_current_cell(self):
+        block_pos = self.map.to_block_pos(*self.pos)
+        return self.map.get_cell(block_pos)
 
 
 class WolfRenderer(RayRenderer):
@@ -77,6 +89,9 @@ class WolfGame:
         self.init_keymappings()
 
         self.clock = pygame.time.Clock()
+            
+    def handle_player_pos(self):
+        pass
 
     def init_keymappings(self):
         self.key_mappings = {
