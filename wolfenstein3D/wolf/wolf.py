@@ -18,6 +18,7 @@ class WolfPlayer(Observer):
         self.weapon = weapon
         self.pace = 2
         self.rot_pace = 3
+        self.ammo = 0
 
     def move_forward(self):
         self.displace(plain_mul(self.look_dir, self.pace))
@@ -39,15 +40,25 @@ class WolfPlayer(Observer):
     def turn_cw(self):
         self.rotate(-self.rot_pace)
 
-    def pickup_item(self):
-        pass
-
     def shoot(self):
-        pass
+        self.ammo -= 1
 
     def get_current_cell(self):
-        block_pos = self.map.to_block_pos(*self.pos)
+        block_pos = self.get_current_block()
         return self.map.get_cell(block_pos)
+
+    def get_current_block(self):
+        return self.map.to_block_pos(*self.pos)
+
+    def get_front_cell(self):
+        pblock = self.map.to_block_pos(*self.pos)
+        offset = [0, 0]
+        mag = max(self.look_dir, key=abs)
+        vertical = self.look_dir.index(mag)
+        offset[vertical] += sign(mag)
+        front_block = plain_add(pblock, offset)
+        front = self.map.raw[front_block[1]][front_block[0]]
+        return front_block, front
 
 
 class WolfRenderer(RayRenderer):
@@ -92,33 +103,6 @@ class WolfGame:
         # game events to schedule: (ticks-> func)
         self.game_events = {}
 
-    def handle_player_pos(self):
-        pass
-    
-    def handle_doors(self):
-        for door in self.map.doors.values():
-            if door.is_opening:
-                self.open_door(door)
-            elif door.is_closing:
-                self.close_door(door)
-                
-
-    def open_door(self, door: WolfDoor):
-        if door.opening > 0:
-            door.slide_open()
-        else:
-            # door has finished opening
-            door.is_opening = False
-            self.schedule_game_event(200, lambda _: door.begin_closing())
-                
-
-    def close_door(self, door: WolfDoor):
-        if door.opening < 1:
-            door.slide_close()
-        else:
-            # door has finished closing
-            door.is_closing = False
-
     def init_keymappings(self):
         self.key_mappings = {
             pygame.K_w: self.player.move_forward,
@@ -128,14 +112,48 @@ class WolfGame:
             pygame.K_SPACE: "interact"
         }
 
+    def handle_player_requests(self):
+        pblock = self.player.get_current_block()
+        # if there is an item on the player block
+        if pblock in self.map.items:
+            item = self.map.pop_item(pblock)
+            item.affect(self.player)
+            
+        fblock, fcell = self.player.get_front_cell()
+        if fcell in self.map.DOOR:
+            door = self.map.get_door(fblock)
+            if not door.is_opening:
+                door.begin_opening()
+            
+
+    def handle_doors(self):
+        for door in self.map.doors.values():
+            if door.is_opening:
+                self.open_door(door)
+            elif door.is_closing:
+                self.close_door(door)
+
+    def open_door(self, door: WolfDoor):
+        if door.opening > 0:
+            door.slide_open()
+        else:
+            # door has finished opening
+            door.is_opening = False
+            self.schedule_game_event(200, lambda _: door.begin_closing())
+
+    def close_door(self, door: WolfDoor):
+        if door.opening < 1:
+            door.slide_close()
+        else:
+            # door has finished closing
+            door.is_closing = False
+
     def handle_keystate(self):
         pressed = pygame.key.get_pressed()
         for key, action in self.key_mappings.items():
             if pressed[key]:
                 if callable(action):
                     action()
-                elif action == "interact":
-                    self.player.pickup_item()
 
     def handle_mouse(self):
         pass
@@ -146,7 +164,7 @@ class WolfGame:
                 pygame.quit()
                 exit()
         self.handle_keystate()
-        
+
     def schedule_game_event(self, future, action):
         self.game_events[self.beats + future] = action
 
@@ -171,7 +189,9 @@ class WolfGame:
         for actor in self.actors:
             actor.tick(dt)
         pgevents = pygame.event.get()
+        self.handle_player_requests()
         self.handle_events(pgevents)
         self.handle_game_events()
         self.handle_doors()
+        print(self.player.get_front_cell())
         self.beats += 1

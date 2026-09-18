@@ -242,7 +242,7 @@ class Parser:
             sprite_src = SPRITES[myindex]
             sprite_src.blocking = myindex in BLOCKING_SPRITES
             if item:
-                wolfmap.add_item(WolfItem(sprite_src, pos))
+                wolfmap.add_item(WolfItem(wolfmap, sprite_src, pos))
             else:
                 # it is a decoration
                 wolfmap.add_sprite(sprite_src, pos)
@@ -257,7 +257,6 @@ def get_shareware_maps():
     maptemp = open(path.join("maps", "MAPTEMP.WL1"), "rb")
     parser = Parser(maphead.read(), maptemp.read(), level_count=10)
     SHAREWARE_MAPS = [parser.to_wolfmap(i) for i in range(10)]
-    print(SHAREWARE_MAPS[0].sprites[0].pos)
     maphead.close()
     maptemp.close()
 

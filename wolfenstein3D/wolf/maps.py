@@ -19,20 +19,22 @@ class WolfDoor:
 
     def slide_close(self):
         self.opening = min(self.opening + 0.01, 1)
-        
+
     def begin_opening(self):
         self.is_opening = True
-        
+        self.is_closing = False
+
     def begin_closing(self):
         self.is_closing = True
 
 
 class WolfItem:
-    def __init__(self, sprite_src: Sprite, pos):
+    def __init__(self, map_, sprite_src: Sprite, pos):
+        self.map = map_
         self.sprite = sprite_src.copy(pos)
-        self.pos = pos
+        self.pos = self.map.to_block_pos(*pos)
 
-    def effect(self, player):
+    def affect(self, player):
         pass
 
 
@@ -41,7 +43,7 @@ class WolfItem:
 class WolfMap:
     DOOR = [0x1f + 1, (0x1f << 1) + 1]
 
-    def __init__(self, size=(64, 64), array=None, 
+    def __init__(self, size=(64, 64), array=None,
                  wall_width=20, init_pos=(0, 0), init_look_dir=[1, 0]):
         self.size = size
         self.doors = {}
@@ -80,10 +82,11 @@ class WolfMap:
     def add_item(self, item: WolfItem):
         self.items[item.pos] = item
         self.sprites.append(item.sprite)
+        self.sprite_lookup[item.pos] = item.sprite
 
     def pop_item(self, pos):
         item = self.items.pop(pos)
-        self.delete_sprite(item.sprite)
+        self.delete_sprite(item.pos)
         return item
 
     def construct_map(self):
@@ -104,11 +107,12 @@ class WolfMap:
     def to_block_pos(self, x, y):
         return int(x // self.wall_width), int(y // self.wall_width)
 
-    def get_door(self, coor) -> WolfDoor:
-        return self.doors.get(coor, None)
+    def get_door(self, block_pos) -> WolfDoor:
+        return self.doors.get(block_pos, None)
 
-    def add_door(self, pos, horizontal):
-        self.doors[pos] = WolfDoor(pos, 1, horizontal=horizontal)
+    def add_door(self, block_pos, horizontal):
+        self.doors[block_pos] = WolfDoor(
+            block_pos, 1, horizontal=horizontal)
 
     def init_doors(self):
         self.doors.clear()
@@ -135,6 +139,9 @@ class WolfMap:
             door = self.get_door(pos)
             return door.opening != 0
         return True
+
+    def neighbor_cells(self, center):
+        return
 
     def in_boundary(self, coor):
         return 0 <= coor[0] < self.abs_size[0] and\

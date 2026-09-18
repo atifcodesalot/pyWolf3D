@@ -38,8 +38,6 @@ class WolfGameTest(unittest.TestCase):
         mymap = SHAREWARE_MAPS[0]
         player = WolfPlayer(mymap)
         mymap.doors[(32, 57)].begin_opening()
-        print(mymap.doors)
-        print(mymap.to_block_pos(*player.pos))
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
@@ -51,7 +49,7 @@ class WolfGameTest(unittest.TestCase):
         self.assertEqual(map_.size, (64, 64))
         bird_view = pygame.Surface(
             (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
-        bw_scale = 0.5
+        bw_scale = 0.25
         while True:
             game.heartbeat()
             screen.blit(pygame.transform.scale(

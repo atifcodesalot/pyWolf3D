@@ -21,7 +21,7 @@ class Observer:
 
     def update_directions(self):
         self.directions.clear()
-        self.left_dir = rotate_vector_angle(self.look_dir, self.fov / -2)
+        self.left_dir = rotate_vector_angle(self.look_dir, self.fov / -2).tolist()
         da = self.gap
         for i in range(self.ray_count):
             vec = rotate_vector_angle(self.left_dir, i*da)
@@ -29,8 +29,8 @@ class Observer:
 
     def rotate(self, angle):
         rm = ROT_MATRIX(math.radians(angle))
-        self.look_dir = rm.dot(self.look_dir)
-        self.left = rm.dot(self.left)
+        self.look_dir = rm.dot(self.look_dir).tolist()
+        self.left = rm.dot(self.left).tolist()
         self.update_directions()
 
     def translate(self, tvec):
