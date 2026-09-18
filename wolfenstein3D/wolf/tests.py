@@ -35,7 +35,7 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_quick(self):
-        player = WolfPlayer((340, 400), SHAREWARE_MAPS[0])
+        player = WolfPlayer(SHAREWARE_MAPS[2])
         for door in player.map.doors.values():
             door.opening = 0
         screen = pygame.display.set_mode((128*4, 128*4))

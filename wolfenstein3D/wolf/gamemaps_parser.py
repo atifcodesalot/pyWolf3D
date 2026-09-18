@@ -225,6 +225,10 @@ class Parser:
         for i, sprite in enumerate(sprites):
             if not sprite:
                 continue
+            pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
+            if sprite in [19, 20, 21, 22]:
+                wolfmap.init_pos = pos
+                wolfmap.init_look = {19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}[sprite]
             item = False
             if sprite in ITEM_SPRITES_MAPPING:
                 myindex = ITEM_SPRITES_MAPPING[sprite]
@@ -237,7 +241,6 @@ class Parser:
                 continue
             sprite_src = SPRITES[myindex]
             sprite_src.blocking = myindex in BLOCKING_SPRITES
-            pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
             if item:
                 wolfmap.add_item(WolfItem(sprite_src, pos))
             else:

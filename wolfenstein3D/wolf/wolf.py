@@ -10,10 +10,10 @@ LIGHT_OPTIONS = [PointLight((0, 0))]
 
 
 class WolfPlayer(Observer):
-    def __init__(self, pos, map: WolfMap, look_dir=[1, 0],
-                 fov=60, ray_count=256, health=100, weapon=None):
-        super().__init__(pos, look_dir, fov, ray_count)
-        self.map = map
+    def __init__(self, map_: WolfMap, fov=60, 
+                 ray_count=256, health=100, weapon=None):
+        super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
+        self.map = map_
         self.health = health
         self.weapon = weapon
         self.pace = 2
@@ -92,6 +92,10 @@ class WolfGame:
             
     def handle_player_pos(self):
         pass
+    
+    def open_door(self, door: WolfDoor):
+        pass
+        
 
     def init_keymappings(self):
         self.key_mappings = {
