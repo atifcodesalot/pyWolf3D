@@ -10,7 +10,7 @@ LIGHT_OPTIONS = [PointLight((0, 0))]
 
 
 class WolfPlayer(Observer):
-    def __init__(self, map_: WolfMap, fov=60, 
+    def __init__(self, map_: WolfMap, fov=60,
                  ray_count=256, health=100, weapon=None):
         super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
         self.map = map_
@@ -24,7 +24,7 @@ class WolfPlayer(Observer):
 
     def move_backward(self):
         self.displace(disp=plain_mul(self.look_dir, -self.pace*1.2))
-        
+
     # collide with occupied cells
     def displace(self, disp):
         new_pos = plain_add(self.pos, plain_mul(disp, 4))
@@ -89,13 +89,35 @@ class WolfGame:
         self.init_keymappings()
 
         self.clock = pygame.time.Clock()
-            
+        # game events to schedule: (ticks-> func)
+        self.game_events = {}
+
     def handle_player_pos(self):
         pass
     
+    def handle_doors(self):
+        for door in self.map.doors.values():
+            if door.is_opening:
+                self.open_door(door)
+            elif door.is_closing:
+                self.close_door(door)
+                
+
     def open_door(self, door: WolfDoor):
-        pass
-        
+        if door.opening > 0:
+            door.slide_open()
+        else:
+            # door has finished opening
+            door.is_opening = False
+            self.schedule_game_event(200, lambda _: door.begin_closing())
+                
+
+    def close_door(self, door: WolfDoor):
+        if door.opening < 1:
+            door.slide_close()
+        else:
+            # door has finished closing
+            door.is_closing = False
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -124,6 +146,19 @@ class WolfGame:
                 pygame.quit()
                 exit()
         self.handle_keystate()
+        
+    def schedule_game_event(self, future, action):
+        self.game_events[self.beats + future] = action
+
+    def handle_game_events(self):
+        if not self.beats in self.game_events:
+            return
+        func = self.game_events[self.beats]
+        if callable(func):
+            try:
+                func(self)
+            except TypeError:
+                return
 
     def heartbeat(self):
         dt = self.clock.tick(self.framerate)
@@ -137,4 +172,6 @@ class WolfGame:
             actor.tick(dt)
         pgevents = pygame.event.get()
         self.handle_events(pgevents)
+        self.handle_game_events()
+        self.handle_doors()
         self.beats += 1

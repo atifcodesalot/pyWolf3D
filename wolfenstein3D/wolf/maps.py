@@ -8,15 +8,23 @@ class WolfDoor:
         self.opening = opening
         self.open = opening == 1
         self.horizontal = horizontal
+        self.is_opening = False
+        self.is_closing = False
 
     def is_open(self):
         return self.openning == 1
 
     def slide_open(self):
-        self.opening = (self.opening - 0.01) % 1
+        self.opening = max(self.opening - 0.01, 0)
 
     def slide_close(self):
-        self.opening = (self.opening + 0.01) % 1
+        self.opening = min(self.opening + 0.01, 1)
+        
+    def begin_opening(self):
+        self.is_opening = True
+        
+    def begin_closing(self):
+        self.is_closing = True
 
 
 class WolfItem:
