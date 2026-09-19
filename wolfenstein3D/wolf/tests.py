@@ -1,7 +1,7 @@
 import unittest
 
 from .gamemaps_parser import *
-from .wolf import *
+from .wolfenstein import *
 
 
 class ParserTest(unittest.TestCase):
@@ -35,9 +35,8 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[0]
+        mymap = SHAREWARE_MAPS[5]
         player = WolfPlayer(mymap)
-        mymap.doors[(32, 57)].begin_opening()
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)

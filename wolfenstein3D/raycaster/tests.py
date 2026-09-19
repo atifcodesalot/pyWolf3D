@@ -7,6 +7,7 @@ import cProfile
 import pygame
 from .sprites import *
 from wolf.gamemaps_parser import SHAREWARE_MAPS
+from wolf.assets import WALL_TEXTURES, SPRITES
 
 
 profiler = cProfile.Profile()
@@ -69,7 +70,9 @@ def renderer_test():
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
-    renderer = RayRenderer(raycaster, screen, topcolor="#282828", bottomcolor="#707070")
+    renderer = RayRenderer(
+        raycaster, screen, topcolor="#282828", 
+        bottomcolor="#707070", wall_textures=WALL_TEXTURES)
 
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
@@ -82,7 +85,6 @@ def renderer_test():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
-
 
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_LEFT]:
@@ -125,11 +127,15 @@ def sprite_tests():
     screen = pygame.display.set_mode((600, 600))
     sw, sh = screen.get_size()
     raycaster = Raycaster(o, map_)
-    renderer = RayRenderer(raycaster, screen, topcolor="#500909", bottomcolor="#D47C7C")
+    renderer = RayRenderer(
+        raycaster, screen, topcolor="#500909",
+        bottomcolor="#D47C7C", wall_textures=WALL_TEXTURES)
     for sprite in list(SPRITES.values())[:5]:
+        if type(sprite) is not Sprite:
+            continue
         randangle = math.radians(random.choice(range(0, 360, 30)))
         map_.add_sprite(sprite, (25 * math.cos(randangle) + 300,
-                                     25 * math.sin(randangle) + 300))
+                                 25 * math.sin(randangle) + 300))
     bird_view = pygame.Surface(
         (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
     bw_scale = 0.25

@@ -1,6 +1,6 @@
 
 from .maps import WolfMap, WolfItem
-from raycaster.sprites import SPRITES
+from .assets import SPRITES, WALL_TEXTURES
 from os import path
 
 
@@ -48,7 +48,7 @@ DECORATION_SPRITES_MAPPING = {
     59: 36,  # Well with water
     60: 37,  # Empty well
     62: 39,  # Flag
-    63: 40,  # "Call Apogee" slot — blank in your sheet
+    63: 40,  # "Call Apogee" slot — blank in our sheet
     64: 41,  # Debris 1
     65: 42,  # Debris 2
     66: 43,  # Debris 3
@@ -77,10 +77,13 @@ BLOCKING_SPRITES = [
     36,  # Well with water
     37,  # Empty well
     39,  # Flag
-    40,  # "Call Apogee" — blocks even if your sheet has it blank
+    40,  # "Call Apogee" — blocks even if my sheet has it blank
     45,  # Stove
     46,  # Spear rack
 ]
+
+OBJECT_SPRITES = set(list(ITEM_SPRITES_MAPPING.values()) +
+                     list(DECORATION_SPRITES_MAPPING.values()))
 
 WALL_TEXTURE_MAPPING = {
     # DOS GAMEMAPS ID : my atlas index
@@ -228,7 +231,8 @@ class Parser:
             pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
             if sprite in [19, 20, 21, 22]:
                 wolfmap.init_pos = pos
-                wolfmap.init_look = {19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}[sprite]
+                wolfmap.init_look = {
+                    19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}[sprite]
             item = False
             if sprite in ITEM_SPRITES_MAPPING:
                 myindex = ITEM_SPRITES_MAPPING[sprite]
@@ -236,17 +240,19 @@ class Parser:
             elif sprite in DECORATION_SPRITES_MAPPING:
                 myindex = DECORATION_SPRITES_MAPPING[sprite]
             else:
+                # todo: implement character sprites
                 continue
-            if myindex not in SPRITES:
+            
+            if myindex not in SPRITES["objects"]:
                 continue
-            sprite_src = SPRITES[myindex]
+            
+            sprite_src = SPRITES["objects"][myindex]
             sprite_src.blocking = myindex in BLOCKING_SPRITES
             if item:
                 wolfmap.add_item(WolfItem(wolfmap, sprite_src, pos))
             else:
                 # it is a decoration
                 wolfmap.add_sprite(sprite_src, pos)
-            
 
         return wolfmap
 

@@ -1,10 +1,11 @@
 
 from raycaster.aux_math import *
 from raycaster.raycaster import Observer, Raycaster
-from raycaster.renderer import RayRenderer, PointLight, pygame
+from raycaster.renderer import RayRenderer, PointLight
 from .maps import *
 from .actors import *
-
+from .assets import WALL_TEXTURES
+from . import wolflogger, pygame
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
 
@@ -30,7 +31,7 @@ class WolfPlayer(Observer):
     def displace(self, disp):
         new_pos = plain_add(self.pos, plain_mul(disp, 4))
         if self.map.cell_occupied(new_pos):
-            print(f"can't displace to {new_pos}")
+            wolflogger.debug(f"Can't displace to {new_pos}")
             return
         self.translate(disp)
 
@@ -68,7 +69,9 @@ class WolfRenderer(RayRenderer):
     def __init__(self, player: WolfPlayer, pgsurface):
         raycaster = Raycaster(player, player.map)
         super().__init__(raycaster, pgsurface,
-                         topcolor="#282828", bottomcolor="#707070")
+                         topcolor="#282828",
+                         bottomcolor="#707070",
+                         wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
 
     def render_weapon(self):
@@ -118,13 +121,12 @@ class WolfGame:
         if pblock in self.map.items:
             item = self.map.pop_item(pblock)
             item.affect(self.player)
-            
+
         fblock, fcell = self.player.get_front_cell()
         if fcell in self.map.DOOR:
             door = self.map.get_door(fblock)
             if not door.is_opening:
                 door.begin_opening()
-            
 
     def handle_doors(self):
         for door in self.map.doors.values():
@@ -193,5 +195,4 @@ class WolfGame:
         self.handle_events(pgevents)
         self.handle_game_events()
         self.handle_doors()
-        print(self.player.get_front_cell())
         self.beats += 1

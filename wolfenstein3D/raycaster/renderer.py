@@ -2,7 +2,6 @@
 from .raycaster import Raycaster
 from .aux_math import *
 import pygame
-from .textures import WALL_TEXTURES
 from .sprites import Sprite
 
 
@@ -22,7 +21,8 @@ class DirectionLight:
 
 class RayRenderer:
     def __init__(self, raycaster: Raycaster,
-                 pgsurface: pygame.Surface, topcolor, bottomcolor):
+                 pgsurface: pygame.Surface, 
+                 topcolor, bottomcolor, wall_textures):
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
@@ -36,6 +36,7 @@ class RayRenderer:
         self.toprect = pygame.Rect(0, 0, self.width, self.height//2)
 
         self.sprite_wh_ratio = 2
+        self.wall_textures = wall_textures
 
     def distance_to_height(self, d, scaler):
         return (self.height / d) * scaler
@@ -60,7 +61,7 @@ class RayRenderer:
             if door:
                 offset = m.wall_width * door.opening - offset
 
-        texture = WALL_TEXTURES[coll[2] - 1]
+        texture = self.wall_textures[coll[2] - 1]
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (texture.width - 1)
         return texture.get_column(round(ci),

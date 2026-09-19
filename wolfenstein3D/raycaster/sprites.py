@@ -4,11 +4,8 @@ from .textures import Texture, os, Image
 from .aux_math import plain_dot, plain_sub, plain_add
 
 
-SPRITE_PATH = os.path.join('.', 'sprites')
-
-
 class Sprite(Texture):
-    def __init__(self, image, pos, blocking):
+    def __init__(self, image, pos=None, blocking=None):
         super().__init__(image)
         self.pos = pos
         self.image = image
@@ -42,24 +39,3 @@ class Sprite(Texture):
         copied = self.__new__(self.__class__)
         copied.__init__(self.image, pos=pos, blocking=self.blocking)
         return copied
-
-
-def init_sprites():
-    global SPRITES
-    SPRITES = {}
-    for entry in os.scandir(SPRITE_PATH):
-        if entry.is_file():
-            if entry.name == "objects.png":
-                objects_ = Image.open(entry.path)
-                for i in range(0, 40):
-                    SPRITES[i] = Sprite(objects_.crop((
-                        i*64, 0, (i+1) * 64, 64)), None, None)
-            SPRITES[entry.name] = Sprite(Image.open(entry.path), None, None)
-        if entry.is_dir():
-            for entry2 in os.scandir(entry.path):
-                if entry2.is_file():
-                    SPRITES[entry.name + "/" + entry2.name] = Sprite(
-                        Image.open(entry2.path), None, None)
-
-
-init_sprites()
