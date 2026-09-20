@@ -5,7 +5,7 @@ import logging
 pygame.font.init()
 
 SPRITES = {}
-WALL_TEXTURES = []
+WALL_TEXTURES = {}
 
 wolflogger = logging.getLogger(__package__)
 logging.basicConfig(level=logging.DEBUG,

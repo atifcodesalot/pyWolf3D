@@ -6,20 +6,29 @@ from .maps import *
 from .actors import *
 from .assets import SPRITES, WALL_TEXTURES
 from . import wolflogger, pygame
+from enum import Enum
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
 
+class WolfWeapon(Enum):
+    KNIFE = 0
+    PISTOL = 1
+    MP4 = 2
+    MINIGUN = 3
 
 class WolfPlayer(Observer):
+    
     def __init__(self, map_: WolfMap, fov=60,
-                 ray_count=256, health=100, weapon=None):
+                 ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=20):
         super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
         self.map = map_
         self.health = health
         self.weapon = weapon
-        self.pace = 2
+        self.pace = 1.5
         self.rot_pace = 3
-        self.ammo = 0
+        self.ammo = ammo
+        
+        self.shooting = False
 
     def move_forward(self):
         self.displace(plain_mul(self.look_dir, self.pace))
@@ -42,7 +51,14 @@ class WolfPlayer(Observer):
         self.rotate(-self.rot_pace)
 
     def shoot(self):
+        if self.out_of_ammo():
+            # can't shoot
+            return
+        self.shooting = True
         self.ammo -= 1
+        
+    def out_of_ammo(self):
+        return self.ammo == 0
 
     def get_current_cell(self):
         block_pos = self.get_current_block()
@@ -68,6 +84,7 @@ class WolfRenderer(RayRenderer):
     BLACK = (0, 0, 0)
 
     def __init__(self, player: WolfPlayer, pgsurface: pygame.Surface):
+        self.player = player
         raycaster = Raycaster(player, player.map)
         super().__init__(raycaster, pgsurface,
                          topcolor="#282828",
@@ -75,6 +92,7 @@ class WolfRenderer(RayRenderer):
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
+        self.wpn_sprite_idx = self.player.weapon.value * 5
 
     def init_weapon_sprites(self):
         weapons: dict = SPRITES["weapons"]
@@ -85,7 +103,9 @@ class WolfRenderer(RayRenderer):
             self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size()))
 
     def render_weapon(self):
-        self.pgsurface.blit(self.weapons[6].surface, (0,0))
+        self.pgsurface.blit(
+            self.weapons[self.wpn_sprite_idx].surface,
+            (0, 0))
 
     def render_statusbar(self):
         pass
@@ -100,6 +120,35 @@ class WolfRenderer(RayRenderer):
         self.pgsurface.fill(self.BLACK)
 
 
+class Animation:
+    def __init__(self, obj, target_attr: str, duration,
+                 frame_count, shapenum=0, endcallback=None, offset=0):
+        # in heartbeats
+        self.duration = duration
+        #
+        self.obj = obj
+        self.target_attr = target_attr
+        self.frame_count = frame_count
+        self.shapenum = shapenum
+        self.hb_perframe = self.duration / self.frame_count
+
+        self.lifetime = 0
+        self.endcallback = endcallback
+        self.offset = offset
+
+    def tick(self, heartbeats):
+        self.lifetime += heartbeats
+        if self.ended():
+            if callable(self.endcallback):
+                self.endcallback(self)
+            return
+        self.shapenum = self.lifetime // self.hb_perframe
+        setattr(self.obj, self.target_attr, self.shapenum + self.offset)
+
+    def ended(self) -> bool:
+        return self.lifetime >= self.duration
+
+
 class WolfGame:
     def __init__(self, player: WolfPlayer, renderer: WolfRenderer,
                  actors: list[Actor], framerate=50):
@@ -108,13 +157,14 @@ class WolfGame:
         self.map = self.player.map
         self.actors = actors
         self.framerate = framerate
-        self.beats = 0
+        self.heartbeats = 0
 
         self.init_keymappings()
 
         self.clock = pygame.time.Clock()
         # game events to schedule: (ticks-> func)
         self.game_events = {}
+        self.animations: list[Animation] = []
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -122,7 +172,7 @@ class WolfGame:
             pygame.K_s: self.player.move_backward,
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
-            pygame.K_SPACE: "interact"
+            pygame.K_SPACE: self.handle_shooting
         }
 
     def handle_player_requests(self):
@@ -137,6 +187,28 @@ class WolfGame:
             door = self.map.get_door(fblock)
             if not door.is_opening:
                 door.begin_opening()
+
+    def add_animation(self, anim, obj, target):
+        anim.obj = obj
+        anim.target_attr = target
+        self.animations.append(anim)
+
+    def handle_shooting(self):
+        if self.player.shooting or self.player.out_of_ammo():
+            wolflogger.debug("player already shooting, or out of ammo")
+            print(self.animations)
+            return
+        self.player.shoot()
+        # handle shooting animation
+        old = self.renderer.wpn_sprite_idx
+        def return_(anim): 
+            setattr(anim.obj,"wpn_sprite_idx", old)
+            self.player.shooting = False
+        self.add_animation(Animation(
+            None, None, 20, 5, 0, endcallback=return_, offset=old),
+            self.renderer, "wpn_sprite_idx")
+        wolflogger.debug("now shooting")
+        print(self.animations)
 
     def handle_doors(self):
         for door in self.map.doors.values():
@@ -178,20 +250,24 @@ class WolfGame:
         self.handle_keystate()
 
     def schedule_game_event(self, future, action):
-        self.game_events[self.beats + future] = action
+        self.game_events[self.heartbeats + future] = action
 
     def handle_game_events(self):
-        if not self.beats in self.game_events:
+        if not self.heartbeats in self.game_events:
             return
-        func = self.game_events[self.beats]
+        func = self.game_events[self.heartbeats]
         if callable(func):
             try:
                 func(self)
             except TypeError:
                 return
-            
-    def handle_animations(self):
-        pass
+
+    def handle_animations(self, dt=1):
+        for anim in self.animations:
+            if anim.ended():
+                self.animations.remove(anim)
+                continue
+            anim.tick(dt)
 
     def heartbeat(self):
         dt = self.clock.tick(self.framerate)
@@ -209,4 +285,4 @@ class WolfGame:
         self.handle_game_events()
         self.handle_doors()
         self.handle_animations()
-        self.beats += 1
+        self.heartbeats += 1
