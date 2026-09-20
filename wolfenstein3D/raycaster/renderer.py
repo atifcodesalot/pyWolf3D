@@ -21,8 +21,8 @@ class DirectionLight:
 
 class RayRenderer:
     def __init__(self, raycaster: Raycaster,
-                 pgsurface: pygame.Surface, 
-                 topcolor, bottomcolor, wall_textures):
+                 pgsurface: pygame.Surface,
+                 topcolor, bottomcolor, wall_textures, scaler=8):
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
@@ -35,10 +35,13 @@ class RayRenderer:
             0, self.height//2, self.width, self.height//2)
         self.toprect = pygame.Rect(0, 0, self.width, self.height//2)
 
-        self.sprite_wh_ratio = 2
+        self.sprite_wh_ratio = 1 / self.repeat
         self.wall_textures = wall_textures
+        self.wall_scaler = scaler
+        self.sprite_scaler = self.wall_scaler 
 
-    def distance_to_height(self, d, scaler):
+    def distance_to_height(self, d, sprite=False):
+        scaler = self.sprite_scaler if sprite else self.wall_scaler
         return (self.height / d) * scaler
 
     def cast(self):
@@ -85,8 +88,8 @@ class RayRenderer:
         screen_pos = sprite.screen_pos(self, projected)
         perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
 
-        height_to_draw = self.distance_to_height(perp_dist, scaler=10)
-        width_to_draw = height_to_draw // self.sprite_wh_ratio
+        height_to_draw = self.distance_to_height(perp_dist, sprite=True)
+        width_to_draw = height_to_draw * self.sprite_wh_ratio
 
         skip = sprite.width / width_to_draw
         visible_height = min(self.height, height_to_draw)
@@ -125,7 +128,7 @@ class RayRenderer:
         for i, d in enumerate(self.db):
             coll = self.colls[i]
             start = self.repeat * i
-            chh = self.distance_to_height(d, scaler=10) // 2
+            chh = self.distance_to_height(d) // 2
             cosine = self.lamberts_cosine(coll, light)
             column = self.get_wall_col(coll, self.repeat, chh*2, cosine)
             chh = min(chh, hh)

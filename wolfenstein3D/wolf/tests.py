@@ -35,12 +35,11 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[5]
-        player = WolfPlayer(mymap)
+        mymap = SHAREWARE_MAPS[0]
+        player = WolfPlayer(mymap, ray_count=128)
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
-        renderer.sprite_wh_ratio = 2
         game = WolfGame(player, renderer, [])
         raycaster = game.renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)

@@ -5,7 +5,7 @@ from .aux_math import plain_dot, plain_sub, plain_add
 
 
 class Sprite(Texture):
-    def __init__(self, image, pos=None, blocking=None):
+    def __init__(self, image: Image.Image, pos=None, blocking=None):
         super().__init__(image)
         self.pos = pos
         self.image = image

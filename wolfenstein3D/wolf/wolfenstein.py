@@ -4,7 +4,7 @@ from raycaster.raycaster import Observer, Raycaster
 from raycaster.renderer import RayRenderer, PointLight
 from .maps import *
 from .actors import *
-from .assets import WALL_TEXTURES
+from .assets import SPRITES, WALL_TEXTURES
 from . import wolflogger, pygame
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
@@ -31,7 +31,7 @@ class WolfPlayer(Observer):
     def displace(self, disp):
         new_pos = plain_add(self.pos, plain_mul(disp, 4))
         if self.map.cell_occupied(new_pos):
-            wolflogger.debug(f"Can't displace to {new_pos}")
+            # wolflogger.debug(f"Can't displace to {new_pos}")
             return
         self.translate(disp)
 
@@ -55,6 +55,7 @@ class WolfPlayer(Observer):
         pblock = self.map.to_block_pos(*self.pos)
         offset = [0, 0]
         mag = max(self.look_dir, key=abs)
+        # get if looking towards y
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
         front_block = plain_add(pblock, offset)
@@ -66,16 +67,25 @@ class WolfRenderer(RayRenderer):
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
 
-    def __init__(self, player: WolfPlayer, pgsurface):
+    def __init__(self, player: WolfPlayer, pgsurface: pygame.Surface):
         raycaster = Raycaster(player, player.map)
         super().__init__(raycaster, pgsurface,
                          topcolor="#282828",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
+        self.init_weapon_sprites()
+
+    def init_weapon_sprites(self):
+        weapons: dict = SPRITES["weapons"]
+        self.weapons = {}
+        for i in weapons:
+            w: Sprite = weapons[i]
+            # transform each weapon sprite to match the screen size
+            self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size()))
 
     def render_weapon(self):
-        pass
+        self.pgsurface.blit(self.weapons[6].surface, (0,0))
 
     def render_statusbar(self):
         pass
@@ -116,7 +126,7 @@ class WolfGame:
         }
 
     def handle_player_requests(self):
-        pblock = self.player.get_current_block()
+        pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
         if pblock in self.map.items:
             item = self.map.pop_item(pblock)
@@ -179,6 +189,9 @@ class WolfGame:
                 func(self)
             except TypeError:
                 return
+            
+    def handle_animations(self):
+        pass
 
     def heartbeat(self):
         dt = self.clock.tick(self.framerate)
@@ -195,4 +208,5 @@ class WolfGame:
         self.handle_events(pgevents)
         self.handle_game_events()
         self.handle_doors()
+        self.handle_animations()
         self.beats += 1

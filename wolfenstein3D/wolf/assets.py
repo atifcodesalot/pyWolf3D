@@ -1,6 +1,7 @@
 
 from raycaster.sprites import Sprite
 from raycaster.textures import Texture
+from . import SPRITES, WALL_TEXTURES
 from PIL import Image
 import os
 
@@ -9,6 +10,7 @@ SPRITE_PATH = os.path.join('.', 'sprites')
 TEXTURE_PATH = os.path.join('.', 'textures')
 
 OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
+WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
 
 # code used for creating transparency
 # def convert_sheet_trans(sheet: Image.Image, target: tuple, savename: str):
@@ -29,7 +31,7 @@ OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
 def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
                  texmap: Image.Image, init, lmarg=0, rmarg=0):
     textures = []
-    init = init if callable(init) else lambda im:im
+    init = init if callable(init) else lambda im: im
     w, h = texmap.width, texmap.height
     for j in range(tmarg, h-bmarg, vsep + th):
         for i in range(lmarg, w-rmarg, hsep + tw):
@@ -59,34 +61,36 @@ def init_object_sprites():
     objects_sheet = Image.open(OBJECTS_PATH)
     objects_ = texmap_parse(0, 0, 0, 0, 64, 64, objects_sheet, init=Sprite)
     SPRITES["objects"] = dict(enumerate(objects_))
-    print(SPRITES)
-    
+
+
 def init_object_sprites():
     objects_sheet = Image.open(OBJECTS_PATH)
     objects_ = texmap_parse(0, 0, 0, 0, 64, 64, objects_sheet, init=Sprite)
     SPRITES["objects"] = dict(enumerate(objects_))
-    print(SPRITES)
+
+
+def init_weapon_srites():
+    weapons_sheet = Image.open(WEAPONS_PATH)
+    weapons = texmap_parse(34, 16, 16, 1, 64, 64, weapons_sheet, Sprite, 1, 1)
+    SPRITES["weapons"] = dict(enumerate(weapons))
 
 
 def init_sprites():
-    global SPRITES
-    SPRITES = {}
     init_object_sprites()
+    init_weapon_srites()
+
     def clean_remaining():
         for entry in os.scandir(SPRITE_PATH):
             if entry.is_file():
-                SPRITES[entry.name] = Sprite(Image.open(entry.path), None, None)
+                SPRITES[entry.name] = Sprite(
+                    Image.open(entry.path), None, None)
             if entry.is_dir():
                 for entry2 in os.scandir(entry.path):
                     if entry2.is_file():
                         SPRITES[entry.name + "/" + entry2.name] = Sprite(
                             Image.open(entry2.path), None, None)
     clean_remaining()
-    
-        
 
 
-init_sprites()
 init_textures()
-
-
+init_sprites()
