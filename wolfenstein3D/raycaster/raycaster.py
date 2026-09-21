@@ -26,6 +26,11 @@ class Observer:
         for i in range(self.ray_count):
             vec = rotate_vector_angle(self.left_dir, i*da)
             self.directions.append(vec.tolist())
+            
+    def to_this_space(self, pos):
+        to_pos = plain_sub(self.pos, pos)
+        return (plain_dot(to_pos, self.left),
+                plain_dot(to_pos, self.look_dir))
 
     def rotate(self, angle):
         rm = ROT_MATRIX(math.radians(angle))

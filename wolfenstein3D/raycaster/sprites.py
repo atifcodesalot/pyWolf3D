@@ -12,15 +12,13 @@ class Sprite(Texture):
         self.blocking = blocking
 
     def to_observer_space(self, observer):
-        to_self = plain_sub(self.pos, observer.pos)
-        self.ospace = (plain_dot(to_self, observer.left),
-                plain_dot(to_self, observer.look_dir))
-        return self.ospace[1]
+        self.obs_space = observer.to_this_space(self.pos)
+        return self.obs_space[1]
 
     def project(self):
         # guard against 0
-        w = 0.0001 if self.ospace[1] == 0 else self.ospace[1]
-        return (self.ospace[0] / w, 1)
+        w = 0.0001 if self.obs_space[1] == 0 else self.obs_space[1]
+        return (self.obs_space[0] / w, 1)
 
     # takes RayRenderer object
     def screen_pos(self, renderer, projected):
