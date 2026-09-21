@@ -1,7 +1,7 @@
 
 from .maps import WolfMap, WolfItem
 from .actors import Actor
-from .assets import SPRITES, WALL_TEXTURES
+from .assets import SPRITES, ASSETS_PATH
 from os import path
 
 
@@ -267,8 +267,8 @@ class Parser:
 
 def get_shareware_maps():
     global SHAREWARE_MAPS
-    maphead = open(path.join("maps", "MAPHEAD.WL1"), "rb")
-    maptemp = open(path.join("maps", "MAPTEMP.WL1"), "rb")
+    maphead = open(path.join(ASSETS_PATH, "maps", "MAPHEAD.WL1"), "rb")
+    maptemp = open(path.join(ASSETS_PATH, "maps", "MAPTEMP.WL1"), "rb")
     parser = Parser(maphead.read(), maptemp.read(), level_count=10)
     SHAREWARE_MAPS = [parser.to_wolfmap(i) for i in range(10)]
     maphead.close()

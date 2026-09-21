@@ -6,8 +6,10 @@ from PIL import Image
 import os
 
 
-SPRITE_PATH = os.path.join('.', 'sprites')
-TEXTURE_PATH = os.path.join('.', 'textures')
+ASSETS_PATH = os.path.join('.', 'assets')
+
+SPRITE_PATH = os.path.join(ASSETS_PATH, 'sprites')
+TEXTURE_PATH = os.path.join(ASSETS_PATH, 'textures')
 
 WALLS_PATH = os.path.join(TEXTURE_PATH, 'wallmap.png')
 

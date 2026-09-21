@@ -94,6 +94,7 @@ class WolfRenderer(RayRenderer):
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
         self.wpn_sprite_idx = self.player.weapon.value * 5
+        self.font = pygame.font.SysFont("arial", 12)
 
     def init_weapon_sprites(self):
         weapons: dict = SPRITES["weapons"]
