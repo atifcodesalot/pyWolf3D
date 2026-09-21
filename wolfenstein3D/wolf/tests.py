@@ -34,13 +34,18 @@ class ParserTest(unittest.TestCase):
 
 
 class WolfGameTest(unittest.TestCase):
+    def test_actor_instances(self):
+        mymap = SHAREWARE_MAPS[0]
+        self.assertFalse(id(mymap.actors[0]) == id(mymap.actors[1]))
+        self.assertFalse(id(mymap.actors[0].sprites[0]) == id(mymap.actors[1].sprites[0]))
+        
     def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
         player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
-        game = WolfGame(player, renderer, [])
+        game = WolfGame(player, renderer)
         raycaster = game.renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map
@@ -48,13 +53,20 @@ class WolfGameTest(unittest.TestCase):
         bird_view = pygame.Surface(
             (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
         bw_scale = 0.25
-        while True:
+        while game.ongoing:
             game.heartbeat()
             screen.blit(pygame.transform.scale(
                                     bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
             bird_view.fill((0, 0, 0))
             raycaster.render_bird_view(renderer.colls, pygame, bird_view)
             pygame.display.flip()
+            
+    # def test_character_sprites(self):
+    #     self.assertIn("guard", SPRITES["characters"])
+    #     guard_sprites = SPRITES["characters"]["guard"]
+    #     self.assertIsInstance(guard_sprites, dict)
+    #     self.assertGreater(len(guard_sprites), 0)
+    #     guard_sprites[1].image.show()
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 
 from .maps import WolfMap, WolfItem
+from .actors import Actor
 from .assets import SPRITES, WALL_TEXTURES
 from os import path
 
@@ -240,12 +241,19 @@ class Parser:
             elif sprite in DECORATION_SPRITES_MAPPING:
                 myindex = DECORATION_SPRITES_MAPPING[sprite]
             else:
-                # todo: implement character sprites
+                # todo: implement all character sprites
+                # add guard sprites
+                if sprite in range(108, 116):
+                    wolfmap.add_actor(
+                        Actor(pos, [0, 1], "guard", sprites=SPRITES["characters"]["guard"]))
+                elif sprite == 124:
+                    # add dead guard
+                    wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
                 continue
-            
+
             if myindex not in SPRITES["objects"]:
                 continue
-            
+
             sprite_src = SPRITES["objects"][myindex]
             sprite_src.blocking = myindex in BLOCKING_SPRITES
             if item:

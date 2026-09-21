@@ -1,5 +1,6 @@
 
 from raycaster.sprites import Sprite
+from .actors import Actor
 
 
 class WolfDoor:
@@ -62,8 +63,9 @@ class WolfMap:
 
         self.sprites = []
         self.sprite_lookup = {}
-
+        
         self.items = {}
+        self.actors = []
 
     def add_sprite(self, sprite_src: Sprite, pos):
         if type(sprite_src) is not Sprite:
@@ -88,6 +90,9 @@ class WolfMap:
         item = self.items.pop(pos)
         self.delete_sprite(item.pos)
         return item
+    
+    def add_actor(self, actor: Actor):
+        self.actors.append(actor)
 
     def construct_map(self):
         self.raw = list()

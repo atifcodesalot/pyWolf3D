@@ -9,6 +9,8 @@ import os
 SPRITE_PATH = os.path.join('.', 'sprites')
 TEXTURE_PATH = os.path.join('.', 'textures')
 
+WALLS_PATH = os.path.join(TEXTURE_PATH, 'wallmap.png')
+
 OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
 WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
 
@@ -44,7 +46,7 @@ def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
 
 def init_wall_textures():
     global WALL_TEXTURES
-    walls = Image.open(os.path.join(TEXTURE_PATH, 'wallmap.png'))
+    walls = Image.open(WALLS_PATH)
     WALL_TEXTURES = texmap_parse(0, 0, 0, 0, 128, 128, walls, init=Texture)
 
     # extend to 100 slot texture table
@@ -63,21 +65,22 @@ def init_object_sprites():
     SPRITES["objects"] = dict(enumerate(objects_))
 
 
-def init_object_sprites():
-    objects_sheet = Image.open(OBJECTS_PATH)
-    objects_ = texmap_parse(0, 0, 0, 0, 64, 64, objects_sheet, init=Sprite)
-    SPRITES["objects"] = dict(enumerate(objects_))
-
-
 def init_weapon_srites():
     weapons_sheet = Image.open(WEAPONS_PATH)
     weapons = texmap_parse(34, 16, 16, 1, 64, 64, weapons_sheet, Sprite, 1, 1)
     SPRITES["weapons"] = dict(enumerate(weapons))
+    
+def init_characters():
+    SPRITES["characters"] = {}
+    guard_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'guard.png'))
+    guard_sprites = texmap_parse(0, 0, 1, 1, 64, 64, guard_sheet, Sprite)
+    SPRITES["characters"]["guard"] = dict(enumerate(guard_sprites))
 
 
 def init_sprites():
     init_object_sprites()
     init_weapon_srites()
+    init_characters()
 
     def clean_remaining():
         for entry in os.scandir(SPRITE_PATH):

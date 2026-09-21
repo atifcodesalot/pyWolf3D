@@ -38,7 +38,7 @@ class RayRenderer:
         self.sprite_wh_ratio = 1 / self.repeat
         self.wall_textures = wall_textures
         self.wall_scaler = scaler
-        self.sprite_scaler = self.wall_scaler 
+        self.sprite_scaler = self.wall_scaler
 
     def distance_to_height(self, d, sprite=False):
         scaler = self.sprite_scaler if sprite else self.wall_scaler
@@ -112,14 +112,15 @@ class RayRenderer:
             self.pgsurface.blit(
                 column, (col_pos, ystart))
 
-    def sort_sprites(self):
+    def sort_sprites(self, sprites: list[Sprite]):
         sorted_sprites = sorted(
-            self.raycaster.map.sprites,
-            key=lambda s: s.to_observer_space(self.raycaster.observer))
-        return sorted_sprites
+            sprites,
+            key=lambda s: s.to_observer_space(self.raycaster.observer),
+            reverse=True)
+        return [sp for sp in sorted_sprites if sp.obs_space[1] > 0]
 
     def render_sprites(self):
-        sorted_sprites = self.sort_sprites()
+        sorted_sprites = self.sort_sprites(self.raycaster.map.sprites)
         for sprite in sorted_sprites:
             self.draw_sprite(sprite)
 

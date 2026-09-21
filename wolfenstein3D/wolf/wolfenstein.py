@@ -85,9 +85,10 @@ class WolfRenderer(RayRenderer):
 
     def __init__(self, player: WolfPlayer, pgsurface: pygame.Surface):
         self.player = player
+        self.map = self.player.map
         raycaster = Raycaster(player, player.map)
         super().__init__(raycaster, pgsurface,
-                         topcolor="#282828",
+                         topcolor="#640000",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
@@ -109,6 +110,13 @@ class WolfRenderer(RayRenderer):
 
     def render_statusbar(self):
         pass
+    
+    def render_sprites(self):
+        # also render actors
+        actor_sprites = [act.current_sprite(self.player) for act in self.map.actors]
+        all_sprites = self.sort_sprites(actor_sprites + self.map.sprites)
+        for sprite in all_sprites:
+            self.draw_sprite(sprite)
 
     def render(self):
         super().render(self.light)
@@ -150,12 +158,11 @@ class Animation:
 
 
 class WolfGame:
-    def __init__(self, player: WolfPlayer, renderer: WolfRenderer,
-                 actors: list[Actor], framerate=50):
+    def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=50):
         self.player = player
         self.renderer = renderer
         self.map = self.player.map
-        self.actors = actors
+        self.actors = self.map.actors
         self.framerate = framerate
         self.heartbeats = 0
 
@@ -165,6 +172,9 @@ class WolfGame:
         # game events to schedule: (ticks-> func)
         self.game_events = {}
         self.animations: list[Animation] = []
+        
+        
+        self.ongoing = True
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -172,7 +182,7 @@ class WolfGame:
             pygame.K_s: self.player.move_backward,
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
-            pygame.K_SPACE: self.handle_shooting
+            pygame.K_RETURN: self.handle_shooting
         }
 
     def handle_player_requests(self):
@@ -196,7 +206,7 @@ class WolfGame:
     def handle_shooting(self):
         if self.player.shooting or self.player.out_of_ammo():
             wolflogger.debug("player already shooting, or out of ammo")
-            print(self.animations)
+            # print(self.animations)
             return
         self.player.shoot()
         # handle shooting animation
@@ -208,7 +218,7 @@ class WolfGame:
             None, None, 20, 5, 0, endcallback=return_, offset=old),
             self.renderer, "wpn_sprite_idx")
         wolflogger.debug("now shooting")
-        print(self.animations)
+        # print(self.animations)
 
     def handle_doors(self):
         for door in self.map.doors.values():
@@ -245,8 +255,7 @@ class WolfGame:
     def handle_events(self, pgevents):
         for event in pgevents:
             if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
+                self.ongoing = False
         self.handle_keystate()
 
     def schedule_game_event(self, future, action):
