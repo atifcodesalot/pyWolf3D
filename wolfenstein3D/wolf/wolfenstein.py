@@ -2,6 +2,7 @@
 from raycaster.aux_math import *
 from raycaster.raycaster import Observer, Raycaster
 from raycaster.renderer import RayRenderer, PointLight
+from .animations import Animation
 from .maps import *
 from .actors import *
 from .assets import SPRITES, WALL_TEXTURES
@@ -88,7 +89,7 @@ class WolfRenderer(RayRenderer):
         self.map = self.player.map
         raycaster = Raycaster(player, player.map)
         super().__init__(raycaster, pgsurface,
-                         topcolor="#640000",
+                         topcolor="#585303",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
@@ -129,33 +130,7 @@ class WolfRenderer(RayRenderer):
         self.pgsurface.fill(self.BLACK)
 
 
-class Animation:
-    def __init__(self, obj, target_attr: str, duration,
-                 frame_count, shapenum=0, endcallback=None, offset=0):
-        # in heartbeats
-        self.duration = duration
-        #
-        self.obj = obj
-        self.target_attr = target_attr
-        self.frame_count = frame_count
-        self.shapenum = shapenum
-        self.hb_perframe = self.duration / self.frame_count
 
-        self.lifetime = 0
-        self.endcallback = endcallback
-        self.offset = offset
-
-    def tick(self, heartbeats):
-        self.lifetime += heartbeats
-        if self.ended():
-            if callable(self.endcallback):
-                self.endcallback(self)
-            return
-        self.shapenum = self.lifetime // self.hb_perframe
-        setattr(self.obj, self.target_attr, self.shapenum + self.offset)
-
-    def ended(self) -> bool:
-        return self.lifetime >= self.duration
 
 
 class WolfGame:
@@ -218,6 +193,11 @@ class WolfGame:
         self.add_animation(Animation(
             None, None, 20, 5, 0, endcallback=return_, offset=old),
             self.renderer, "wpn_sprite_idx")
+        
+        for act in self.actors:
+            act.get_shot(self)
+        
+        
         wolflogger.debug("now shooting")
         # print(self.animations)
 
@@ -259,8 +239,11 @@ class WolfGame:
                 self.ongoing = False
         self.handle_keystate()
 
-    def schedule_game_event(self, future, action):
-        self.game_events[self.heartbeats + future] = action
+    def schedule_game_event(self, _time, action):
+        future = self.heartbeats + _time
+        while future in self.game_events:
+            future += 1
+        self.game_events[future] = action
 
     def handle_game_events(self):
         if not self.heartbeats in self.game_events:
