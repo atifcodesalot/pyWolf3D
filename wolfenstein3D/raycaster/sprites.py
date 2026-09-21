@@ -17,7 +17,7 @@ class Sprite(Texture):
 
     def project(self):
         # guard against 0
-        w = 0.0001 if self.obs_space[1] == 0 else self.obs_space[1]
+        w = 1e-10 if self.obs_space[1] == 0 else self.obs_space[1]
         return (self.obs_space[0] / w, 1)
 
     # takes RayRenderer object

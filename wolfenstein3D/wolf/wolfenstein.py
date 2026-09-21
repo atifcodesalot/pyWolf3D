@@ -4,80 +4,13 @@ from raycaster.raycaster import Observer, Raycaster
 from raycaster.renderer import RayRenderer, PointLight
 from .animations import Animation
 from .maps import *
+from .player import *
 from .actors import *
 from .assets import SPRITES, WALL_TEXTURES
 from . import wolflogger, pygame
-from enum import Enum
+
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
-
-class WolfWeapon(Enum):
-    KNIFE = 0
-    PISTOL = 1
-    MP4 = 2
-    MINIGUN = 3
-
-class WolfPlayer(Observer):
-    
-    def __init__(self, map_: WolfMap, fov=60,
-                 ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=20):
-        super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
-        self.map = map_
-        self.health = health
-        self.weapon = weapon
-        self.pace = 1.5
-        self.rot_pace = 3
-        self.ammo = ammo
-        
-        self.shooting = False
-
-    def move_forward(self):
-        self.displace(plain_mul(self.look_dir, self.pace))
-
-    def move_backward(self):
-        self.displace(disp=plain_mul(self.look_dir, -self.pace*1.2))
-
-    # collide with occupied cells
-    def displace(self, disp):
-        new_pos = plain_add(self.pos, plain_mul(disp, 4))
-        if self.map.cell_occupied(new_pos):
-            # wolflogger.debug(f"Can't displace to {new_pos}")
-            return
-        self.translate(disp)
-
-    def turn_cc(self):
-        self.rotate(self.rot_pace)
-
-    def turn_cw(self):
-        self.rotate(-self.rot_pace)
-
-    def shoot(self):
-        if self.out_of_ammo():
-            # can't shoot
-            return
-        self.shooting = True
-        self.ammo -= 1
-        
-    def out_of_ammo(self):
-        return self.ammo == 0
-
-    def get_current_cell(self):
-        block_pos = self.get_current_block()
-        return self.map.get_cell(block_pos)
-
-    def get_current_block(self):
-        return self.map.to_block_pos(*self.pos)
-
-    def get_front_cell(self):
-        pblock = self.map.to_block_pos(*self.pos)
-        offset = [0, 0]
-        mag = max(self.look_dir, key=abs)
-        # get if looking towards y
-        vertical = self.look_dir.index(mag)
-        offset[vertical] += sign(mag)
-        front_block = plain_add(pblock, offset)
-        front = self.map.raw[front_block[1]][front_block[0]]
-        return front_block, front
 
 
 class WolfRenderer(RayRenderer):
@@ -97,6 +30,11 @@ class WolfRenderer(RayRenderer):
         self.wpn_sprite_idx = self.player.weapon.value * 5
         self.font = pygame.font.SysFont("arial", 12)
 
+    def middle_hitblock(self):
+        if self.colls:
+            middle_hit, _, _ = self.colls[self.player.ray_count // 2]
+            return self.map.to_block_pos(*middle_hit)
+
     def init_weapon_sprites(self):
         weapons: dict = SPRITES["weapons"]
         self.weapons = {}
@@ -112,10 +50,11 @@ class WolfRenderer(RayRenderer):
 
     def render_statusbar(self):
         pass
-    
+
     def render_sprites(self):
         # also render actors
-        actor_sprites = [act.current_sprite(self.player) for act in self.map.actors]
+        actor_sprites = [act.current_sprite(
+            self.player) for act in self.map.actors]
         all_sprites = self.sort_sprites(actor_sprites + self.map.sprites)
         for sprite in all_sprites:
             self.draw_sprite(sprite)
@@ -128,9 +67,6 @@ class WolfRenderer(RayRenderer):
     def clear_screen(self):
         self.pgsurface.fill(self.WHITE)
         self.pgsurface.fill(self.BLACK)
-
-
-
 
 
 class WolfGame:
@@ -148,8 +84,7 @@ class WolfGame:
         # game events to schedule: (ticks-> func)
         self.game_events = {}
         self.animations: list[Animation] = []
-        
-        
+
         self.ongoing = True
 
     def init_keymappings(self):
@@ -180,26 +115,26 @@ class WolfGame:
         self.animations.append(anim)
 
     def handle_shooting(self):
-        if self.player.shooting or self.player.out_of_ammo():
+        cantshoot = self.player.shooting or self.player.out_of_ammo()
+        if cantshoot:
             wolflogger.debug("player already shooting, or out of ammo")
-            # print(self.animations)
             return
         self.player.shoot()
         # handle shooting animation
         old = self.renderer.wpn_sprite_idx
-        def return_(anim): 
-            setattr(anim.obj,"wpn_sprite_idx", old)
+
+        def return_(anim):
+            setattr(anim.obj, "wpn_sprite_idx", old)
             self.player.shooting = False
         self.add_animation(Animation(
             None, None, 20, 5, 0, endcallback=return_, offset=old),
             self.renderer, "wpn_sprite_idx")
-        
+
         for act in self.actors:
-            act.get_shot(self)
-        
-        
+            if self.player.hits_actor(self.renderer.raycaster, act):
+                act.get_shot(self)  
+
         wolflogger.debug("now shooting")
-        # print(self.animations)
 
     def handle_doors(self):
         for door in self.map.doors.values():

@@ -41,7 +41,7 @@ class WolfGameTest(unittest.TestCase):
         
     def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MINIGUN)
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)

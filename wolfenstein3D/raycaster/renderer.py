@@ -39,6 +39,8 @@ class RayRenderer:
         self.wall_textures = wall_textures
         self.wall_scaler = scaler
         self.sprite_scaler = self.wall_scaler
+        self.colls = []
+        self.db = []
 
     def distance_to_height(self, d, sprite=False):
         scaler = self.sprite_scaler if sprite else self.wall_scaler
@@ -117,7 +119,7 @@ class RayRenderer:
             sprites,
             key=lambda s: s.to_observer_space(self.raycaster.observer),
             reverse=True)
-        return [sp for sp in sorted_sprites if sp.obs_space[1] > 0]
+        return sorted_sprites
 
     def render_sprites(self):
         sorted_sprites = self.sort_sprites(self.raycaster.map.sprites)
