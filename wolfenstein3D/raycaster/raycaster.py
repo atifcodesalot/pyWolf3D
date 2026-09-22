@@ -90,6 +90,21 @@ class Raycaster:
     def get_perp_dist(self, trace):
         to_trace = plain_sub(self.observer.pos, trace)
         return plain_dot(to_trace, self.observer.look_dir)
+    
+    @staticmethod
+    def get_ray_context(ray):
+        # get signs of the ray direction
+        rx, ry = ray
+        # guard against zero division
+        if rx == 0:
+            rx = 1e-10
+        if ry == 0:
+            ry = 1e-10
+        # x is non negative
+        xnn = sign(rx) + 1
+        # y is non negative
+        ynn = sign(ry) + 1
+        return rx, ry, xnn, ynn
 
     def march_ray(self, ctrace, rx, ry, xnn, ynn, xhalf=False, yhalf=False):
         mags = self.mags_for_step(ctrace, rx, ry, xnn, ynn, xhalf, yhalf)
@@ -98,47 +113,40 @@ class Raycaster:
         ctrace[0] += rx * mag
         ctrace[1] += ry * mag
         return ctrace, vertical_hit
+    
+    def ray_step(self, ray_dir, trace, hw):
+        rx, ry, xnn, ynn = self.get_ray_context(ray_dir)
+        trace, vertical = self.march_ray(trace, rx, ry, xnn, ynn)
+        xb = hw if not xnn and vertical else 0
+        yb = hw if not ynn and not vertical else 0
+        biased_pos = self.map.to_block_pos(
+            trace[0] - xb, trace[1] - yb)
+        if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
+            if cell in self.map.DOOR:
+                door_obj = self.map.get_door(biased_pos)
+                dvertical, dcell, dtrace, dhit = self.handle_door(
+                    trace,
+                    door_obj,
+                    vertical,
+                    rx, ry, xnn, ynn)
+                if dhit:
+                    return self.get_perp_dist(dtrace), dtrace, dvertical, dcell
+                else:
+                    return
+    
+            return self.get_perp_dist(trace), trace, vertical, cell
 
     def raycast(self):
         db = []
         colls = []
         hw = self.map.wall_width // 2
-        o = self.observer
         for ray_dir in self.observer.directions:
             trace = self.observer.pos.copy()
-            # get signs of the ray direction
-            rx, ry = ray_dir
-            # guard against zero division
-            if rx == 0:
-                rx = 1e-10
-            if ry == 0:
-                ry = 1e-10
-            # x is non negative
-            xnn = sign(rx) + 1
-            # y is non negative
-            ynn = sign(ry) + 1
             while True:
-                trace, vertical = self.march_ray(trace, rx, ry, xnn, ynn)
-                xb = hw if not xnn and vertical else 0
-                yb = hw if not ynn and not vertical else 0
-                biased_pos = self.map.to_block_pos(
-                    trace[0] - xb, trace[1] - yb)
-                if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
-                    if cell in self.map.DOOR:
-                        door_obj = self.map.get_door(biased_pos)
-                        dvertical, dcell, dtrace, dhit = self.handle_door(
-                            trace,
-                            door_obj,
-                            vertical,
-                            rx, ry, xnn, ynn)
-                        if dhit:
-                            db.append(self.get_perp_dist(dtrace))
-                            colls.append((dtrace, dvertical, dcell))
-                            break
-                        else:
-                            continue
-                    db.append(self.get_perp_dist(trace))
-                    colls.append((trace, vertical, cell))
+                if (data := self.ray_step(ray_dir, trace, hw)):
+                    dist, trace, vert, cell = data
+                    db.append(dist)
+                    colls.append((trace, vert, cell))
                     break
         return colls, db
 
@@ -146,12 +154,7 @@ class Raycaster:
         visited = []
         hw = self.map.wall_width // 2
         trace = self.observer.pos.copy()
-        if rx == 0:
-            rx = 1e-10
-        if ry == 0:
-            ry = 1e-10
-        xnn = sign(rx) + 1
-        ynn = sign(ry) + 1
+        rx, ry, xnn, ynn = self.get_ray_context((rx, ry))
         while True:
             trace, vertical = self.march_ray(trace, rx, ry, xnn, ynn)
             xb = hw if not xnn and vertical else 0
