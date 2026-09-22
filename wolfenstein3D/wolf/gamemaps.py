@@ -1,5 +1,5 @@
 
-from .maps import WolfMap, WolfItem
+from .maps import WolfMap
 from .actors import Actor
 from .assets import SPRITES, ASSETS_PATH
 from os import path
@@ -61,26 +61,14 @@ class GameMapsParser:
     def get_magic_marker(self):
         self.magic_marker = get_n_bytes_LI(0, 2, self.mapheader)
 
-    
+
 class GameMapsAdaptor:
     obj_lookdir = {19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}
+
     def __init__(self, parser):
         self.parser = parser
         self.planes = self.parser.planes
-        
-    def add_item_object(self, wolfmap, item, sprite_src, pos):
-        witem = WolfItem(wolfmap, sprite_src,
-                            pos, pickcallback=None)
-        if item in HEALTH_ITEMS:
-            witem.pickcallback = lambda p: p.regain_health(20)
-        elif item in TREASURE_ITEMS:
-            witem.pickcallback = lambda p: p.get_money()
-        elif item in WEAPON_ITEMS:
-            witem.pickcallback = lambda p: p.switch_weapon(WolfWeapon(item-48))
-        elif item == 49:
-            witem.pickcallback = lambda p: p.get_ammo()
-        wolfmap.add_item(witem)
-        
+
     def add_actor(self, wolfmap, obj, pos):
         # todo: implement all character sprites
         # add guard sprites
@@ -90,11 +78,11 @@ class GameMapsAdaptor:
         elif obj == 124:
             # add dead guard
             wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
-            
+
     def add_player(self, wolfmap, obj, pos):
         wolfmap.init_pos = pos
         wolfmap.init_look = self.obj_lookdir[obj]
-    
+
     def to_wolfmap(self, level_i) -> WolfMap:
         walls = self.planes[level_i][0]
         sprites = self.planes[level_i][1]
@@ -105,32 +93,33 @@ class GameMapsAdaptor:
         wolfmap = WolfMap(array=walls, wall_width=12)
         ww = wolfmap.wall_width
 
-        for i, obj in enumerate(sprites):
-            if not obj:
+        for i, entry in enumerate(sprites):
+            if not entry:
                 continue
             pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
-            if obj in [19, 20, 21, 22]:
-                self.add_player(wolfmap, obj, pos)
+            if entry in [19, 20, 21, 22]:
+                self.add_player(wolfmap, entry, pos)
             is_item = False
-            if obj in ITEM_SPRITES_MAPPING:
-                myindex = ITEM_SPRITES_MAPPING[obj]
+            if entry in WolfItem:
+                myindex = ITEM_SPRITES_MAPPING[WolfItem(entry)]
                 is_item = True
-            elif obj in DECORATION_SPRITES_MAPPING:
-                myindex = DECORATION_SPRITES_MAPPING[obj]
+            elif entry in WolfDecoration:
+                myindex = DECORATION_SPRITES_MAPPING[WolfDecoration(entry)]
             else:
-                self.add_actor(wolfmap, obj, pos)
+                self.add_actor(wolfmap, entry, pos)
                 continue
 
             if myindex not in SPRITES["objects"]:
-                wolflogger.warning(f"entry {obj} not in known sprites dict.")
+                wolflogger.warning(
+                    f"entry {entry} not in available sprites dict.")
                 continue
 
-            sprite_src = SPRITES["objects"][myindex]
-            sprite_src.blocking = myindex in BLOCKING_SPRITES
             if is_item:
-                self.add_item_object(wolfmap, obj, sprite_src, pos)
+                wolfmap.add_item(WolfItem(entry), pos)
             else:
                 # it is a decoration object
+                sprite_src = SPRITES["objects"][myindex]
+                sprite_src.blocking = myindex in BLOCKING_SPRITES
                 wolfmap.add_sprite(sprite_src, pos)
 
         return wolfmap

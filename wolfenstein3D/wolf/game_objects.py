@@ -1,100 +1,123 @@
 
 from enum import Enum
+from .assets import SPRITES
 
+class WolfDecoration(Enum):
+    WATERPUDDLE = 23
+    GREENBARREL = 24
+    TABLEWITHCHAIRS = 25
+    FLOORLAMP = 26
+    CHANDELIER = 27
+    HANGINGSKELETON = 28
+    PILLAR = 30
+    POTTEDTREE = 31
+    SINK = 32
+    POTTEDPLANT = 34
+    URN = 35
+    EMPTYTABLE = 36
+    CEILINGLIGHT = 37
+    HANGINGKITCHENUTENSILS = 38
+    ARMOUR = 39
+    EMPTYHANGINGCAGE = 40
+    HANGINGCAGEWITHSKELETON = 41
+    SKELETONREMAINS = 42
+    BED = 45
+    BASKET = 46
+    WOODENBARREL = 58
+    WELLWITHWATER = 59
+    EMPTYWELL = 60
+    FLAG = 62
+    CALLAPOGEE = 63
+    DEBRIS1 = 64
+    DEBRIS2 = 65
+    DEBRIS3 = 66
+    HANGINGPOTS = 67
+    STOVE = 68
+    SPEARRACK = 69
+    VINES = 70
+
+class WolfItem(Enum):
+    DOGFOOD = 29
+    GOLDKEY = 43
+    SILVERKEY = 44
+    FOOD = 47
+    FIRSTAIDKIT = 48
+    AMMUNITION = 49
+    MACHINEGUN = 50
+    CHAINGUN = 51
+    CROSS = 52
+    CHALICE = 53
+    TREASURECHEST = 54
+    CROWN = 55
+    EXTRALIFE = 56
+    BLOODYREMAINS = 57
+    BLOODPOOL = 61
 
 ITEM_SPRITES_MAPPING = {
-    29:  6,  # Dog food
-    43: 20,  # Gold key
-    44: 21,  # Silver key
-    47: 24,  # Food
-    48: 25,  # First-aid kit
-    49: 26,  # Ammunition
-    50: 27,  # Machine gun
-    51: 28,  # Chaingun
-    52: 29,  # Cross
-    53: 30,  # Chalice
-    54: 31,  # Treasure chest
-    55: 32,  # Crown
-    56: 33,  # Extra life
-    57: 34,  # Bloody remains
-    61: 38,  # Blood pool
+    WolfItem.DOGFOOD:  6,  # Dog food
+    WolfItem.GOLDKEY: 20,  # Gold key
+    WolfItem.SILVERKEY: 21,  # Silver key
+    WolfItem.FOOD: 24,  # Food
+    WolfItem.FIRSTAIDKIT: 25,  # First-aid kit
+    WolfItem.AMMUNITION: 26,  # Ammunition
+    WolfItem.MACHINEGUN: 27,  # Machine gun
+    WolfItem.CHAINGUN: 28,  # Chaingun
+    WolfItem.CROSS: 29,  # Cross
+    WolfItem.CHALICE: 30,  # Chalice
+    WolfItem.TREASURECHEST: 31,  # Treasure chest
+    WolfItem.CROWN: 32,  # Crown
+    WolfItem.EXTRALIFE: 33,  # Extra life
+    WolfItem.BLOODYREMAINS: 34,  # Bloody remains
+    WolfItem.BLOODPOOL: 38,  # Blood pool
+}
+
+ITEM_AFFECT = {
+    WolfItem.DOGFOOD: lambda p: p.regain_health(20),
+    WolfItem.FOOD: lambda p: p.regain_health(50),
+    WolfItem.FIRSTAIDKIT: lambda p: p.regain_health(75)
+    
 }
 
 TREASURE_ITEMS = [
-    52,
-    53,
-    54,
-    55,
+    WolfItem.CROSS,
+    WolfItem.CHALICE,
+    WolfItem.TREASURECHEST,
+    WolfItem.CROWN,
 ]
 
 HEALTH_ITEMS = [
-    29,
-    47,
-    48,
-    57,
-    61
+    WolfItem.FIRSTAIDKIT,
+    WolfItem.FOOD,
+    WolfItem.BLOODYREMAINS,
+    WolfItem.BLOODPOOL
 ]
 
 WEAPON_ITEMS = [50, 51]
 
-DECORATION_SPRITES_MAPPING = {
-    23:  0,  # Water puddle
-    24:  1,  # Green barrel
-    25:  2,  # Table with chairs
-    26:  3,  # Floor lamp
-    27:  4,  # Chandelier
-    28:  5,  # Hanging skeleton
-    30:  7,  # Pillar
-    31:  8,  # Potted tree
-    32:  9,  # Skeleton on floor
-    33: 10,  # Sink
-    34: 11,  # Potted plant
-    35: 12,  # Urn
-    36: 13,  # Empty table
-    37: 14,  # Ceiling light
-    38: 15,  # Hanging kitchen utensils
-    39: 16,  # Armour
-    40: 17,  # Empty hanging cage
-    41: 18,  # Hanging cage with skeleton
-    42: 19,  # Skeleton remains
-    45: 22,  # Bed
-    46: 23,  # Basket
-    58: 35,  # Wooden barrel
-    59: 36,  # Well with water
-    60: 37,  # Empty well
-    62: 39,  # Flag
-    63: 40,  # "Call Apogee" slot — blank in our sheet
-    64: 41,  # Debris 1
-    65: 42,  # Debris 2
-    66: 43,  # Debris 3
-    67: 44,  # Hanging pots
-    68: 45,  # Stove
-    69: 46,  # Spear rack
-    70: 47,  # Vines
-}
+DECORATION_SPRITES_MAPPING = dict((i, i.value - 23) for i in WolfDecoration)
 
 BLOCKING_SPRITES = [
-    1,   # Green barrel
-    2,   # Table with chairs
-    3,   # Floor lamp
-    5,   # Hanging skeleton
-    7,   # Pillar
-    8,   # Potted tree
-    10,  # Sink
-    11,  # Potted plant
-    12,  # Urn
-    13,  # Empty table
-    16,  # Armour
-    17,  # Empty hanging cage
-    18,  # Hanging cage with skeleton
-    22,  # Bed
-    35,  # Wooden barrel
-    36,  # Well with water
-    37,  # Empty well
-    39,  # Flag
-    40,  # "Call Apogee" — blocks even if my sheet has it blank
-    45,  # Stove
-    46,  # Spear rack
+    WolfDecoration.GREENBARREL,   
+    WolfDecoration.TABLEWITHCHAIRS,   
+    WolfDecoration.FLOORLAMP,  
+    WolfDecoration.HANGINGSKELETON,   
+    WolfDecoration.PILLAR,  
+    WolfDecoration.POTTEDTREE,
+    WolfDecoration.SINK,  
+    WolfDecoration.POTTEDPLANT,  
+    WolfDecoration.URN,  
+    WolfDecoration.EMPTYTABLE,  
+    WolfDecoration.ARMOUR,  
+    WolfDecoration.EMPTYHANGINGCAGE,  
+    WolfDecoration.HANGINGCAGEWITHSKELETON,  
+    WolfDecoration.BED,  
+    WolfDecoration.WOODENBARREL,  
+    WolfDecoration.WELLWITHWATER,  
+    WolfDecoration.EMPTYWELL,  
+    WolfDecoration.FLAG, 
+    WolfDecoration.CALLAPOGEE,
+    WolfDecoration.STOVE, 
+    WolfDecoration.SPEARRACK,  
 ]
 
 OBJECT_SPRITES = set(list(ITEM_SPRITES_MAPPING.values()) +
@@ -182,10 +205,12 @@ class WolfWeapon(Enum):
     MP4 = 2
     MINIGUN = 3
     
-class WolfItem:
-    def __init__(self, map_, sprite_src, pos, pickcallback):
+class MapItem:
+    def __init__(self, map_, item: WolfItem, pos, pickcallback):
         self.map = map_
-        self.sprite = sprite_src.copy(pos)
+        self.pyindex = ITEM_SPRITES_MAPPING[item]
+        self.sprite = SPRITES["objects"][self.pyindex].copy(pos)
+        self.sprite.blocking = item in BLOCKING_SPRITES
         self.pos = self.map.to_block_pos(*pos)
         self.pickcallback = pickcallback
 

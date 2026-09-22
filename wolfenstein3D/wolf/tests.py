@@ -42,7 +42,7 @@ class WolfGameTest(unittest.TestCase):
         
     def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
-        mymap.add_item(WolfItem(mymap, SPRITES["objects"][28], (400, 400), None))
+        mymap.add_decoration(WolfDecoration.VINES, (400, 400))
         player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MP4)
         player.ammo = 10
         screen = pygame.display.set_mode((128*4, 128*4))

@@ -1,7 +1,8 @@
 
 from raycaster.sprites import Sprite
 from .actors import Actor
-from .game_objects import WolfItem
+from .game_objects import *
+from .assets import SPRITES
 
 
 class WolfDoor:
@@ -72,10 +73,12 @@ class WolfMap:
         self.sprites.remove(sprite)
         del self.sprite_lookup[pos]
 
-    def add_item(self, item: WolfItem):
-        self.items[item.pos] = item
-        self.sprites.append(item.sprite)
-        self.sprite_lookup[item.pos] = item.sprite
+    def add_item(self, item: WolfItem, pos):
+        effect = ITEM_AFFECT.get(item, None)
+        mapitem = MapItem(self, item, pos, effect)
+        self.items[mapitem.pos] = mapitem
+        self.sprites.append(mapitem.sprite)
+        self.sprite_lookup[mapitem.pos] = mapitem.sprite
 
     def pop_item(self, pos):
         item = self.items.pop(pos)
@@ -84,6 +87,12 @@ class WolfMap:
 
     def add_actor(self, actor: Actor):
         self.actors.append(actor)
+        
+    def add_decoration(self, decor: WolfDecoration, pos): 
+        if decor not in WolfDecoration:
+            raise TypeError("can't add non decoration")
+        spidx = DECORATION_SPRITES_MAPPING[decor]
+        self.add_sprite(SPRITES["objects"][spidx], pos)
 
     def construct_map(self):
         self.raw = list()
