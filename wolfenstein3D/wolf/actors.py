@@ -41,8 +41,13 @@ class Actor:
         # placeholder
         return ActorState(0)
 
-    def change_state(self):
-        self.state = self.decide_state()
+    def set_state(self, state=None):
+        if self.is_dead():
+            return
+        if not state:
+            self.state = self.decide_state()
+        else:
+            self.state = state
 
     def to_this_space(self, pos):
         to_self = plain_sub(pos, self.pos)
@@ -80,7 +85,7 @@ class Actor:
         self.dying = True
         self.state = ActorState(5)
 
-        def death_end(_):
+        def death_end():
             self.dying = False
         anim = Animation(None, None, 50, 5,
                          offset=ActorState.DYING.value *
@@ -89,25 +94,30 @@ class Actor:
 
     # ouch
     def get_shot(self, game):
-        if self.being_shot or self.dying:
-            # if already being shot or already dying
-            self.dec_health(50)
+        if self.dying:
             return
+        if self.being_shot:
+            # if already being shot
+            self.dec_health(20)
+            if self.is_dead():
+                self.die(game)
+            return
+        # if not being already shot
         self.being_shot = True
-        # placeholder
-        self.dec_health(50)
+        # placeholder, no damage model
+        self.dec_health(20)
         #
         if self.is_dead():
             self.die(game)
             return
+        # if did not die
         old_state = self.state
         self.state = ActorState.DYING
         # schedule to return to old state after being hurt
         # after 20 ticks
-
         def return_(_):
-            self.state = old_state
-            print(old_state)
+            self.set_state(old_state)
             self.being_shot = False
+            
         game.schedule_game_event(
-            20, return_)
+            10, return_)

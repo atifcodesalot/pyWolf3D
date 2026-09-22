@@ -93,7 +93,6 @@ class WolfGame:
             pygame.K_s: self.player.move_backward,
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
-            pygame.K_RETURN: self.handle_shooting
         }
 
     def handle_player_requests(self):
@@ -114,27 +113,39 @@ class WolfGame:
         anim.target_attr = target
         self.animations.append(anim)
 
-    def handle_shooting(self):
-        cantshoot = self.player.shooting or self.player.out_of_ammo()
+    def shooting_animation_end(self):
+        wolflogger.debug("shooting_animation_end called.")
+        self.player.ammo -= 1
+        self.renderer.wpn_sprite_idx = self.player.weapon.value * 5
+        pressed = pygame.key.get_pressed()
+        if pressed[pygame.K_RETURN] and self.player.has_automatic_weapon():
+            # if the player is still holding down shoot_button
+            # and they have an automatic weapon
+            # don't stop
+            return self.handle_shooting(ongoing=True)
+
+        self.player.shooting = False
+
+    def handle_shooting(self, ongoing=False):
+        wolflogger.debug("called handle_shooting")
+        rapid = ongoing.real
+        cantshoot = (self.player.shooting and not ongoing) or self.player.out_of_ammo()
         if cantshoot:
             wolflogger.debug("player already shooting, or out of ammo")
             return
-        self.player.shoot()
+        self.player.shooting = True
         # handle shooting animation
         old = self.renderer.wpn_sprite_idx
 
-        def return_(anim):
-            setattr(anim.obj, "wpn_sprite_idx", old)
-            self.player.shooting = False
         self.add_animation(Animation(
-            None, None, 20, 5, 0, endcallback=return_, offset=old),
+            None, None, 20-10*rapid, 5-3*rapid, 0,
+            endcallback=self.shooting_animation_end, offset=old + 2*rapid),
             self.renderer, "wpn_sprite_idx")
 
         for act in self.actors:
             if self.player.hits_actor(self.renderer.raycaster, act):
-                act.get_shot(self)  
+                act.get_shot(self)
 
-        wolflogger.debug("now shooting")
 
     def handle_doors(self):
         for door in self.map.doors.values():
@@ -172,6 +183,9 @@ class WolfGame:
         for event in pgevents:
             if event.type == pygame.QUIT:
                 self.ongoing = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    self.handle_shooting()
         self.handle_keystate()
 
     def schedule_game_event(self, _time, action):

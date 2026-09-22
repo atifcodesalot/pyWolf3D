@@ -6,8 +6,8 @@ from .wolfenstein import *
 
 class ParserTest(unittest.TestCase):
     def test_parse(self):
-        maphead = open(path.join("maps", "MAPHEAD.WL1"), "rb")
-        maptemp = open(path.join("maps", "MAPTEMP.WL1"), "rb")
+        maphead = open(path.join("assets", "maps", "MAPHEAD.WL1"), "rb")
+        maptemp = open(path.join("assets", "maps", "MAPTEMP.WL1"), "rb")
         parser = Parser(maphead.read(), maptemp.read(), level_count=10)
         self.assertEqual(parser.magic_marker, 0xABCD)
         self.assertEqual(len(parser.level_offsets), 10)
@@ -16,8 +16,8 @@ class ParserTest(unittest.TestCase):
         maptemp.close()
 
     def test_decompress(self):
-        maphead = open(path.join("maps", "MAPHEAD.WL1"), "rb")
-        maptemp = open(path.join("maps", "MAPTEMP.WL1"), "rb")
+        maphead = open(path.join("assets", "maps", "MAPHEAD.WL1"), "rb")
+        maptemp = open(path.join("assets", "maps", "MAPTEMP.WL1"), "rb")
         parser = Parser(maphead.read(), maptemp.read(), level_count=10)
         plane = [0xA, 0x00, 0xCD, 0xAB, 0x03, 0x00,
                  0x01, 0x00, 0x02, 0x00, 0x03, 0x00]
@@ -40,8 +40,9 @@ class WolfGameTest(unittest.TestCase):
         self.assertFalse(id(mymap.actors[0].sprites[0]) == id(mymap.actors[1].sprites[0]))
         
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[0]
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MINIGUN)
+        mymap = SHAREWARE_MAPS[1]
+        player = WolfPlayer(mymap, ray_count=256, weapon=WolfWeapon.MINIGUN)
+        player.ammo = 100
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)

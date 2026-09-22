@@ -26,7 +26,7 @@ class WolfPlayer(Observer):
         self.shooting = False
 
     def has_automatic_weapon(self):
-        return self.weapon.value > 2
+        return self.weapon.value > 1
 
     def move_forward(self):
         self.displace(plain_mul(self.look_dir, self.pace))
@@ -47,10 +47,6 @@ class WolfPlayer(Observer):
 
     def turn_cw(self):
         self.rotate(-self.rot_pace)
-
-    def shoot(self):
-        self.shooting = True
-        self.ammo -= 1
         
     def out_of_ammo(self):
         return self.ammo == 0

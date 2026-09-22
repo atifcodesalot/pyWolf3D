@@ -1,9 +1,5 @@
 
 
-
-
-
-
 class Animation:
     def __init__(self, obj, target_attr: str, duration,
                  frame_count, shapenum=0, endcallback=None, offset=0):
@@ -24,7 +20,7 @@ class Animation:
         self.lifetime += heartbeats
         if self.ended():
             if callable(self.endcallback):
-                self.endcallback(self)
+                self.endcallback()
             return
         self.shapenum = self.lifetime // self.hb_perframe
         setattr(self.obj, self.target_attr, self.shapenum + self.offset)
