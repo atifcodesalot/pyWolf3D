@@ -1,8 +1,5 @@
 
-from .maps import WolfMap, WolfItem
-from .actors import Actor
-from .assets import SPRITES, ASSETS_PATH
-from os import path
+from enum import Enum
 
 
 ITEM_SPRITES_MAPPING = {
@@ -37,6 +34,8 @@ HEALTH_ITEMS = [
     57,
     61
 ]
+
+WEAPON_ITEMS = [50, 51]
 
 DECORATION_SPRITES_MAPPING = {
     23:  0,  # Water puddle
@@ -177,125 +176,11 @@ WALL_TEXTURE_MAPPING = {
 }
 
 
-# return n bytes little endian from data
-def get_n_bytes_LI(start, n, data: bytearray):
-    result = 0
-    for i in range(n):
-        result <<= 8
-        result |= data[start + (n - 1 - i)]
-    return result
+class WolfWeapon(Enum):
+    KNIFE = 0
+    PISTOL = 1
+    MP4 = 2
+    MINIGUN = 3
 
 
-class Parser:
-    def __init__(self, mapheader: bytearray, maptemp: bytearray, level_count=10):
-        self.mapheader = mapheader
-        self.maptemp = maptemp
-        self.get_magic_marker()
-        self.levels = level_count
-        self.parse()
-
-    def parse(self):
-        dcmp = self.decompress
-        self.level_offsets = [get_n_bytes_LI(
-            2 + 4*i, 4, self.mapheader) for i in range(self.levels)]
-        self.planes = [(dcmp(self.get_level_plane(i, 0)), dcmp(self.get_level_plane(i, 1)))
-                       for i in range(self.levels)]
-
-    def decompress(self, plane):
-        decompressed = []
-        # skip the uncompressed size header
-        i = 2
-        #
-        while i < len(plane):
-            entry = get_n_bytes_LI(i, 2, plane)
-            if entry == self.magic_marker:
-                repeat = get_n_bytes_LI(i + 2, 2, plane)
-                value = get_n_bytes_LI(i + 4, 2, plane)
-                decompressed += [value,] * repeat
-                i += 6
-                continue
-            decompressed.append(entry)
-            i += 2
-        return decompressed
-
-    def get_level_header(self, level_i):
-        pos = self.level_offsets[level_i]
-        return self.maptemp[pos: pos + 38]
-
-    def get_level_plane(self, level_i, plane_i):
-        header = self.get_level_header(level_i)
-        plane_size = get_n_bytes_LI(12+2*plane_i, 2, header)
-        offset = get_n_bytes_LI(plane_i * 4, 4, header)
-        return self.maptemp[offset: offset + plane_size]
-
-    def get_magic_marker(self):
-        self.magic_marker = get_n_bytes_LI(0, 2, self.mapheader)
-
-    def to_wolfmap(self, level_i) -> WolfMap:
-        walls = self.planes[level_i][0]
-        sprites = self.planes[level_i][1]
-        walls = [walls[i*64: (i+1)*64] for i in range(64)]
-        for i, row in enumerate(walls):
-            walls[i] = [WALL_TEXTURE_MAPPING.get(wall, -1) + 1 for wall in row]
-
-        wolfmap = WolfMap(array=walls, wall_width=12)
-        ww = wolfmap.wall_width
-
-        for i, sprite in enumerate(sprites):
-            if not sprite:
-                continue
-            pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
-            if sprite in [19, 20, 21, 22]:
-                wolfmap.init_pos = pos
-                wolfmap.init_look = {
-                    19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}[sprite]
-            item = False
-            if sprite in ITEM_SPRITES_MAPPING:
-                myindex = ITEM_SPRITES_MAPPING[sprite]
-                item = True
-            elif sprite in DECORATION_SPRITES_MAPPING:
-                myindex = DECORATION_SPRITES_MAPPING[sprite]
-            else:
-                # todo: implement all character sprites
-                # add guard sprites
-                if sprite in range(108, 116):
-                    wolfmap.add_actor(
-                        Actor(pos, [0, 1], "guard", sprites=SPRITES["characters"]["guard"]))
-                elif sprite == 124:
-                    # add dead guard
-                    wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
-                continue
-
-            if myindex not in SPRITES["objects"]:
-                continue
-
-            sprite_src = SPRITES["objects"][myindex]
-            sprite_src.blocking = myindex in BLOCKING_SPRITES
-            if item:
-                witem = WolfItem(wolfmap, sprite_src,
-                                 pos, pickcallback=None)
-                if sprite in HEALTH_ITEMS:
-                    witem.pickcallback = lambda p: p.regain_health(20)
-                elif sprite in TREASURE_ITEMS:
-                    witem.pickcallback = lambda p: p.get_money()
-                elif sprite == 49:
-                    witem.pickcallback = lambda p: p.get_ammo()
-                wolfmap.add_item(witem)
-            else:
-                # it is a decoration
-                wolfmap.add_sprite(sprite_src, pos)
-
-        return wolfmap
-
-
-def get_shareware_maps():
-    global SHAREWARE_MAPS
-    maphead = open(path.join(ASSETS_PATH, "maps", "MAPHEAD.WL1"), "rb")
-    maptemp = open(path.join(ASSETS_PATH, "maps", "MAPTEMP.WL1"), "rb")
-    parser = Parser(maphead.read(), maptemp.read(), level_count=10)
-    SHAREWARE_MAPS = [parser.to_wolfmap(i) for i in range(10)]
-    maphead.close()
-    maptemp.close()
-
-
-get_shareware_maps()
+WEAPON_MULTIPLIER = 1.2

@@ -1,20 +1,10 @@
 
 
 from raycaster.raycaster import Observer
-from enum import Enum
+from .game_objects import WolfWeapon
 from .maps import WolfMap
 from raycaster.aux_math import *
 from .actors import Actor
-
-
-class WolfWeapon(Enum):
-    KNIFE = 0
-    PISTOL = 1
-    MP4 = 2
-    MINIGUN = 3
-
-
-WEAPON_MULTIPLIER = 1.2
 
 
 class WolfPlayer(Observer):
@@ -82,8 +72,7 @@ class WolfPlayer(Observer):
         ablock = self.map.to_block_pos(*actor.pos)
         d = euclidean_distance(pblock, ablock)
         d = 1 if d == 0 else d
-        inflicted = (1 / d) * 125
-        print(inflicted)
+        inflicted = (1 / d) * 175
         # cap to 100
         return min(inflicted, 100)
 

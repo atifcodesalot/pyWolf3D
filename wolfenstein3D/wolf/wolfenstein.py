@@ -41,7 +41,8 @@ class WolfRenderer(RayRenderer):
         for i in weapons:
             w: Sprite = weapons[i]
             # transform each weapon sprite to match the screen size
-            self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size()))
+            self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size(), 
+                                                    resample=Image.Resampling.NEAREST))
 
     def render_weapon(self):
         self.pgsurface.blit(

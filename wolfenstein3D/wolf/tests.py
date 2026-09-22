@@ -1,6 +1,6 @@
 import unittest
 
-from .gamemaps_parser import *
+from .gamemaps import *
 from .wolfenstein import *
 
 
@@ -8,24 +8,25 @@ class ParserTest(unittest.TestCase):
     def test_parse(self):
         maphead = open(path.join("assets", "maps", "MAPHEAD.WL1"), "rb")
         maptemp = open(path.join("assets", "maps", "MAPTEMP.WL1"), "rb")
-        parser = Parser(maphead.read(), maptemp.read(), level_count=10)
+        parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
+        maphead.close()
+        maptemp.close()
         self.assertEqual(parser.magic_marker, 0xABCD)
         self.assertEqual(len(parser.level_offsets), 10)
         self.assertEqual(len(parser.planes), 10)
-        maphead.close()
-        maptemp.close()
+        
 
     def test_decompress(self):
         maphead = open(path.join("assets", "maps", "MAPHEAD.WL1"), "rb")
         maptemp = open(path.join("assets", "maps", "MAPTEMP.WL1"), "rb")
-        parser = Parser(maphead.read(), maptemp.read(), level_count=10)
+        parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
+        maphead.close()
+        maptemp.close()
         plane = [0xA, 0x00, 0xCD, 0xAB, 0x03, 0x00,
                  0x01, 0x00, 0x02, 0x00, 0x03, 0x00]
         decompressed = parser.decompress(plane)
         self.assertEqual(
             decompressed, [0x0001, 0x0001, 0x0001, 0x0002, 0x0003])
-        maphead.close()
-        maptemp.close()
 
     def test_shareware_maps(self):
         self.assertEqual(len(SHAREWARE_MAPS), 10)
@@ -41,7 +42,7 @@ class WolfGameTest(unittest.TestCase):
         
     def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
-        player = WolfPlayer(mymap, ray_count=256, weapon=WolfWeapon.PISTOL)
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MP4)
         player.ammo = 10
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
