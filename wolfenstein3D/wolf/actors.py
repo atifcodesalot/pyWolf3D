@@ -93,19 +93,19 @@ class Actor:
         game.add_animation(anim, self, "shapenum")
 
     # ouch
-    def get_shot(self, game):
+    def get_shot(self, game, damage):
         if self.dying:
             return
         if self.being_shot:
             # if already being shot
-            self.dec_health(20)
+            self.dec_health(damage)
             if self.is_dead():
                 self.die(game)
             return
         # if not being already shot
         self.being_shot = True
         # placeholder, no damage model
-        self.dec_health(20)
+        self.dec_health(damage)
         #
         if self.is_dead():
             self.die(game)

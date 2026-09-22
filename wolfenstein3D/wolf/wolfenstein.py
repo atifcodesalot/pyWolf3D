@@ -86,6 +86,7 @@ class WolfGame:
         self.animations: list[Animation] = []
 
         self.ongoing = True
+        self.interact = False
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -93,6 +94,7 @@ class WolfGame:
             pygame.K_s: self.player.move_backward,
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
+            pygame.K_SPACE: lambda: setattr(self, "interact", True)
         }
 
     def handle_player_requests(self):
@@ -103,7 +105,7 @@ class WolfGame:
             item.affect(self.player)
 
         fblock, fcell = self.player.get_front_cell()
-        if fcell in self.map.DOOR:
+        if fcell in self.map.DOOR and self.interact:
             door = self.map.get_door(fblock)
             if not door.is_opening:
                 door.begin_opening()
@@ -129,7 +131,8 @@ class WolfGame:
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
         rapid = ongoing.real
-        cantshoot = (self.player.shooting and not ongoing) or self.player.out_of_ammo()
+        cantshoot = (
+            self.player.shooting and not ongoing) or self.player.out_of_ammo()
         if cantshoot:
             wolflogger.debug("player already shooting, or out of ammo")
             return
@@ -144,8 +147,8 @@ class WolfGame:
 
         for act in self.actors:
             if self.player.hits_actor(self.renderer.raycaster, act):
-                act.get_shot(self)
-
+                damage = self.player.hit_damage(act)
+                act.get_shot(self, damage)
 
     def handle_doors(self):
         for door in self.map.doors.values():
@@ -186,11 +189,16 @@ class WolfGame:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     self.handle_shooting()
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_SPACE:
+                    self.interact = False
+                
         self.handle_keystate()
 
     def schedule_game_event(self, _time, action):
         future = self.heartbeats + _time
         while future in self.game_events:
+            # schedule one tick later so they dont collide
             future += 1
         self.game_events[future] = action
 

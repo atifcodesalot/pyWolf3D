@@ -3,14 +3,19 @@
 from raycaster.raycaster import Observer
 from enum import Enum
 from .maps import WolfMap
-from raycaster.aux_math import plain_mul, plain_add, sign
+from raycaster.aux_math import *
 from .actors import Actor
+
 
 class WolfWeapon(Enum):
     KNIFE = 0
     PISTOL = 1
     MP4 = 2
     MINIGUN = 3
+
+
+WEAPON_MULTIPLIER = 1.2
+
 
 class WolfPlayer(Observer):
     def __init__(self, map_: WolfMap, fov=60,
@@ -22,7 +27,7 @@ class WolfPlayer(Observer):
         self.pace = 1.5
         self.rot_pace = 3
         self.ammo = ammo
-        
+
         self.shooting = False
 
     def has_automatic_weapon(self):
@@ -47,7 +52,7 @@ class WolfPlayer(Observer):
 
     def turn_cw(self):
         self.rotate(-self.rot_pace)
-        
+
     def out_of_ammo(self):
         return self.ammo == 0
 
@@ -68,9 +73,18 @@ class WolfPlayer(Observer):
         front_block = plain_add(pblock, offset)
         front = self.map.raw[front_block[1]][front_block[0]]
         return front_block, front
-    
+
+    def hit_damage(self, actor: Actor):
+        pblock = self.map.to_block_pos(*self.pos)
+        ablock = self.map.to_block_pos(*actor.pos)
+        d = euclidean_distance(pblock, ablock)
+        d = 1 if d == 0 else d
+        inflicted = (1 / d) * 125
+        print(inflicted)
+        # cap to 100
+        return min(inflicted, 100)
+
     def hits_actor(self, raycaster, actor: Actor):
         visited = raycaster.get_corridor(*self.look_dir)
         actor_block = self.map.to_block_pos(*actor.pos)
         return actor_block in visited
-            
