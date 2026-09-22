@@ -1,13 +1,14 @@
 
 from raycaster.sprites import Sprite
 from raycaster.textures import Texture
-from . import SPRITES, WALL_TEXTURES
+from . import SPRITES, WALL_TEXTURES, pygame
 from PIL import Image
 import os
 
 
 ASSETS_PATH = os.path.join('.', 'assets')
 
+FONT_PATH = os.path.join(ASSETS_PATH, 'fonts')
 SPRITE_PATH = os.path.join(ASSETS_PATH, 'sprites')
 TEXTURE_PATH = os.path.join(ASSETS_PATH, 'textures')
 
@@ -95,7 +96,14 @@ def init_sprites():
                         SPRITES[entry.name + "/" + entry2.name] = Sprite(
                             Image.open(entry2.path), None, None)
     clean_remaining()
+    
+def init_font():
+    font_size = 30
+    global FONT
+    FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
+    
 
 
 init_textures()
 init_sprites()
+init_font()

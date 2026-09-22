@@ -27,6 +27,9 @@ class WolfPlayer(Observer):
         self.pace = 1.5
         self.rot_pace = 3
         self.ammo = ammo
+        
+        
+        self.score = 0
 
         self.shooting = False
 
@@ -88,3 +91,12 @@ class WolfPlayer(Observer):
         visited = raycaster.get_corridor(*self.look_dir)
         actor_block = self.map.to_block_pos(*actor.pos)
         return actor_block in visited
+    
+    def regain_health(self, aid):
+        self.health = min(self.health + aid, 100)
+        
+    def get_money(self):
+        self.score += 500
+        
+    def get_ammo(self):
+        self.ammo += 5

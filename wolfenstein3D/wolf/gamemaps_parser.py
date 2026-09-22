@@ -23,6 +23,21 @@ ITEM_SPRITES_MAPPING = {
     61: 38,  # Blood pool
 }
 
+TREASURE_ITEMS = [
+    52,
+    53,
+    54,
+    55,
+]
+
+HEALTH_ITEMS = [
+    29,
+    47,
+    48,
+    57,
+    61
+]
+
 DECORATION_SPRITES_MAPPING = {
     23:  0,  # Water puddle
     24:  1,  # Green barrel
@@ -257,7 +272,15 @@ class Parser:
             sprite_src = SPRITES["objects"][myindex]
             sprite_src.blocking = myindex in BLOCKING_SPRITES
             if item:
-                wolfmap.add_item(WolfItem(wolfmap, sprite_src, pos))
+                witem = WolfItem(wolfmap, sprite_src,
+                                 pos, pickcallback=None)
+                if sprite in HEALTH_ITEMS:
+                    witem.pickcallback = lambda p: p.regain_health(20)
+                elif sprite in TREASURE_ITEMS:
+                    witem.pickcallback = lambda p: p.get_money()
+                elif sprite == 49:
+                    witem.pickcallback = lambda p: p.get_ammo()
+                wolfmap.add_item(witem)
             else:
                 # it is a decoration
                 wolfmap.add_sprite(sprite_src, pos)

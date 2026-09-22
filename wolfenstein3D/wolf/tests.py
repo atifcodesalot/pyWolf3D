@@ -35,14 +35,14 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_actor_instances(self):
-        mymap = SHAREWARE_MAPS[0]
+        mymap = SHAREWARE_MAPS[4]
         self.assertFalse(id(mymap.actors[0]) == id(mymap.actors[1]))
         self.assertFalse(id(mymap.actors[0].sprites[0]) == id(mymap.actors[1].sprites[0]))
         
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[1]
-        player = WolfPlayer(mymap, ray_count=256, weapon=WolfWeapon.MP4)
-        player.ammo = 100
+        mymap = SHAREWARE_MAPS[0]
+        player = WolfPlayer(mymap, ray_count=256, weapon=WolfWeapon.PISTOL)
+        player.ammo = 10
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)

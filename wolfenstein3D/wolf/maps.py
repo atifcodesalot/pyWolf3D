@@ -30,13 +30,15 @@ class WolfDoor:
 
 
 class WolfItem:
-    def __init__(self, map_, sprite_src: Sprite, pos):
+    def __init__(self, map_, sprite_src: Sprite, pos, pickcallback):
         self.map = map_
         self.sprite = sprite_src.copy(pos)
         self.pos = self.map.to_block_pos(*pos)
+        self.pickcallback = pickcallback
 
     def affect(self, player):
-        pass
+        if callable(self.pickcallback):
+            self.pickcallback(player)
 
 
 # map class, creates a simple 2D array for map layout

@@ -94,7 +94,7 @@ class Actor:
 
     # ouch
     def get_shot(self, game, damage):
-        if self.dying:
+        if self.dying or self.is_dead():
             return
         if self.being_shot:
             # if already being shot

@@ -22,7 +22,7 @@ class WolfRenderer(RayRenderer):
         self.map = self.player.map
         raycaster = Raycaster(player, player.map)
         super().__init__(raycaster, pgsurface,
-                         topcolor="#585303",
+                         topcolor="#6B6404",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
@@ -49,7 +49,9 @@ class WolfRenderer(RayRenderer):
             (0, 0))
 
     def render_statusbar(self):
-        pass
+        sfont = FONT.render(
+            f"Score: {self.player.score} Health: {self.player.health}  Ammo: {self.player.ammo}", True, self.WHITE)
+        self.pgsurface.blit(sfont, (150, 10))
 
     def render_sprites(self):
         # also render actors
