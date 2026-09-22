@@ -1,6 +1,7 @@
 
 from raycaster.sprites import Sprite
 from .actors import Actor
+from .game_objects import WolfItem
 
 
 class WolfDoor:
@@ -29,18 +30,6 @@ class WolfDoor:
         self.is_closing = True
 
 
-class WolfItem:
-    def __init__(self, map_, sprite_src: Sprite, pos, pickcallback):
-        self.map = map_
-        self.sprite = sprite_src.copy(pos)
-        self.pos = self.map.to_block_pos(*pos)
-        self.pickcallback = pickcallback
-
-    def affect(self, player):
-        if callable(self.pickcallback):
-            self.pickcallback(player)
-
-
 # map class, creates a simple 2D array for map layout
 # 0: empty, nonzero: wall with texture
 class WolfMap:
@@ -65,7 +54,7 @@ class WolfMap:
 
         self.sprites = []
         self.sprite_lookup = {}
-        
+
         self.items = {}
         self.actors = []
 
@@ -92,7 +81,7 @@ class WolfMap:
         item = self.items.pop(pos)
         self.delete_sprite(item.pos)
         return item
-    
+
     def add_actor(self, actor: Actor):
         self.actors.append(actor)
 

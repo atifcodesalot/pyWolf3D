@@ -89,3 +89,6 @@ class WolfPlayer(Observer):
         
     def get_ammo(self):
         self.ammo += 5
+        
+    def switch_weapon(self, new: WolfWeapon):
+        self.weapon = new

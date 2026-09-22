@@ -181,6 +181,17 @@ class WolfWeapon(Enum):
     PISTOL = 1
     MP4 = 2
     MINIGUN = 3
+    
+class WolfItem:
+    def __init__(self, map_, sprite_src, pos, pickcallback):
+        self.map = map_
+        self.sprite = sprite_src.copy(pos)
+        self.pos = self.map.to_block_pos(*pos)
+        self.pickcallback = pickcallback
+
+    def affect(self, player):
+        if callable(self.pickcallback):
+            self.pickcallback(player)
 
 
 WEAPON_MULTIPLIER = 1.2

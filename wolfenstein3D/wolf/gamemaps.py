@@ -76,7 +76,7 @@ class GameMapsAdaptor:
         elif item in TREASURE_ITEMS:
             witem.pickcallback = lambda p: p.get_money()
         elif item in WEAPON_ITEMS:
-            witem.pickcallback = lambda p: p.get_money()
+            witem.pickcallback = lambda p: p.switch_weapon(WolfWeapon(item-48))
         elif item == 49:
             witem.pickcallback = lambda p: p.get_ammo()
         wolfmap.add_item(witem)
