@@ -21,6 +21,7 @@ class WolfPlayer(Observer):
         self.score = 0
 
         self.shooting = False
+        self.weapon_sprite = self.weapon.value * 5
 
     def has_automatic_weapon(self):
         return self.weapon.value > 1
@@ -91,3 +92,4 @@ class WolfPlayer(Observer):
 
     def switch_weapon(self, new: WolfWeapon):
         self.weapon = new
+        self.weapon_sprite = self.weapon.value * 5

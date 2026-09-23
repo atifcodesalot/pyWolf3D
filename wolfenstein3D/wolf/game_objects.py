@@ -2,6 +2,12 @@
 from enum import Enum
 from .assets import SPRITES
 
+class WolfWeapon(Enum):
+    KNIFE = 0
+    PISTOL = 1
+    MP4 = 2
+    MINIGUN = 3
+
 class WolfDecoration(Enum):
     WATERPUDDLE = 23
     GREENBARREL = 24
@@ -74,7 +80,16 @@ ITEM_SPRITES_MAPPING = {
 ITEM_AFFECT = {
     WolfItem.DOGFOOD: lambda p: p.regain_health(20),
     WolfItem.FOOD: lambda p: p.regain_health(50),
-    WolfItem.FIRSTAIDKIT: lambda p: p.regain_health(75)
+    WolfItem.FIRSTAIDKIT: lambda p: p.regain_health(75),
+    WolfItem.CHAINGUN: lambda p: p.switch_weapon(WolfWeapon.MINIGUN),
+    WolfItem.MACHINEGUN: lambda p: p.switch_weapon(WolfWeapon.MP4),
+    WolfItem.AMMUNITION: lambda p: p.get_ammo(),
+    WolfItem.GOLDKEY: None, # will add key functionality later
+    WolfItem.SILVERKEY: None, #
+    WolfItem.CROSS: lambda p: p.get_money(),
+    WolfItem.CHALICE: lambda p: p.get_money(),
+    WolfItem.TREASURECHEST: lambda p: p.get_money(),
+    WolfItem.CROWN: lambda p: p.get_money(),
     
 }
 
@@ -197,13 +212,6 @@ WALL_TEXTURE_MAPPING = {
     0x64: 34,  # elevator door
     0x65: 34,
 }
-
-
-class WolfWeapon(Enum):
-    KNIFE = 0
-    PISTOL = 1
-    MP4 = 2
-    MINIGUN = 3
     
 class MapItem:
     def __init__(self, map_, item: WolfItem, pos, pickcallback):

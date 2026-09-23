@@ -27,7 +27,6 @@ class WolfRenderer(RayRenderer):
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
-        self.wpn_sprite_idx = self.player.weapon.value * 5
         self.font = pygame.font.SysFont("arial", 12)
 
     def middle_hitblock(self):
@@ -46,7 +45,7 @@ class WolfRenderer(RayRenderer):
 
     def render_weapon(self):
         self.pgsurface.blit(
-            self.weapons[self.wpn_sprite_idx].surface,
+            self.weapons[self.player.weapon_sprite].surface,
             (0, 0))
 
     def render_statusbar(self):
@@ -121,7 +120,7 @@ class WolfGame:
     def shooting_animation_end(self):
         wolflogger.debug("shooting_animation_end called.")
         self.player.ammo -= 1
-        self.renderer.wpn_sprite_idx = self.player.weapon.value * 5
+        self.player.weapon_sprite = self.player.weapon.value * 5
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_RETURN] and self.player.has_automatic_weapon():
             # if the player is still holding down shoot_button
@@ -133,7 +132,6 @@ class WolfGame:
 
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
-        rapid = ongoing.real
         cantshoot = (
             self.player.shooting and not ongoing) or self.player.out_of_ammo()
         if cantshoot:
@@ -141,12 +139,12 @@ class WolfGame:
             return
         self.player.shooting = True
         # handle shooting animation
-        old = self.renderer.wpn_sprite_idx
-
+        old = self.player.weapon_sprite
+        rapid = ongoing.real
         self.add_animation(Animation(
             None, None, 20-10*rapid, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
-            self.renderer, "wpn_sprite_idx")
+            self.player, "weapon_sprite")
 
         for act in self.actors:
             if self.player.hits_actor(self.renderer.raycaster, act):
