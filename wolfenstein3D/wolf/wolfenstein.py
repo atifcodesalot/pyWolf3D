@@ -8,6 +8,7 @@ from .player import *
 from .actors import *
 from .assets import SPRITES, WALL_TEXTURES
 from . import wolflogger, pygame
+import numpy as np
 
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
@@ -27,7 +28,16 @@ class WolfRenderer(RayRenderer):
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
-        self.font = pygame.font.SysFont("arial", 12)
+        self.font = pygame.font.SysFont("arial", 6)
+
+        # for when items are picked up or other stuff
+        self.glow = False
+
+        self.heartbeats = 0
+        self.rgb_offset = [0, 0, 0]
+        # in heartbeats
+        self.glow_duration = 16
+        self.glow_cycle = 0
 
     def middle_hitblock(self):
         if self.colls:
@@ -40,7 +50,7 @@ class WolfRenderer(RayRenderer):
         for i in weapons:
             w: Sprite = weapons[i]
             # transform each weapon sprite to match the screen size
-            self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size(), 
+            self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size(),
                                                     resample=Image.Resampling.NEAREST))
 
     def render_weapon(self):
@@ -61,10 +71,41 @@ class WolfRenderer(RayRenderer):
         for sprite in all_sprites:
             self.draw_sprite(sprite)
 
-    def render(self):
-        super().render(self.light)
+    def handle_glow(self):
+        self.glow_cycle += 1
+        half_cycle: bool = (self.glow_duration // self.glow_cycle) == 1
+        offr, offg, _ = self.rgb_offset
+        pixelref = pygame.surfarray.pixels3d(self.pgsurface)
+        red_channel = pixelref[:, :, 0].astype(np.uint16) + offr
+        green_channel = pixelref[:, :, 1].astype(np.uint16) + offg
+        pixelref[:, :, 0] = np.minimum(red_channel, 255)
+        pixelref[:, :, 1] = np.minimum(green_channel, 255)
+        
+        addition = -4 if half_cycle else 4
+        self.rgb_offset[0] = offr + addition
+        self.rgb_offset[1] = offg + addition
+        print(self.rgb_offset)
+        del pixelref
+
+    def render(self, heartbeats):
+        self.pgsurface.fill(self.topcolor, rect=self.toprect)
+        self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
+        self.cast()
+        self.render_walls(self.light)
+        self.render_sprites()
+        if self.glow:
+            self.handle_glow()
         self.render_weapon()
         self.render_statusbar()
+        self.heartbeats += heartbeats
+
+    def fizzle_fade(self):
+        return
+
+    def glow_end(self):
+        self.rgb_offset = [0, 0, 0]
+        self.glow = False
+        self.glow_cycle = 0
 
     def clear_screen(self):
         self.pgsurface.fill(self.WHITE)
@@ -105,6 +146,10 @@ class WolfGame:
         if pblock in self.map.items:
             item = self.map.pop_item(pblock)
             item.affect(self.player)
+            self.renderer.glow = True
+            # set glow false after 40 frames
+            self.schedule_game_event(
+                self.renderer.glow_duration, lambda s: s.renderer.glow_end())
 
         fblock, fcell = self.player.get_front_cell()
         if fcell in self.map.DOOR and self.interact:
@@ -193,7 +238,7 @@ class WolfGame:
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     self.interact = False
-                
+
         self.handle_keystate()
 
     def schedule_game_event(self, _time, action):
@@ -226,7 +271,7 @@ class WolfGame:
         if type(self.renderer.light) is PointLight:
             self.renderer.light.pos = self.player.pos
         self.renderer.clear_screen()
-        self.renderer.render()
+        self.renderer.render(heartbeats=1)
         #
         for actor in self.actors:
             actor.tick(dt)

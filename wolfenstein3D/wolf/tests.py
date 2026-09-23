@@ -57,7 +57,6 @@ class WolfGameTest(unittest.TestCase):
             (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
         bw_scale = 0.25
         while game.ongoing:
-            print(player.pos)
             game.heartbeat()
             screen.blit(pygame.transform.scale(
                                     bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
