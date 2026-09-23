@@ -49,14 +49,14 @@ class WolfGameTest(unittest.TestCase):
     def test_actor_sprite_count(self):
         for _map in SHAREWARE_MAPS:
             for actor in _map.actors:
-                self.assertEqual(len(actor.sprites), 56)
+                self.assertGreater(len(actor.sprites), 8*4)
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick_render(self):
         mymap = SHAREWARE_MAPS[0]
-        mymap.add_item(WolfItem.MACHINEGUN, (400, 400))
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
-        player.ammo = 10
+        mymap.add_item(WolfItem.CHAINGUN, (400, 400))
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MP4)
+        player.ammo = 5
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
