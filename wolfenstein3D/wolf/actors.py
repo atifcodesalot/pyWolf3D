@@ -5,6 +5,7 @@ from .assets import *
 from raycaster.aux_math import *
 from math import pi, atan2
 from .animations import Animation
+from .maps import WolfItem, WolfMap
 
 
 class ActorState(Enum):
@@ -14,11 +15,13 @@ class ActorState(Enum):
     SHOOTING = 6
 
 # The actor class that is able to displace, shoot, do other stuff and "think".
+#
 
 
 class Actor:
-    def __init__(self, pos, look_dir, name: str,
+    def __init__(self, wolfmap: WolfMap, pos, look_dir, name: str,
                  sprites: list[Sprite], state=ActorState(0), health=100):
+        self.wolfmap = wolfmap
         self.pos = pos
         self.look_dir = look_dir
         self.left = [-self.look_dir[1], self.look_dir[0]]
@@ -34,7 +37,7 @@ class Actor:
         self.dying = False
         self.shapenum = self.state.value
 
-    def tick(self, dt):
+    def tick(self, heartbeats):
         pass
 
     def decide_state(self):
@@ -85,12 +88,17 @@ class Actor:
         self.dying = True
         self.state = ActorState(5)
 
-        def death_end():
-            self.dying = False
         anim = Animation(None, None, 50, 5,
                          offset=ActorState.DYING.value *
-                         self.sprite_per_state, endcallback=death_end)
+                         self.sprite_per_state, endcallback=self.death_end)
         game.add_animation(anim, self, "shapenum")
+
+    def hurt_end(self, old_state):
+        self.set_state(old_state)
+        self.being_shot = False
+
+    def death_end(self):
+        self.dying = False
 
     # ouch
     def get_shot(self, game, damage):
@@ -115,9 +123,27 @@ class Actor:
         self.state = ActorState.DYING
         # schedule to return to old state after being hurt
         # after 20 ticks
-        def return_(_):
-            self.set_state(old_state)
-            self.being_shot = False
-            
+
         game.schedule_game_event(
-            10, return_)
+            10, lambda _: self.hurt_end(old_state))
+
+
+class Guard(Actor):
+    def __init__(self, wolfmap, pos, look_dir, state=ActorState(0)):
+        super().__init__(wolfmap, pos, look_dir, "Guard",
+                         sprites=SPRITES["characters"]["guard"],
+                         state=state, health=100)
+        
+    def drop_ammunition(self):
+        self.wolfmap.add_item(WolfItem.AMMUNITION, plain_add(self.pos, (2, 0)))
+        
+    def death_end(self):
+        super().death_end()
+        self.drop_ammunition()
+        
+        
+class Shepherd(Actor):
+    pass
+
+class SS(Actor):
+    pass

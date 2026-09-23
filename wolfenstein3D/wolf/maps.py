@@ -1,6 +1,5 @@
 
 from raycaster.sprites import Sprite
-from .actors import Actor
 from .game_objects import *
 from .assets import SPRITES
 
@@ -85,7 +84,7 @@ class WolfMap:
         self.delete_sprite(item.pos)
         return item
 
-    def add_actor(self, actor: Actor):
+    def add_actor(self, actor):
         self.actors.append(actor)
         
     def add_decoration(self, decor: WolfDecoration, pos): 

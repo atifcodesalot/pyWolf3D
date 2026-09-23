@@ -1,6 +1,6 @@
 
 from .maps import WolfMap
-from .actors import Actor
+from .actors import *
 from .assets import SPRITES, ASSETS_PATH
 from os import path
 from .game_objects import *
@@ -73,8 +73,7 @@ class GameMapsAdaptor:
         # todo: implement all character sprites
         # add guard sprites
         if obj in range(108, 116):
-            wolfmap.add_actor(
-                Actor(pos, [0, 1], "guard", sprites=SPRITES["characters"]["guard"]))
+            wolfmap.add_actor(Guard(wolfmap, pos, [0, 1]))
         elif obj == 124:
             # add dead guard
             wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
