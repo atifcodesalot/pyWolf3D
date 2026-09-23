@@ -84,15 +84,12 @@ class WolfRenderer(RayRenderer):
         addition = -4 if half_cycle else 4
         self.rgb_offset[0] = offr + addition
         self.rgb_offset[1] = offg + addition
-        print(self.rgb_offset)
         del pixelref
 
     def render(self, heartbeats):
         self.pgsurface.fill(self.topcolor, rect=self.toprect)
         self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
-        self.cast()
-        self.render_walls(self.light)
-        self.render_sprites()
+        super().render(self.light)
         if self.glow:
             self.handle_glow()
         self.render_weapon()

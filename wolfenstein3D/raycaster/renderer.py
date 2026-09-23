@@ -138,8 +138,6 @@ class RayRenderer:
             self.pgsurface.blit(column, (start, hh - chh))
 
     def render(self, light: PointLight):
-        self.pgsurface.fill(self.topcolor, rect=self.toprect)
-        self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
         self.cast()
         self.render_walls(light)
         self.render_sprites()
