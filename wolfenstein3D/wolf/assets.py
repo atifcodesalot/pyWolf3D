@@ -87,7 +87,7 @@ def init_characters():
     SPRITES["characters"]["shepherd"] = dict(enumerate(dog_sprites))
 
     SS_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'SS.png'))
-    SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite)
+    SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite, 1, 1)
     SPRITES["characters"]["SS"] = dict(enumerate(SS_sprites))
 
 

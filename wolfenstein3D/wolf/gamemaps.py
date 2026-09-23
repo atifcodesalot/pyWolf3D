@@ -74,7 +74,9 @@ class GameMapsAdaptor:
         # add guard sprites
         if obj in range(108, 116):
             wolfmap.add_actor(Guard(wolfmap, pos, [0, 1]))
-        if obj in range(134, 142):
+        elif obj in range(126, 135):
+            wolfmap.add_actor(SS(wolfmap, pos, [0, 1]))
+        elif obj in range(134, 142):
             wolfmap.add_actor(Shepherd(wolfmap, pos, [0, 1]))
         elif obj == 124:
             # add dead guard

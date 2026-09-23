@@ -113,7 +113,7 @@ class Actor:
         self.dying = True
         self.state = ActorState.DYING
 
-        anim = Animation(None, None, 50, 5,
+        anim = Animation(None, None, 50, self.death_frames,
                          offset=self.state_column[2],
                          endcallback=self.death_end)
         game.add_animation(anim, self, "shapenum")
@@ -137,7 +137,7 @@ class Actor:
             return
         # if not being already shot
         self.being_shot = True
-        # placeholder, no damage model
+        # placeholder damage model
         self.dec_health(damage)
         #
         if self.is_dead():
@@ -182,7 +182,7 @@ class Shepherd(Actor):
                          death_frames=4,
                          move_frames=3,
                          dead_offset=3,
-                         hurt_offset=3,
+                         hurt_offset=0,
                          state=state, health=60)
 
 
