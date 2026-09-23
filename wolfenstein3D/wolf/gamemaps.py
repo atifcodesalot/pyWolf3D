@@ -119,7 +119,7 @@ class GameMapsAdaptor:
             else:
                 # it is a decoration object
                 sprite_src = SPRITES["objects"][myindex]
-                sprite_src.blocking = myindex in BLOCKING_SPRITES
+                sprite_src.blocking = WolfDecoration(entry) in BLOCKING_SPRITES
                 wolfmap.add_sprite(sprite_src, pos)
 
         return wolfmap

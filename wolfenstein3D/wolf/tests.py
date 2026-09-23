@@ -14,7 +14,6 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(parser.magic_marker, 0xABCD)
         self.assertEqual(len(parser.level_offsets), 10)
         self.assertEqual(len(parser.planes), 10)
-        
 
     def test_decompress(self):
         maphead = open(path.join("assets", "maps", "MAPHEAD.WL1"), "rb")
@@ -38,12 +37,25 @@ class WolfGameTest(unittest.TestCase):
     def test_actor_instances(self):
         mymap = SHAREWARE_MAPS[4]
         self.assertFalse(id(mymap.actors[0]) == id(mymap.actors[1]))
-        self.assertFalse(id(mymap.actors[0].sprites[0]) == id(mymap.actors[1].sprites[0]))
-        
-    def test_quick(self):
+        self.assertFalse(id(mymap.actors[0].sprites[0]) == id(
+            mymap.actors[1].sprites[0]))
+
+    def test_blocking_sprites(self):
+        for _map in SHAREWARE_MAPS:
+            self.assertTrue(
+                any([sprite.blocking for sprite in _map.sprites])
+            )
+            
+    def test_actor_sprite_count(self):
+        for _map in SHAREWARE_MAPS:
+            for actor in _map.actors:
+                self.assertEqual(len(actor.sprites), 56)
+                self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
+
+    def test_quick_render(self):
         mymap = SHAREWARE_MAPS[0]
-        mymap.add_item(WolfItem.CHAINGUN, (400, 400))
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MP4)
+        mymap.add_item(WolfItem.MACHINEGUN, (400, 400))
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
         player.ammo = 10
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
@@ -59,11 +71,11 @@ class WolfGameTest(unittest.TestCase):
         while game.ongoing:
             game.heartbeat()
             screen.blit(pygame.transform.scale(
-                                    bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
+                bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
             bird_view.fill((0, 0, 0))
             raycaster.render_bird_view(renderer.colls, pygame, bird_view)
             pygame.display.flip()
-            
+
     # def test_character_sprites(self):
     #     self.assertIn("guard", SPRITES["characters"])
     #     guard_sprites = SPRITES["characters"]["guard"]
