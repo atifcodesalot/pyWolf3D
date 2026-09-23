@@ -168,16 +168,17 @@ class WolfGame:
             # if the player is still holding down shoot_button
             # and they have an automatic weapon
             # don't stop
-            return self.handle_shooting(ongoing=True)
+            self.handle_shooting(ongoing=True)
 
         self.player.shooting = False
 
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
+        no_ammo = self.player.out_of_ammo()
         cantshoot = (
-            self.player.shooting and not ongoing) or self.player.out_of_ammo()
+            self.player.shooting and not ongoing) or no_ammo
         if cantshoot:
-            wolflogger.debug("player already shooting, or out of ammo")
+            wolflogger.debug("player can't shoot.")
             return
         self.player.shooting = True
         # handle shooting animation
