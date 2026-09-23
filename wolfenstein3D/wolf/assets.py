@@ -72,12 +72,23 @@ def init_weapon_srites():
     weapons_sheet = Image.open(WEAPONS_PATH)
     weapons = texmap_parse(34, 16, 16, 1, 64, 64, weapons_sheet, Sprite, 1, 1)
     SPRITES["weapons"] = dict(enumerate(weapons))
-    
+
+
 def init_characters():
     SPRITES["characters"] = {}
-    guard_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'guard.png'))
+    guard_sheet = Image.open(os.path.join(
+        SPRITE_PATH, 'characters', 'guard.png'))
     guard_sprites = texmap_parse(0, 0, 1, 1, 64, 64, guard_sheet, Sprite)
     SPRITES["characters"]["guard"] = dict(enumerate(guard_sprites))
+
+    dog_sheet = Image.open(os.path.join(
+        SPRITE_PATH, 'characters', 'shepherd.png'))
+    dog_sprites = texmap_parse(0, 0, 1, 1, 64, 64, dog_sheet, Sprite)
+    SPRITES["characters"]["shepherd"] = dict(enumerate(dog_sprites))
+
+    SS_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'SS.png'))
+    SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite)
+    SPRITES["characters"]["SS"] = dict(enumerate(SS_sprites))
 
 
 def init_sprites():
@@ -96,12 +107,12 @@ def init_sprites():
                         SPRITES[entry.name + "/" + entry2.name] = Sprite(
                             Image.open(entry2.path), None, None)
     clean_remaining()
-    
+
+
 def init_font():
     font_size = 30
     global FONT
     FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
-    
 
 
 init_textures()

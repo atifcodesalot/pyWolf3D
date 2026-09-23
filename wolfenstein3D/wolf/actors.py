@@ -9,18 +9,26 @@ from .maps import WolfItem, WolfMap
 
 
 class ActorState(Enum):
+    # these values also used to point to the-
+    # row numbers of general layout of the actor spritesheets
     STANDING = 0
     WALKING = 1
-    DYING = 5
-    SHOOTING = 6
+    # must be adjusted in the actor class if the walk cycle rows cary
+    # e.g in the shepherd dog class
+    DYING = 2
+    SHOOTING = 3
 
 # The actor class that is able to displace, shoot, do other stuff and "think".
-#
+# the amount of rows can vary: e.g:
+# the dog spritesheet has one less row for walk cycle compared to the guard spritesheet
+# it will assume the "hurt offset" is in the DYING row
 
 
 class Actor:
     def __init__(self, wolfmap: WolfMap, pos, look_dir, name: str,
-                 sprites: list[Sprite], state=ActorState(0), health=100):
+                 sprites: list[Sprite], sprite_layout,
+                 death_frames, move_frames, dead_offset,
+                 hurt_offset, state=ActorState(0), health=100):
         self.wolfmap = wolfmap
         self.pos = pos
         self.look_dir = look_dir
@@ -30,11 +38,26 @@ class Actor:
         self.health = health
 
         self.sprites = [sprite.copy(self.pos) for sprite in sprites.values()]
-        self.sprite_per_state = 8
+        self.sprite_layout = sprite_layout
+        self.sprite_per_row = self.sprite_layout[0]
+        self.death_frames = death_frames
+        self.move_frames = move_frames
+        self.dead_offset = dead_offset
+        self.hurt_offset = hurt_offset
+        
+        self.state_column = {
+            0: 0,
+            1: self.sprite_per_row,
+            2: (1 + self.move_frames)*self.sprite_per_row,
+            3: (2 + self.move_frames)*self.sprite_per_row
+            
+        }
 
         # not very nice
         self.being_shot = False
         self.dying = False
+        #
+
         self.shapenum = self.state.value
 
     def tick(self, heartbeats):
@@ -63,14 +86,16 @@ class Actor:
             if self.dying:
                 # animation playing will alter shapenum
                 return int(self.shapenum)
-            offset = 4
+            # if completely dead
+            offset = self.dead_offset
         elif self.being_shot:
-            offset = 7
+            # if being shot just return hurt offset
+            offset = self.hurt_offset
         else:
             thispace = self.to_this_space(observer.pos)
             sx, sy = thispace
             offset = int((pi/2-atan2(-sy, sx)) // (2*pi / sectors) % sectors)
-        return self.sprite_per_state * self.state.value + offset
+        return self.state_column[self.state.value] + offset
 
     def current_sprite(self, observer):
         self.shapenum = self.get_current_sp_idx(observer)
@@ -86,11 +111,11 @@ class Actor:
     # add_animation(self, anim, obj, target)
     def die(self, game):
         self.dying = True
-        self.state = ActorState(5)
+        self.state = ActorState.DYING
 
         anim = Animation(None, None, 50, 5,
-                         offset=ActorState.DYING.value *
-                         self.sprite_per_state, endcallback=self.death_end)
+                         offset=self.state_column[2],
+                         endcallback=self.death_end)
         game.add_animation(anim, self, "shapenum")
 
     def hurt_end(self, old_state):
@@ -123,7 +148,6 @@ class Actor:
         self.state = ActorState.DYING
         # schedule to return to old state after being hurt
         # after 20 ticks
-
         game.schedule_game_event(
             10, lambda _: self.hurt_end(old_state))
 
@@ -132,18 +156,43 @@ class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir, state=ActorState(0)):
         super().__init__(wolfmap, pos, look_dir, "Guard",
                          sprites=SPRITES["characters"]["guard"],
+                         sprite_layout=(8, 7),
+                         death_frames=5,
+                         move_frames=4,
+                         dead_offset=4,
+                         hurt_offset=7,
                          state=state, health=100)
-        
+
     def drop_ammunition(self):
-        self.wolfmap.add_item(WolfItem.AMMUNITION, plain_add(self.pos, (2, 0)))
-        
+        # drop ammunition upon death
+        self.wolfmap.add_item(
+            WolfItem.AMMUNITION,
+            plain_add(self.pos, (2, 0)))
+
     def death_end(self):
         super().death_end()
         self.drop_ammunition()
-        
-        
+
+
 class Shepherd(Actor):
-    pass
+    def __init__(self, wolfmap, pos, look_dir, state=ActorState(0)):
+        super().__init__(wolfmap, pos, look_dir, "Shepherd",
+                         sprites=SPRITES["characters"]["shepherd"],
+                         sprite_layout=(8, 6),
+                         death_frames=4,
+                         move_frames=3,
+                         dead_offset=3,
+                         hurt_offset=3,
+                         state=state, health=60)
+
 
 class SS(Actor):
-    pass
+    def __init__(self, wolfmap, pos, look_dir, state=ActorState(0)):
+        super().__init__(wolfmap, pos, look_dir, "Shepherd",
+                         sprites=SPRITES["characters"]["SS"],
+                         sprite_layout=(8, 7),
+                         death_frames=6,
+                         move_frames=4,
+                         dead_offset=5,
+                         hurt_offset=0,
+                         state=state, health=120)
