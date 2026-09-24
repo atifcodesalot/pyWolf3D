@@ -195,7 +195,7 @@ class WolfGame:
         for act in self.actors:
             if self.player.hits_actor(self.renderer.raycaster, act):
                 damage = self.player.hit_damage(act)
-                act.get_shot(self, damage)
+                act.get_shot(damage)
 
     def handle_doors(self):
         for door in self.map.doors.values():
@@ -259,15 +259,15 @@ class WolfGame:
             except TypeError:
                 return
 
-    def handle_animations(self, dt=1):
+    def handle_animations(self, heartbeats=1):
         for anim in self.animations:
             if anim.ended():
                 self.animations.remove(anim)
                 continue
-            anim.tick(dt)
+            anim.tick(heartbeats)
 
     def heartbeat(self):
-        dt = self.clock.tick(self.framerate)
+        self.clock.tick(self.framerate)
         # render everything
         if type(self.renderer.light) is PointLight:
             self.renderer.light.pos = self.player.pos
@@ -275,7 +275,7 @@ class WolfGame:
         self.renderer.render(heartbeats=1)
         #
         for actor in self.actors:
-            actor.tick(dt)
+            actor.tick(self, 1)
         pgevents = pygame.event.get()
         self.handle_player_requests()
         self.handle_events(pgevents)
