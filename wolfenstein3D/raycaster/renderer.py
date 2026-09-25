@@ -81,14 +81,16 @@ class RayRenderer:
         return on_vp and in_front
 
     def draw_sprite(self, sprite: Sprite):
+        o = self.raycaster.observer
+        perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
+        if perp_dist < 1:
+            return
         projected = sprite.project()
         if not self.sprite_is_visible(projected, sprite):
             return
         h = self.height
         hh = h // 2
-        o = self.raycaster.observer
         screen_pos = sprite.screen_pos(self, projected)
-        perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
 
         height_to_draw = self.distance_to_height(perp_dist, sprite=True)
         width_to_draw = height_to_draw * self.sprite_wh_ratio
