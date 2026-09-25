@@ -37,7 +37,7 @@ class GuardingState(ActorState):
     def think(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         if dist < self.actor.proximity_radius:
-            self.next = ChaseState(self.actor, 0)
+            self.next = ChaseState(self.actor, 0, game_ctx)
 
     def shapenum(self, observer):
         col = self.colnum()
@@ -87,25 +87,25 @@ class HurtState(ActorState):
 
 class AttackState(ActorState):
     def __init__(self, actor):
-        super().__init__(actor, 3, nextstate=None, lifetime=20)
+        super().__init__(actor, 3, nextstate=None, lifetime=30)
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.attacked = False
-        
+
     def shapenum(self, _):
         col = self.colnum()
         return col + self.heartbeats // self.hb_perframe
 
     def act(self, game_ctx):
+        self.heartbeats = (self.heartbeats + 1) % self.lifetime
         if not self.attacked:
             if random.randint(1, 2) == 2:
                 game_ctx.player.dec_health(20)
             self.attacked = True
-        self.heartbeats += 1
 
 
 class ChaseState(ActorState):
-    def __init__(self, actor, walk_cycle):
+    def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 20)
         if type(actor) is Shepherd:
             # dogs dont have standing sprites
@@ -113,6 +113,20 @@ class ChaseState(ActorState):
         self.hb_perframe = self.lifetime // self.actor.move_frames
         self.move_off = walk_cycle
         self.heartbeats = 0
+        self.find_move_dir(game_ctx)
+
+    def find_move_dir(self, game_ctx):
+        delta = plain_sub(self.actor.pos, game_ctx.player.pos)
+        maxd = max(delta, key=abs)
+        vertical = delta.index(maxd)
+        dirs = ([1*sign(maxd), 0], [0, 1*sign(maxd)],)
+        move_dir = dirs[vertical]
+        self.actor.update_direction(move_dir)
+        fblock = self.actor.get_front_block()
+        if self.actor.wolfmap.cell_occupied(fblock):
+            print("occupied")
+            move_dir = dirs[~vertical + 2]
+            self.actor.update_direction(move_dir)
 
     def colnum(self):
         return super().colnum() + \
@@ -125,21 +139,27 @@ class ChaseState(ActorState):
         return col + ori
 
     def think(self, game_ctx):
-        if random.randint(1, 100) == 2:
-            self.actor.interrupt_transition(AttackState(self.actor))
+        dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
+        dist = 1 if dist == 0 else dist
+        diceroll = random.randint(1, int(dist)) == 1
+        self.gonna_attack = diceroll and dist < self.actor.range
 
     def act(self, game_ctx):
+        if self.gonna_attack:
+            self.actor.interrupt_transition(AttackState(self.actor))
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
-        self.actor.turn_towards(game_ctx.player.pos)
         self.actor.move()
+
+    def endcallback(self, game_ctx):
+        self.find_move_dir(game_ctx)
 
 
 class Actor:
     def __init__(self, wolfmap: WolfMap, pos, look_dir, name: str,
                  sprites: list[Sprite], sprite_layout,
-                 death_frames, move_frames, attack_frames, 
-                 dead_offset, hurt_offset, health=100, drop=None):
+                 death_frames, move_frames, attack_frames,
+                 dead_offset, hurt_offset, health=100, drop=None, _range=100):
         self.wolfmap = wolfmap
         self.pos = pos
         self.look_dir = look_dir
@@ -148,6 +168,7 @@ class Actor:
         self.state = GuardingState(self)
         self.health = health
         self.drop = drop
+        self.range = _range
 
         self.sprites = [sprite.copy(self.pos) for sprite in sprites.values()]
         self.sprite_layout = sprite_layout
@@ -160,7 +181,7 @@ class Actor:
 
         self.ticks_since_trans = 0
         self.pace = 0.5
-        self.proximity_radius = 50
+        self.proximity_radius = self.wolfmap.wall_width * 6
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
@@ -170,9 +191,10 @@ class Actor:
         self.state.act(game_ctx)
 
     def timeout_transition(self, game_ctx):
-        self.ticks_since_trans = 0
         self.state.endcallback(game_ctx)
         self.state = self.state.next
+        # if the state was interrupted, restore old ticks
+        self.ticks_since_trans = getattr(self.state, "heartbeats", 0)
 
     def interrupt_transition(self, state: ActorState):
         self.ticks_since_trans = 0
@@ -187,12 +209,21 @@ class Actor:
         return obs_space
 
     def turn_towards(self, point):
-        self.look_dir = plain_normalize(
-            plain_sub(self.pos, point))
+        self.update_direction(plain_normalize(
+            plain_sub(self.pos, point)))
+
+    def update_direction(self, _dir):
+        self.look_dir = _dir
+        self.left = [-self.look_dir[1], self.look_dir[0]]
 
     def move(self):
-        self.pos = plain_add(self.pos,
-                             plain_mul(self.look_dir, self.pace))
+        m = self.wolfmap
+        disp = plain_mul(self.look_dir, self.pace)
+        new_pos = plain_add(self.pos, plain_mul(disp, self.pace))
+        new_block = m.to_block_pos(*new_pos)
+        if m.cell_occupied(new_block):
+            return
+        self.pos = plain_add(self.pos, disp)
 
     def orientation_idx(self, observer, sectors=8):
         myspace = self.to_this_space(observer.pos)
@@ -219,6 +250,14 @@ class Actor:
         newst = DyingState(self) if dead else HurtState(self)
         self.interrupt_transition(newst)
 
+    def get_front_block(self):
+        pblock = self.wolfmap.to_block_pos(*self.pos)
+        offset = [0, 0]
+        mag = max(self.look_dir, key=abs)
+        vertical = self.look_dir.index(mag)
+        offset[vertical] += sign(mag)
+        return plain_add(pblock, offset)
+
 
 class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir):
@@ -227,7 +266,7 @@ class Guard(Actor):
                          sprite_layout=(8, 7),
                          death_frames=5,
                          move_frames=4,
-                         attack_frames=2,
+                         attack_frames=3,
                          dead_offset=4,
                          hurt_offset=7,
                          health=100,
@@ -241,10 +280,11 @@ class Shepherd(Actor):
                          sprite_layout=(8, 6),
                          death_frames=3,
                          move_frames=3,
-                         attack_frames=2,
+                         attack_frames=3,
                          dead_offset=3,
                          hurt_offset=0,
-                         health=60)
+                         health=60,
+                         _range=(wolfmap.wall_width)*2)
 
 
 class SS(Actor):
@@ -254,7 +294,7 @@ class SS(Actor):
                          sprite_layout=(8, 7),
                          death_frames=5,
                          move_frames=4,
-                         attack_frames=2,
+                         attack_frames=3,
                          dead_offset=5,
                          hurt_offset=0,
                          health=120,

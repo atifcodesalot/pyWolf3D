@@ -127,11 +127,10 @@ class WolfMap:
                                   horizontal=entry >> 1 == 0x1f)
 
     def get_cell(self, coor):
-        pos = self.to_block_pos(*coor)
-        return self.raw[pos[1]][pos[0]]
+        block = self.to_block_pos(*coor)
+        return self.raw[block[1]][block[0]]
 
-    def cell_occupied(self, coor):
-        pos = self.to_block_pos(*coor)
+    def cell_occupied(self, pos):
         cell = self.raw[pos[1]][pos[0]]
         if not cell:
             if pos in self.sprite_lookup:

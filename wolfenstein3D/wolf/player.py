@@ -35,7 +35,7 @@ class WolfPlayer(Observer):
     # collide with occupied cells
     def displace(self, disp):
         new_pos = plain_add(self.pos, plain_mul(disp, 4))
-        if self.map.cell_occupied(new_pos):
+        if self.map.cell_occupied(self.map.to_block_pos(*new_pos)):
             # wolflogger.debug(f"Can't displace to {new_pos}")
             return
         self.translate(disp)
