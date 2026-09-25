@@ -83,6 +83,9 @@ class WolfPlayer(Observer):
 
     def regain_health(self, aid):
         self.health = min(self.health + aid, 100)
+        
+    def dec_health(self, dmg):
+        self.health = max(self.health - dmg, 0)
 
     def get_money(self):
         self.score += 500

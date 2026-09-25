@@ -56,7 +56,7 @@ class WolfGameTest(unittest.TestCase):
         mymap = SHAREWARE_MAPS[0]
         mymap.add_item(WolfItem.CHAINGUN, (400, 400))
         mymap.add_actor(SS(mymap, (400, 500), [1, 0]))
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MP4)
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
         player.ammo = 5
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
@@ -71,10 +71,10 @@ class WolfGameTest(unittest.TestCase):
         bw_scale = 0.25
         while game.ongoing:
             game.heartbeat()
-            screen.blit(pygame.transform.scale(
-                bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
-            bird_view.fill((0, 0, 0))
-            raycaster.render_bird_view(renderer.colls, pygame, bird_view)
+            # screen.blit(pygame.transform.scale(
+            #     bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
+            # bird_view.fill((0, 0, 0))
+            # raycaster.render_bird_view(renderer.colls, pygame, bird_view)
             pygame.display.flip()
 
     # def test_character_sprites(self):

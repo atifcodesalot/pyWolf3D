@@ -171,6 +171,14 @@ class WolfGame:
             return self.handle_shooting(ongoing=True)
 
         self.player.shooting = False
+        
+    def handle_hitscan(self):
+        for act in self.actors:
+            if act.is_dead():
+                continue
+            if self.player.hits_actor(self.renderer.raycaster, act):
+                damage = self.player.hit_damage(act)
+                act.get_shot(damage)
 
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
@@ -191,11 +199,9 @@ class WolfGame:
             None, None, 20-10*rapid, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
             self.player, "weapon_sprite")
+        self.handle_hitscan()
 
-        for act in self.actors:
-            if self.player.hits_actor(self.renderer.raycaster, act):
-                damage = self.player.hit_damage(act)
-                act.get_shot(damage)
+        
 
     def handle_doors(self):
         for door in self.map.doors.values():

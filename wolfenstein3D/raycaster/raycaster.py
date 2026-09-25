@@ -194,10 +194,3 @@ class Raycaster:
                 pygame.draw.aaline(pgsurface, (255, 255, 255),
                                    self.observer.pos, coll[0])
                 pygame.draw.circle(pgsurface, (0, 0, 255), coll[0], 2)
-
-        pygame.draw.line(pgsurface, (0, 255, 0), self.observer.pos,
-                         (self.observer.pos[0] + self.observer.left[0] * 20,
-                          self.observer.pos[1] + self.observer.left[1] * 20))
-        pygame.draw.line(pgsurface, (255, 0, 0), self.observer.pos,
-                         (self.observer.pos[0] + self.observer.look_dir[0] * 20,
-                          self.observer.pos[1] + self.observer.look_dir[1] * 20))
