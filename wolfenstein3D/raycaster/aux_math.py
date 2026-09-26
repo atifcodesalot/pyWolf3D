@@ -14,16 +14,16 @@ def normalize(vec):
 
 def plain_normalize(vec):
     mag = math.sqrt(vec[0]**2 + vec[1]**2)
-    return (vec[0] / mag, vec[1] / mag)
+    return [vec[0] / mag, vec[1] / mag]
 
 def plain_sub(v1, v2):
-    return (v2[0] - v1[0], v2[1] - v1[1])
+    return [v2[0] - v1[0], v2[1] - v1[1]]
 
 def plain_mul(v1, s):
-    return (v1[0] * s, v1[1] * s)
+    return [v1[0] * s, v1[1] * s]
 
 def plain_add(v1, v2):
-    return (v2[0] + v1[0], v2[1] + v1[1])
+    return [v2[0] + v1[0], v2[1] + v1[1]]
 
 def rotate_vector_angle(vec, angle):
     rm = ROT_MATRIX(angle)
