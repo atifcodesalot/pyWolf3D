@@ -67,11 +67,11 @@ class Raycaster:
         mags = [dx / rx, dy / ry]
         return mags
 
-    def handle_door(self, trace, door: WolfDoor,
+    def handle_door(self, cell, trace, door: WolfDoor,
                     vert_intercept: int, *details):
         # the ray hits from the door's side
         if not (vert_intercept ^ door.horizontal):
-            return vert_intercept, self.map.DOOR[0], trace, True
+            return vert_intercept, cell, trace, True
         #
         ww = self.map.wall_width
         trace, hstep_vertical = self.march_ray(
@@ -79,7 +79,6 @@ class Raycaster:
         hstep_horizontal = ~hstep_vertical + 2
         offset = trace[vert_intercept] % ww
         door_hit = (offset / ww) < door.opening
-        cell = self.map.DOOR[0]
         side_hit = (hstep_horizontal ^ door.horizontal)
         if side_hit:
             # if a side hit, return door interior sprite
@@ -124,6 +123,7 @@ class Raycaster:
             if cell in self.map.DOOR:
                 door_obj = self.map.get_door(biased_pos)
                 dvertical, dcell, dtrace, dhit = self.handle_door(
+                    cell,
                     trace,
                     door_obj,
                     vertical,
@@ -165,6 +165,7 @@ class Raycaster:
                 if cell in self.map.DOOR:
                     door_obj = self.map.get_door(biased_pos)
                     _, _, _, dhit = self.handle_door(
+                        cell,
                         trace,
                         door_obj,
                         vertical,

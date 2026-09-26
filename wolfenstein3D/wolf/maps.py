@@ -30,10 +30,11 @@ class WolfDoor:
         self.is_closing = True
 
 
-# map class, creates a simple 2D array for map layout
+# map class,
 # 0: empty, nonzero: wall with texture
+# DOOR has door tile numbers
 class WolfMap:
-    DOOR = [0x1f + 1, (0x1f << 1) + 1]
+    DOOR = [0x1f + 1, (0x1f << 1) + 1, 0x22 + 1, (0x22 << 1) + 1]
 
     def __init__(self, size=(64, 64), array=None,
                  wall_width=20, init_pos=(0, 0), init_look_dir=[1, 0]):
@@ -125,6 +126,7 @@ class WolfMap:
                 if entry in self.DOOR:
                     self.add_door((i, j),
                                   horizontal=entry >> 1 == 0x1f)
+        print(self.doors)
 
     def get_cell(self, coor):
         block = self.to_block_pos(*coor)

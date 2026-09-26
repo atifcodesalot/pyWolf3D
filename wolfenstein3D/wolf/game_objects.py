@@ -210,7 +210,7 @@ WALL_TEXTURE_MAPPING = {
     0x5F: 33,
 
     0x64: 34,  # elevator door
-    0x65: 34,
+    0x65: 34 << 1,
 }
     
 class MapItem:
