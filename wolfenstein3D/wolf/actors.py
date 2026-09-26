@@ -5,6 +5,7 @@ from raycaster.aux_math import *
 from math import pi, atan2
 from .maps import WolfItem, WolfMap
 import random
+from . import wolflogger
 
 
 class ActorState:
@@ -106,7 +107,7 @@ class AttackState(ActorState):
 
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
-        super().__init__(actor, 1, self, 20)
+        super().__init__(actor, 1, self, 16)
         if type(actor) is Shepherd:
             # dogs dont have standing sprites
             self.spcolumn = 0
@@ -117,16 +118,23 @@ class ChaseState(ActorState):
 
     def find_move_dir(self, game_ctx):
         delta = plain_sub(self.actor.pos, game_ctx.player.pos)
+        wolflogger.debug(f"delta: {delta}")
+        wolflogger.debug(f"actor pos: {self.actor.pos}")
         maxd = max(delta, key=abs)
         vertical = delta.index(maxd)
-        dirs = ([1*sign(maxd), 0], [0, 1*sign(maxd)],)
+        mind = delta[~vertical + 2]
+        dirs = [[1, 0], [0, 1]]
+        dirs[vertical] = plain_mul(dirs[vertical], sign(maxd))
+        dirs[~vertical + 2] = plain_mul(dirs[~vertical + 2], sign(mind))
         move_dir = dirs[vertical]
         self.actor.update_direction(move_dir)
         fblock = self.actor.get_front_block()
         if self.actor.wolfmap.cell_occupied(fblock):
             print("occupied")
-            move_dir = dirs[~vertical + 2]
-            self.actor.update_direction(move_dir)
+            if delta[~vertical + 2]:
+                move_dir = dirs[~vertical + 2]
+                self.actor.update_direction(move_dir)
+        wolflogger.debug(f"actor look dir: {self.actor.look_dir}")
 
     def colnum(self):
         return super().colnum() + \
@@ -140,7 +148,7 @@ class ChaseState(ActorState):
 
     def think(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
-        dist = 1 if dist == 0 else dist
+        dist = 1 if dist < 1 else dist
         diceroll = random.randint(1, int(dist)) == 1
         self.gonna_attack = diceroll and dist < self.actor.range
 
@@ -285,6 +293,7 @@ class Shepherd(Actor):
                          hurt_offset=0,
                          health=60,
                          _range=(wolfmap.wall_width)*2)
+        self.pace = 1.01
 
 
 class SS(Actor):
@@ -299,3 +308,4 @@ class SS(Actor):
                          hurt_offset=0,
                          health=120,
                          drop=WolfItem.MACHINEGUN)
+        
