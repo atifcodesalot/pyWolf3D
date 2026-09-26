@@ -98,10 +98,12 @@ class AttackState(ActorState):
         return col + self.heartbeats // self.hb_perframe
 
     def act(self, game_ctx):
+        print(self.actor.sees_player(game_ctx))
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         if not self.attacked:
             if random.randint(1, 2) == 2:
-                game_ctx.player.dec_health(20)
+                damage = game_ctx.calculate_damage(self.actor, reduction=0.2)
+                game_ctx.player.dec_health(damage)
             self.attacked = True
 
 
@@ -129,8 +131,7 @@ class ChaseState(ActorState):
         move_dir = dirs[vertical]
         self.actor.update_direction(move_dir)
         fblock = self.actor.get_front_block()
-        if self.actor.wolfmap.cell_occupied(fblock):
-            print("occupied")
+        if self.actor.wolfmap.cell_occupied(tuple(fblock)):
             if delta[~vertical + 2]:
                 move_dir = dirs[~vertical + 2]
                 self.actor.update_direction(move_dir)
@@ -169,7 +170,7 @@ class Actor:
                  death_frames, move_frames, attack_frames,
                  dead_offset, hurt_offset, health=100, drop=None, _range=100):
         self.wolfmap = wolfmap
-        self.pos = pos
+        self.pos = list(pos)
         self.look_dir = look_dir
         self.left = [-self.look_dir[1], self.look_dir[0]]
         self.name = name
@@ -215,10 +216,9 @@ class Actor:
         obs_space = (plain_dot(to_self, self.left),
                      plain_dot(to_self, self.look_dir))
         return obs_space
-
-    def turn_towards(self, point):
-        self.update_direction(plain_normalize(
-            plain_sub(self.pos, point)))
+    
+    def get_current_block(self):
+        return self.wolfmap.to_block_pos(*self.pos)
 
     def update_direction(self, _dir):
         self.look_dir = _dir
@@ -266,6 +266,17 @@ class Actor:
         offset[vertical] += sign(mag)
         return plain_add(pblock, offset)
 
+    def sees_player(self, game_ctx):
+        r = game_ctx.renderer.raycaster
+        p = game_ctx.player
+        to_player = plain_normalize(plain_sub(self.pos, p.pos))
+        if plain_dot(self.look_dir, to_player) < 0:
+            # player is behind the actor
+            return False
+        print(r.get_corridor(*to_player, self.pos), p.get_current_block(), to_player)
+        return p.get_current_block() in r.get_corridor(*to_player, self.pos)
+            
+
 
 class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir):
@@ -308,4 +319,3 @@ class SS(Actor):
                          hurt_offset=0,
                          health=120,
                          drop=WolfItem.MACHINEGUN)
-        

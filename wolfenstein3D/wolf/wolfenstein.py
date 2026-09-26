@@ -80,7 +80,7 @@ class WolfRenderer(RayRenderer):
         green_channel = pixelref[:, :, 1].astype(np.uint16) + offg
         pixelref[:, :, 0] = np.minimum(red_channel, 255)
         pixelref[:, :, 1] = np.minimum(green_channel, 255)
-        
+
         addition = -4 if half_cycle else 4
         self.rgb_offset[0] = offr + addition
         self.rgb_offset[1] = offg + addition
@@ -112,6 +112,7 @@ class WolfRenderer(RayRenderer):
 class WolfGame:
     def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=50):
         self.player = player
+        self.wolfmap = self.player.map
         self.renderer = renderer
         self.map = self.player.map
         self.actors = self.map.actors
@@ -150,7 +151,7 @@ class WolfGame:
 
         fblock, fcell = self.player.get_front_cell()
         if fcell in self.map.DOOR and self.interact:
-            door = self.map.get_door(fblock)
+            door = self.map.get_door(tuple(fblock))
             if not door.is_opening:
                 door.begin_opening()
 
@@ -171,14 +172,23 @@ class WolfGame:
             return self.handle_shooting(ongoing=True)
 
         self.player.shooting = False
-        
+
     def handle_hitscan(self):
         for act in self.actors:
             if act.is_dead():
                 continue
             if self.player.hits_actor(self.renderer.raycaster, act):
-                damage = self.player.hit_damage(act)
+                damage = self.calculate_damage(act)
                 act.get_shot(damage)
+                
+    def calculate_damage(self, actor: Actor, reduction=1):
+        pblock = self.player.get_current_block()
+        ablock = self.wolfmap.to_block_pos(*actor.pos)
+        d = euclidean_distance(pblock, ablock)
+        d = 1 if d == 0 else d
+        inflicted = (1 / d) * 175
+        # cap to 100
+        return min(int(inflicted * reduction), 100)
 
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
@@ -200,8 +210,6 @@ class WolfGame:
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
             self.player, "weapon_sprite")
         self.handle_hitscan()
-
-        
 
     def handle_doors(self):
         for door in self.map.doors.values():

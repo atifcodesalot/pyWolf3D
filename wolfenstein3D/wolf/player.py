@@ -67,19 +67,10 @@ class WolfPlayer(Observer):
         front = self.map.raw[front_block[1]][front_block[0]]
         return front_block, front
 
-    def hit_damage(self, actor: Actor):
-        pblock = self.map.to_block_pos(*self.pos)
-        ablock = self.map.to_block_pos(*actor.pos)
-        d = euclidean_distance(pblock, ablock)
-        d = 1 if d == 0 else d
-        inflicted = (1 / d) * 175
-        # cap to 100
-        return min(inflicted, 100)
-
     def hits_actor(self, raycaster, actor: Actor):
-        visited = raycaster.get_corridor(*self.look_dir)
-        actor_block = self.map.to_block_pos(*actor.pos)
-        return actor_block in visited
+        corridor = raycaster.get_corridor(*self.look_dir, self.pos)
+        actor_block = actor.get_current_block()
+        return actor_block in corridor
 
     def regain_health(self, aid):
         self.health = min(self.health + aid, 100)
