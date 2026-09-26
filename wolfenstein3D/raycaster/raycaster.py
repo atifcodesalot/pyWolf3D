@@ -40,8 +40,7 @@ class Observer:
         self.update_directions()
 
     def translate(self, tvec):
-        self.pos[0] += tvec[0]
-        self.pos[1] += tvec[1]
+        self.pos = plain_add(self.pos, tvec)
 
 
 class Raycaster:
@@ -150,10 +149,10 @@ class Raycaster:
                     break
         return colls, db
 
-    def get_corridor(self, rx, ry):
+    def get_corridor(self, rx, ry, start_pos):
         visited = []
         hw = self.map.wall_width // 2
-        trace = self.observer.pos.copy()
+        trace = start_pos.copy()
         rx, ry, xnn, ynn = self.get_ray_context((rx, ry))
         while True:
             trace, vertical = self.march_ray(trace, rx, ry, xnn, ynn)
