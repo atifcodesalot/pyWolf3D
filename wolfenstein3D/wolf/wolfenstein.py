@@ -74,16 +74,16 @@ class WolfRenderer(RayRenderer):
     def handle_glow(self):
         self.glow_cycle += 1
         half_cycle: bool = (self.glow_duration // self.glow_cycle) == 1
-        offr, offg, _ = self.rgb_offset
         pixelref = pygame.surfarray.pixels3d(self.pgsurface)
-        red_channel = pixelref[:, :, 0].astype(np.uint16) + offr
-        green_channel = pixelref[:, :, 1].astype(np.uint16) + offg
-        pixelref[:, :, 0] = np.minimum(red_channel, 255)
-        pixelref[:, :, 1] = np.minimum(green_channel, 255)
+        offchannels = [pixelref[:, :, i].astype(
+            np.uint16) + self.rgb_offset[i] for i in self.glow]
+        for i in self.glow:
+            pixelref[:, :, i] = np.minimum(offchannels[i], 255)
 
-        addition = -4 if half_cycle else 4
-        self.rgb_offset[0] = offr + addition
-        self.rgb_offset[1] = offg + addition
+        addition = -8 if half_cycle else 8
+        for i in self.glow:
+            self.rgb_offset[i] += addition
+
         del pixelref
 
     def render(self, heartbeats):
@@ -144,7 +144,7 @@ class WolfGame:
         if pblock in self.map.items:
             item = self.map.pop_item(pblock)
             item.affect(self.player)
-            self.renderer.glow = True
+            self.renderer.glow = (0, 1)
             # set glow false after 40 frames
             self.schedule_game_event(
                 self.renderer.glow_duration, lambda s: s.renderer.glow_end())
@@ -154,6 +154,12 @@ class WolfGame:
             door = self.map.get_door(tuple(fblock))
             if not door.is_opening:
                 door.begin_opening()
+
+    def dec_player_health(self, dmg):
+        self.renderer.glow = (0,)
+        self.player.dec_health(dmg)
+        self.schedule_game_event(
+            self.renderer.glow_duration, lambda s: s.renderer.glow_end())
 
     def add_animation(self, anim, obj, target):
         anim.obj = obj
@@ -180,7 +186,7 @@ class WolfGame:
             if self.player.hits_actor(self.renderer.raycaster, act):
                 damage = self.calculate_damage(act)
                 act.get_shot(damage)
-                
+
     def calculate_damage(self, actor: Actor, reduction=1):
         pblock = self.player.get_current_block()
         ablock = self.wolfmap.to_block_pos(*actor.pos)

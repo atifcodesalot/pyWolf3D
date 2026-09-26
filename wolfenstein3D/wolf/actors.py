@@ -98,19 +98,22 @@ class AttackState(ActorState):
         super().__init__(actor, 3, nextstate=None, lifetime=30)
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
-        self.attacked = False
 
     def shapenum(self, _):
         col = self.colnum()
         return col + self.heartbeats // self.hb_perframe
+    
+    def attack(self, game_ctx):
+        damage = game_ctx.calculate_damage(self.actor, reduction=0.2)
+        game_ctx.dec_player_health(damage)
 
-    def act(self, game_ctx):
+    def act(self, _):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
-        if not self.attacked:
-            if random.randint(1, 2) == 2:
-                damage = game_ctx.calculate_damage(self.actor, reduction=0.2)
-                game_ctx.player.dec_health(damage)
-            self.attacked = True
+            
+    def endcallback(self, game_ctx):
+        if random.randint(1, 2) == 2:
+            self.attack(game_ctx)
+            
 
 
 class ChaseState(ActorState):
@@ -157,7 +160,8 @@ class ChaseState(ActorState):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist = 1 if dist < 1 else dist
         diceroll = random.randint(1, int(dist)) == 1
-        self.gonna_attack = diceroll and dist < self.actor.range
+        self.gonna_attack = diceroll and dist < self.actor.range \
+            and self.actor.sees_player(game_ctx)
 
     def act(self, game_ctx):
         if self.gonna_attack:

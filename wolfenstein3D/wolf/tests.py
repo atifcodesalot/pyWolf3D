@@ -53,11 +53,11 @@ class WolfGameTest(unittest.TestCase):
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick_render(self):
-        mymap = SHAREWARE_MAPS[0]
+        mymap = SHAREWARE_MAPS[1]
         mymap.add_item(WolfItem.CHAINGUN, (400, 400))
         mymap.add_actor(Guard(mymap, (400, 500), [1, 0]))
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
-        player.ammo = 5
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.MP4)
+        player.ammo = 100
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
