@@ -37,7 +37,8 @@ class GuardingState(ActorState):
 
     def think(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
-        if dist < self.actor.proximity_radius:
+        sees = self.actor.sees_player(game_ctx)
+        if dist < self.actor.proximity_radius and sees:
             self.next = ChaseState(self.actor, 0, game_ctx)
 
     def shapenum(self, observer):
@@ -80,6 +81,10 @@ class HurtState(ActorState):
     def __init__(self, actor):
         super().__init__(actor, 2, nextstate=None, lifetime=20)
         self.inflicted_damage = False
+        
+    def think(self, game_ctx):
+        if type(self.next) is not ChaseState:
+            self.next = ChaseState(self.actor, 0, game_ctx)
 
     def shapenum(self, _):
         col = self.colnum()
@@ -98,7 +103,6 @@ class AttackState(ActorState):
         return col + self.heartbeats // self.hb_perframe
 
     def act(self, game_ctx):
-        print(self.actor.sees_player(game_ctx))
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         if not self.attacked:
             if random.randint(1, 2) == 2:
@@ -273,7 +277,6 @@ class Actor:
         if plain_dot(self.look_dir, to_player) < 0:
             # player is behind the actor
             return False
-        print(r.get_corridor(*to_player, self.pos), p.get_current_block(), to_player)
         return p.get_current_block() in r.get_corridor(*to_player, self.pos)
             
 
