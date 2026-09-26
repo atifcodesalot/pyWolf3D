@@ -37,9 +37,11 @@ class GuardingState(ActorState):
 
     def think(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
-        sees = self.actor.sees_player(game_ctx)
-        if dist < self.actor.proximity_radius and sees:
-            self.next = ChaseState(self.actor, 0, game_ctx)
+        if dist < self.actor.proximity_radius:
+            if type(self.actor) == Shepherd:
+                self.next = ChaseState(self.actor, 0, game_ctx)
+            elif self.actor.sees_player(game_ctx):
+                self.next = ChaseState(self.actor, 0, game_ctx)
 
     def shapenum(self, observer):
         col = self.colnum()
