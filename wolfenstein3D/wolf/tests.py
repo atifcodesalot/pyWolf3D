@@ -54,11 +54,12 @@ class WolfGameTest(unittest.TestCase):
 
     def test_quick_render(self):
         mymap = SHAREWARE_MAPS[0]
+        print(mymap.pushwalls)
         mymap.add_item(WolfItem.CHAINGUN, (400, 400))
         mymap.add_actor(Guard(mymap, (400, 500), [1, 0]))
         player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
         player.ammo = 10
-        screen = pygame.display.set_mode((128*5, 128*5))
+        screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
         game = WolfGame(player, renderer)
@@ -76,8 +77,9 @@ class WolfGameTest(unittest.TestCase):
             bird_view.fill((0, 0, 0))
             raycaster.render_bird_view(renderer.colls, pygame, bird_view)
             pygame.display.flip()
-            # if game.player.health == 0:
-            #     exit("YOU ARE DEAD!")
+            if game.player.health == 0:
+                game.renderer.fizzle_fade()
+                exit("YOU ARE DEAD!")
 
     # def test_character_sprites(self):
     #     self.assertIn("guard", SPRITES["characters"])

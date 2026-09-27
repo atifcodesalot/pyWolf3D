@@ -5,6 +5,7 @@ from .assets import SPRITES
 
 
 class WolfDoor:
+    SLIDE = 0.02
     def __init__(self, pos, opening: float, horizontal=True):
         self.pos = pos
         self.opening = opening
@@ -17,10 +18,10 @@ class WolfDoor:
         return self.openning == 1
 
     def slide_open(self):
-        self.opening = max(self.opening - 0.01, 0)
+        self.opening = max(self.opening - self.SLIDE, 0)
 
     def slide_close(self):
-        self.opening = min(self.opening + 0.01, 1)
+        self.opening = min(self.opening + self.SLIDE, 1)
 
     def begin_opening(self):
         self.is_opening = True
@@ -31,6 +32,7 @@ class WolfDoor:
         
         
 class WolfPushWall:
+    SLIDE = 0.01
     def __init__(self, pos, offset=1):
         self.pos = pos
         self.offset = offset
@@ -40,6 +42,14 @@ class WolfPushWall:
     def begin_sliding(self, dir):
         self.sliding = True
         self.sliding_dir = dir
+        
+    def slide_open(self):
+        self.offset = max(self.opening - self.SLIDE, 0)
+
+    def slide_close(self):
+        self.offset = min(self.opening + self.SLIDE, 1)
+        
+        
 
 
 # map class,
@@ -133,6 +143,9 @@ class WolfMap:
 
     def get_door(self, block_pos) -> WolfDoor:
         return self.doors.get(block_pos, None)
+    
+    def get_pushwall(self, block_pos) -> WolfPushWall:
+        return self.pushwalls.get(block_pos, None)
 
     def add_door(self, block_pos, horizontal):
         self.doors[block_pos] = WolfDoor(

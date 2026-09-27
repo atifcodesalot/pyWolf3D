@@ -38,6 +38,11 @@ class WolfRenderer(RayRenderer):
         # in heartbeats
         self.glow_duration = 16
         self.glow_cycle = 0
+        
+        # for fizzle fade
+        self.shuffled_indices = list(range(self.width*self.height))
+        random.shuffle(self.shuffled_indices)
+        #
 
     def middle_hitblock(self):
         if self.colls:
@@ -97,7 +102,22 @@ class WolfRenderer(RayRenderer):
         self.heartbeats += heartbeats
 
     def fizzle_fade(self):
-        return
+        # grab a cheap pixel reference
+        pixelref = pygame.PixelArray(self.pgsurface)
+        #
+        w, h = pixelref.shape
+        red = 0
+        for i in self.shuffled_indices:
+            pos = (i % w, i // h)
+            pixelref[pos] = 0xFF0000
+            red += 1
+            print(red)
+            if not red % 100:
+                # update display per 1000 writes
+                pygame.display.flip()
+                pass
+                
+        del pixelref
 
     def glow_end(self):
         self.rgb_offset = [0, 0, 0]
@@ -150,10 +170,23 @@ class WolfGame:
                 self.renderer.glow_duration, lambda s: s.renderer.glow_end())
 
         fblock, fcell = self.player.get_front_cell()
-        if fcell in self.map.DOOR and self.interact:
-            door = self.map.get_door(tuple(fblock))
-            if not door.is_opening:
-                door.begin_opening()
+        if self.interact:
+            if fcell in self.map.DOOR:
+                door = self.map.get_door(fblock)
+                if not door.is_opening:
+                    door.begin_opening()
+            elif fblock in self.map.pushwalls:
+                pushwall = self.map.get_pushwall(fblock)
+                if not pushwall.sliding:
+                    sliding_dir = [0, 0]
+                    ldir = self.player.look_dir
+                    maxdir = max(ldir, key=abs)
+                    # get where the player looks,
+                    # closest to which axis
+                    vertical = ldir.index(maxdir)
+                    sliding_dir[vertical] = sign(ldir[vertical])
+                    pushwall.begin_sliding(sliding_dir)
+                
 
     def dec_player_health(self, dmg):
         self.renderer.glow = (0,)

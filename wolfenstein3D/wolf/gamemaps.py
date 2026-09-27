@@ -64,6 +64,7 @@ class GameMapsParser:
 
 class GameMapsAdaptor:
     entry_lookdir = {19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}
+    PUSHWALL = 0x62
 
     def __init__(self, parser):
         self.parser = parser
@@ -84,7 +85,7 @@ class GameMapsAdaptor:
     def add_player(self, wolfmap, obj, pos):
         wolfmap.init_pos = pos
         wolfmap.init_look = self.entry_lookdir[obj]
-        
+
     def add_decoration(self, wolfmap, obj, pos):
         myindex = DECORATION_SPRITES_MAPPING[WolfDecoration(obj)]
         if myindex not in SPRITES["objects"]:
@@ -94,8 +95,7 @@ class GameMapsAdaptor:
         sprite_src = SPRITES["objects"][myindex]
         sprite_src.blocking = WolfDecoration(obj) in BLOCKING_SPRITES
         wolfmap.add_sprite(sprite_src, pos)
-        
-        
+
     def add_item(self, wolfmap, obj, pos):
         wolfmap.add_item(WolfItem(obj), pos)
         myindex = ITEM_SPRITES_MAPPING[WolfItem(obj)]
@@ -103,7 +103,6 @@ class GameMapsAdaptor:
             wolflogger.warning(
                 f"entry {obj} not in available sprites dict.")
             return
-        
 
     def to_wolfmap(self, level_i) -> WolfMap:
         walls = self.planes[level_i][0]
@@ -120,6 +119,7 @@ class GameMapsAdaptor:
             if not entry:
                 continue
             pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
+            block_pos = (i % 64), (i // 64)
             if entry in self.entry_lookdir:
                 self.add_player(wolfmap, entry, pos)
             if entry in WolfItem:
@@ -127,6 +127,8 @@ class GameMapsAdaptor:
             elif entry in WolfDecoration:
                 self.add_decoration(wolfmap, entry, pos)
             else:
+                if entry == self.PUSHWALL:
+                    wolfmap.add_pushwall(block_pos)
                 self.add_actor(wolfmap, entry, pos)
                 continue
 

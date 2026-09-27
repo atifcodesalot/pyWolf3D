@@ -65,7 +65,7 @@ class WolfPlayer(Observer):
         offset[vertical] += sign(mag)
         front_block = plain_add(pblock, offset)
         front = self.map.raw[front_block[1]][front_block[0]]
-        return front_block, front
+        return tuple(front_block), front
 
     def hits_actor(self, raycaster, actor: Actor):
         corridor = raycaster.get_corridor(*self.look_dir, self.pos)
