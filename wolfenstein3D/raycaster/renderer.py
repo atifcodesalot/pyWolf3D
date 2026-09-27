@@ -44,6 +44,7 @@ class RayRenderer:
 
     def distance_to_height(self, d, sprite=False):
         scaler = self.sprite_scaler if sprite else self.wall_scaler
+        d = d if d != 0 else 0.0001
         return (self.height / d) * scaler
 
     def cast(self):

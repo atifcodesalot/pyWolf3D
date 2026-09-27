@@ -36,6 +36,7 @@ class Texture:
                 (0, self.half_height - off, 1, off*2))
             height = screen_height
 
+        height = max(height, 0)
         scaled = pygame.transform.scale(
             column, (repeat, height))
         return scaled

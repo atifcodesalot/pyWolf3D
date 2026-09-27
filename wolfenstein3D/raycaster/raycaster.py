@@ -2,7 +2,7 @@
 
 import math
 from .aux_math import *
-from wolf.maps import WolfMap, WolfDoor
+from wolf.maps import WolfMap, WolfDoor, WolfPushWall
 
 
 # observer class,
@@ -68,27 +68,49 @@ class Raycaster:
         return mags
 
     def handle_door(self, cell, trace, door: WolfDoor,
-                    vert_intercept: int, *details):
-        # the ray hits from the door's side
+                    vert_intercept: int, *ray_context):
+        # the ray hits from the door block's other side
         if not (vert_intercept ^ door.horizontal):
-            return vert_intercept, cell, trace, True
+            return vert_intercept, cell, True
         #
         ww = self.map.wall_width
-        trace, hstep_vertical = self.march_ray(
-            trace, *details, vert_intercept, not vert_intercept)
-        hstep_horizontal = ~hstep_vertical + 2
+        half_vert = self.march_ray(
+            trace, *ray_context, vert_intercept, not vert_intercept)
+        half_horiz = ~half_vert + 2
+        # for a near side hit; the half step must hit,
+        # in the opposite direction of the door orientation
+        nearside_hit = (half_horiz ^ door.horizontal)
+        if nearside_hit:
+            # return door interior cell
+            return half_vert, 36, True
+
         offset = trace[vert_intercept] % ww
         door_hit = (offset / ww) < door.opening
-        side_hit = (hstep_horizontal ^ door.horizontal)
-        if side_hit:
-            # if a side hit, return door interior sprite
-            cell = 36
-        return hstep_vertical, cell, trace, door_hit or side_hit
+        if door_hit:
+            # the door was hit
+            return half_vert, cell, True
+        else:
+            # if the ray passes the door opening
+            hh_vert = self.march_ray(
+                trace, *ray_context, half_vert, half_horiz)
+            hh_horiz = ~hh_vert + 2
+            farside_hit = (hh_horiz ^ door.horizontal)
+            hh_horiz = ~hh_vert + 2
+            if farside_hit:
+                return hh_vert, 36, True
+            # the ray passes through
+            return vert_intercept, cell, False
+
+    def handle_pushwall(self, cell, trace, pushwall: WolfPushWall,
+                        vert_intercept: int, *details):
+        print("handle pushwall called")
+        if pushwall.offset == 1:
+            return vert_intercept, cell, True
 
     def get_perp_dist(self, trace):
         to_trace = plain_sub(self.observer.pos, trace)
         return plain_dot(to_trace, self.observer.look_dir)
-    
+
     @staticmethod
     def get_ray_context(ray):
         # get signs of the ray direction
@@ -104,50 +126,61 @@ class Raycaster:
         ynn = sign(ry) + 1
         return rx, ry, xnn, ynn
 
-    def march_ray(self, ctrace, rx, ry, xnn, ynn, xhalf=False, yhalf=False):
-        mags = self.mags_for_step(ctrace, rx, ry, xnn, ynn, xhalf, yhalf)
+    def march_ray(self, trace, rx, ry, xnn, ynn, xhalf=False, yhalf=False) -> int:
+        mags = self.mags_for_step(trace, rx, ry, xnn, ynn, xhalf, yhalf)
         mag = min(mags, key=abs)
-        vertical_hit = ~mags.index(mag) + 2
-        ctrace[0] += rx * mag
-        ctrace[1] += ry * mag
-        return ctrace, vertical_hit
-    
+        vert_hit = ~mags.index(mag) + 2
+        trace[0] += rx * mag
+        trace[1] += ry * mag
+        return vert_hit
+
     def ray_step(self, ray_dir, trace, hw):
         rx, ry, xnn, ynn = self.get_ray_context(ray_dir)
-        trace, vertical = self.march_ray(trace, rx, ry, xnn, ynn)
-        xb = hw if not xnn and vertical else 0
-        yb = hw if not ynn and not vertical else 0
+        vert = self.march_ray(trace, rx, ry, xnn, ynn)
+        xb = hw if not xnn and vert else 0
+        yb = hw if not ynn and not vert else 0
         biased_pos = self.map.to_block_pos(
             trace[0] - xb, trace[1] - yb)
         if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
             if cell in self.map.DOOR:
                 door_obj = self.map.get_door(biased_pos)
-                dvertical, dcell, dtrace, dhit = self.handle_door(
+                dvert, dcell, door_hit = self.handle_door(
                     cell,
                     trace,
                     door_obj,
-                    vertical,
+                    vert,
                     rx, ry, xnn, ynn)
-                if dhit:
-                    return self.get_perp_dist(dtrace), dtrace, dvertical, dcell
-                else:
-                    return
-    
-            return self.get_perp_dist(trace), trace, vertical, cell
+                if door_hit:
+                    return self.get_perp_dist(trace), dvert, dcell
+                # the ray passes through the opening
+                return None
+
+            elif biased_pos in self.map.pushwalls:
+                pushwall = self.map.get_pushwall(biased_pos)
+                pvert, pcell, pwhit = self.handle_pushwall(
+                    cell, trace, pushwall, vert)
+                if pwhit:
+                    return self.get_perp_dist(trace), pvert, pcell
+                return None
+
+            return self.get_perp_dist(trace), vert, cell
+        # no hit on an occupied cell
+        # returns None
 
     def raycast(self):
-        db = []
+        distbuff = []
         colls = []
         hw = self.map.wall_width // 2
         for ray_dir in self.observer.directions:
-            trace = self.observer.pos.copy()
+            trace = self.observer.pos.copy()                    
             while True:
-                if (data := self.ray_step(ray_dir, trace, hw)):
-                    dist, trace, vert, cell = data
-                    db.append(dist)
+                if (hitinfo := self.ray_step(ray_dir, trace, hw)):
+                    dist, vert, cell = hitinfo
+                    distbuff.append(dist)
                     colls.append((trace, vert, cell))
                     break
-        return colls, db
+                # hitinfo is none
+        return colls, distbuff
 
     def get_corridor(self, rx, ry, start_pos):
         visited = []
@@ -155,26 +188,26 @@ class Raycaster:
         trace = start_pos.copy()
         rx, ry, xnn, ynn = self.get_ray_context((rx, ry))
         while True:
-            trace, vertical = self.march_ray(trace, rx, ry, xnn, ynn)
-            xb = hw if not xnn and vertical else 0
-            yb = hw if not ynn and not vertical else 0
+            vert = self.march_ray(trace, rx, ry, xnn, ynn)
+            xb = hw if not xnn and vert else 0
+            yb = hw if not ynn and not vert else 0
             biased_pos = self.map.to_block_pos(
                 trace[0] - xb, trace[1] - yb)
             visited.append(biased_pos)
             if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
                 if cell in self.map.DOOR:
                     door_obj = self.map.get_door(biased_pos)
-                    _, _, _, dhit = self.handle_door(
+                    _, _, door_hit = self.handle_door(
                         cell,
                         trace,
                         door_obj,
-                        vertical,
+                        vert,
                         rx, ry, xnn, ynn)
-                    if dhit:
+                    if door_hit:
                         break
                 else:
                     break
-                    
+
         return visited
 
     def render_bird_view(self, colls, pygame, pgsurface):
