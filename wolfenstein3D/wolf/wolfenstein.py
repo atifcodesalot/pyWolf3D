@@ -111,9 +111,8 @@ class WolfRenderer(RayRenderer):
             pos = (i % w, i // h)
             pixelref[pos] = 0xFF0000
             red += 1
-            print(red)
-            if not red % 100:
-                # update display per 1000 writes
+            if not red % 15:
+                # update display per 15 writes
                 pygame.display.flip()
                 pass
                 
