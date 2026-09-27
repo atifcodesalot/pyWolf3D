@@ -38,7 +38,7 @@ class WolfRenderer(RayRenderer):
         # in heartbeats
         self.glow_duration = 16
         self.glow_cycle = 0
-        
+
         # for fizzle fade
         self.shuffled_indices = list(range(self.width*self.height))
         random.shuffle(self.shuffled_indices)
@@ -115,7 +115,7 @@ class WolfRenderer(RayRenderer):
                 # update display per 15 writes
                 pygame.display.flip()
                 pass
-                
+
         del pixelref
 
     def glow_end(self):
@@ -185,7 +185,6 @@ class WolfGame:
                     vertical = ldir.index(maxdir)
                     sliding_dir[vertical] = sign(ldir[vertical])
                     pushwall.begin_sliding(sliding_dir)
-                
 
     def dec_player_health(self, dmg):
         self.renderer.glow = (0,)
@@ -200,24 +199,31 @@ class WolfGame:
 
     def shooting_animation_end(self):
         wolflogger.debug("shooting_animation_end called.")
-        self.player.ammo -= 1
         self.player.weapon_sprite = self.player.weapon.value * 5
         pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_RETURN] and self.player.has_automatic_weapon():
-            # if the player is still holding down shoot_button
+        if pressed[pygame.K_RETURN] and self.player.has_auto():
+            # if the player is still holding down the shoot button
             # and they have an automatic weapon
             # don't stop
-            return self.handle_shooting(ongoing=True)
+            self.handle_shooting(ongoing=True)
 
         self.player.shooting = False
+        if self.player.out_of_ammo() and not self.player.has_knife():
+            self.player.switch_weapon(WolfWeapon.KNIFE, forced_switch=True)
 
     def handle_hitscan(self):
         for act in self.actors:
             if act.is_dead():
                 continue
             if self.player.hits_actor(self.renderer.raycaster, act):
-                damage = self.calculate_damage(act)
-                act.get_shot(damage)
+                if self.player.has_knife():
+                    ablock = self.map.to_block_pos(*act.pos)
+                    pblock = self.player.get_current_block()
+                    if euclidean_distance(ablock, pblock) < 2:
+                        act.get_shot(damage=75)
+                else:
+                    damage = self.calculate_damage(act)
+                    act.get_shot(damage)
 
     def calculate_damage(self, actor: Actor, reduction=1):
         pblock = self.player.get_current_block()
@@ -231,15 +237,17 @@ class WolfGame:
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
         no_ammo = self.player.out_of_ammo()
-        cantshoot = (
-            self.player.shooting and not ongoing) or no_ammo
-        if cantshoot:
+        cant_shoot = (
+            (self.player.shooting and not ongoing) or
+            (no_ammo and not self.player.has_knife())
+        )
+        if cant_shoot:
             wolflogger.debug("player can't shoot.")
-            if ongoing and no_ammo:
-                # slowdown cowboy!
-                self.player.shooting = False
             return
+        # can shoot
         self.player.shooting = True
+        self.player.dec_ammo()
+        
         # handle shooting animation
         old = self.player.weapon_sprite
         rapid = ongoing.real

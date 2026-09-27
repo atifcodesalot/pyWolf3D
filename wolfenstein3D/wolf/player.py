@@ -5,6 +5,7 @@ from .game_objects import WolfWeapon
 from .maps import WolfMap
 from raycaster.aux_math import *
 from .actors import Actor
+import copy
 
 
 class WolfPlayer(Observer):
@@ -23,7 +24,7 @@ class WolfPlayer(Observer):
         self.shooting = False
         self.weapon_sprite = self.weapon.value * 5
 
-    def has_automatic_weapon(self):
+    def has_auto(self):
         return self.weapon.value > 1
 
     def move_forward(self):
@@ -82,8 +83,18 @@ class WolfPlayer(Observer):
         self.score += 500
 
     def get_ammo(self):
+        if getattr(self, "empty_weapon", None):
+            self.switch_weapon(self.empty_weapon)
         self.ammo += 5
+        
+    def dec_ammo(self):
+        self.ammo = max(self.ammo - 1, 0)
 
-    def switch_weapon(self, new: WolfWeapon):
+    def switch_weapon(self, new: WolfWeapon, forced_switch=False):
+        if forced_switch:
+            self.empty_weapon = copy.copy(self.weapon)
         self.weapon = new
         self.weapon_sprite = self.weapon.value * 5
+        
+    def has_knife(self):
+        return self.weapon == WolfWeapon.KNIFE
