@@ -74,7 +74,7 @@ def init_weapon_srites():
     SPRITES["weapons"] = dict(enumerate(weapons))
 
 
-def init_characters():
+def init_character_sprites():
     SPRITES["characters"] = {}
     guard_sheet = Image.open(os.path.join(
         SPRITE_PATH, 'characters', 'guard.png'))
@@ -94,7 +94,7 @@ def init_characters():
 def init_sprites():
     init_object_sprites()
     init_weapon_srites()
-    init_characters()
+    init_character_sprites()
 
     def clean_remaining():
         for entry in os.scandir(SPRITE_PATH):

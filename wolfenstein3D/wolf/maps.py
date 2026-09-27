@@ -28,6 +28,18 @@ class WolfDoor:
 
     def begin_closing(self):
         self.is_closing = True
+        
+        
+class WolfPushWall:
+    def __init__(self, pos, offset=1):
+        self.pos = pos
+        self.offset = offset
+        self.sliding = False
+        self.sliding_dir = None
+        
+    def begin_sliding(self, dir):
+        self.sliding = True
+        self.sliding_dir = dir
 
 
 # map class,
@@ -58,6 +70,8 @@ class WolfMap:
 
         self.items = {}
         self.actors = []
+        
+        self.pushwalls = {}
 
     def add_sprite(self, sprite_src: Sprite, pos):
         if type(sprite_src) is not Sprite:
@@ -93,8 +107,12 @@ class WolfMap:
             raise TypeError("can't add non decoration")
         spidx = DECORATION_SPRITES_MAPPING[decor]
         self.add_sprite(SPRITES["objects"][spidx], pos)
+        
+    def add_pushwall(self, block_pos):
+        self.pushwalls[block_pos] = WolfPushWall(block_pos)
 
-    def construct_map(self):
+    # mostly used for testing
+    def construct_outer_walls(self):
         self.raw = list()
         w, h = self.size
         for _ in range(h):
