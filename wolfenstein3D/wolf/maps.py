@@ -47,6 +47,7 @@ class WolfPushWall:
 # DOOR has door tile numbers
 class WolfMap:
     DOOR = [0x1f + 1, (0x1f << 1) + 1, 0x22 + 1, (0x22 << 1) + 1]
+    HORIZ_DOOR = [(0x1f << 1) + 1, (0x22 << 1) + 1]
 
     def __init__(self, size=(64, 64), array=None,
                  wall_width=20, init_pos=(0, 0), init_look_dir=[1, 0]):
@@ -143,8 +144,7 @@ class WolfMap:
             for i, entry in enumerate(row):
                 if entry in self.DOOR:
                     self.add_door((i, j),
-                                  horizontal=entry >> 1 == 0x1f)
-        print(self.doors)
+                                  horizontal=entry in self.HORIZ_DOOR)
 
     def get_cell(self, coor):
         block = self.to_block_pos(*coor)
