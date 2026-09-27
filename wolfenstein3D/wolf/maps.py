@@ -84,14 +84,14 @@ class WolfMap:
         
         self.pushwalls = {}
 
-    def add_sprite(self, sprite_src: Sprite, pos):
+    def add_sprite(self, sprite_src: Sprite, coor):
         if type(sprite_src) is not Sprite:
             raise TypeError("Expected Sprite object")
         # copy and add a sprite from sprite_src
-        copy = sprite_src.copy(pos=pos)
+        copy = sprite_src.copy(pos=coor)
         self.sprites.append(copy)
         # save to lookup for deletion
-        self.sprite_lookup[self.to_block_pos(*pos)] = copy
+        self.sprite_lookup[self.to_block_pos(*coor)] = copy
 
     def delete_sprite(self, pos):
         sprite = self.sprite_lookup[pos]
@@ -113,11 +113,11 @@ class WolfMap:
     def add_actor(self, actor):
         self.actors.append(actor)
         
-    def add_decoration(self, decor: WolfDecoration, pos): 
+    def add_decoration(self, decor: WolfDecoration, coor): 
         if decor not in WolfDecoration:
             raise TypeError("can't add non decoration")
         spidx = DECORATION_SPRITES_MAPPING[decor]
-        self.add_sprite(SPRITES["objects"][spidx], pos)
+        self.add_sprite(SPRITES["objects"][spidx], coor)
         
     def add_pushwall(self, block_pos):
         self.pushwalls[block_pos] = WolfPushWall(block_pos)
@@ -160,24 +160,21 @@ class WolfMap:
                                   horizontal=entry in self.HORIZ_DOOR)
 
     def get_cell(self, coor):
-        block = self.to_block_pos(*coor)
-        return self.raw[block[1]][block[0]]
+        block_pos = self.to_block_pos(*coor)
+        return self.raw[block_pos[1]][block_pos[0]]
 
-    def cell_occupied(self, pos):
-        cell = self.raw[pos[1]][pos[0]]
+    def cell_occupied(self, block_pos):
+        cell = self.raw[block_pos[1]][block_pos[0]]
         if not cell:
-            if pos in self.sprite_lookup:
-                sprite = self.sprite_lookup[pos]
+            if block_pos in self.sprite_lookup:
+                sprite = self.sprite_lookup[block_pos]
                 return sprite.blocking
             else:
                 return False
         if cell in self.DOOR:
-            door = self.get_door(pos)
+            door = self.get_door(block_pos)
             return door.opening != 0
         return True
-
-    def neighbor_cells(self, center):
-        return
 
     def in_boundary(self, coor):
         return 0 <= coor[0] < self.abs_size[0] and\
