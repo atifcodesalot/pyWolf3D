@@ -50,17 +50,25 @@ class Raycaster:
         self.observer = observer
         self.map = map
 
-    def mags_for_step(self, trace, rx, ry, xnn, ynn, xhalf=False, yhalf=False):
+    def mags_for_step(self, trace, rx, ry, xnn, ynn):
         w = self.map.wall_width
+        dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
+        dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
+
+        dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
+        dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
+        mags = [dx / rx, dy / ry]
+        return mags
+
+    def mags_for_half_step(self, trace, rx, ry, xnn, ynn, xhalf, yhalf):
+        w = self.map.wall_width
+        dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
         if xhalf:
             dx = w / 2 if xnn else -w / 2
-        else:
-            dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
 
+        dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
         if yhalf:
             dy = w / 2 if ynn else -w / 2
-        else:
-            dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
 
         dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
         dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
@@ -70,16 +78,16 @@ class Raycaster:
     def handle_door(self, cell, trace, door: WolfDoor,
                     vert_intercept: int, ray_context):
         # the ray hits from the door block's other side
-        if not (vert_intercept ^ door.horizontal):
+        if not (vert_intercept ^ door.horiz):
             return vert_intercept, cell, True
         #
         ww = self.map.wall_width
-        half_vert = self.march_ray(
+        half_vert = self.march_ray_half(
             trace, *ray_context, vert_intercept, not vert_intercept)
         half_horiz = ~half_vert + 2
         # for a near side hit; the half step must hit,
         # in the opposite direction of the door orientation
-        nearside_hit = (half_horiz ^ door.horizontal)
+        nearside_hit = (half_horiz ^ door.horiz)
         if nearside_hit:
             # return door interior cell
             return half_vert, 36, True
@@ -91,10 +99,10 @@ class Raycaster:
             return half_vert, cell, True
         else:
             # if the ray passes the door opening
-            hh_vert = self.march_ray(
+            hh_vert = self.march_ray_half(
                 trace, *ray_context, half_vert, half_horiz)
             hh_horiz = ~hh_vert + 2
-            farside_hit = (hh_horiz ^ door.horizontal)
+            farside_hit = (hh_horiz ^ door.horiz)
             hh_horiz = ~hh_vert + 2
             if farside_hit:
                 return hh_vert, 36, True
@@ -102,9 +110,10 @@ class Raycaster:
             return vert_intercept, cell, False
 
     def handle_pushwall(self, cell, trace, pushwall: WolfPushWall,
-                        vert_intercept: int, *details):
+                        vert_intercept: int, *rayctx):
         if pushwall.offset == 1:
-            return vert_intercept, cell, True
+            return self.get_perp_dist(trace), vert_intercept, cell, True
+        # the wall has slided
 
     def get_perp_dist(self, trace):
         to_trace = plain_sub(self.observer.pos, trace)
@@ -125,15 +134,37 @@ class Raycaster:
         ynn = sign(ry) + 1
         return rx, ry, xnn, ynn
 
-    def march_ray(self, trace, rx, ry, xnn, ynn, xhalf=False, yhalf=False) -> int:
-        mags = self.mags_for_step(trace, rx, ry, xnn, ynn, xhalf, yhalf)
+    def march_ray(self, trace, rx, ry, xnn, ynn) -> int:
+        mags = self.mags_for_step(trace, rx, ry, xnn, ynn)
         mag = min(mags, key=abs)
         vert_hit = ~mags.index(mag) + 2
         trace[0] += rx * mag
         trace[1] += ry * mag
         return vert_hit
 
-    def ray_step(self, trace, hw, rayctx):
+    def march_ray_half(self, trace, rx, ry, xnn, ynn, xhalf, yhalf) -> int:
+        # if xhalf and yhalf:
+        #     raise RuntimeError(
+        #         "march_ray: cannot march half step in both directions")
+        mags = self.mags_for_half_step(trace, rx, ry, xnn, ynn, xhalf, yhalf)
+        mag = min(mags, key=abs)
+        vert_hit = ~mags.index(mag) + 2
+        trace[0] += rx * mag
+        trace[1] += ry * mag
+        return vert_hit
+
+    def march_ray_offset(self, trace, rx, ry, xnn, ynn, xoffset, yoffset) -> int:
+        # if xoffset and yoffset:
+        #     raise RuntimeError(
+        #         "march_ray: cannot march step in both offseted directions")
+        mags = self.mags_offset(trace, rx, ry, xnn, ynn, xoffset, yoffset)
+        mag = min(mags, key=abs)
+        vert_hit = ~mags.index(mag) + 2
+        trace[0] += rx * mag
+        trace[1] += ry * mag
+        return vert_hit
+
+    def ray_step(self, trace, hw, rayctx) -> tuple:
         rx, ry, xnn, ynn = rayctx
         vert = self.march_ray(trace, rx, ry, xnn, ynn)
         xb = hw if not xnn and vert else 0
@@ -156,10 +187,10 @@ class Raycaster:
 
             elif biased_pos in self.map.pushwalls:
                 pushwall = self.map.get_pushwall(biased_pos)
-                pvert, pcell, pwhit = self.handle_pushwall(
+                pdist, pvert, pcell, pwhit = self.handle_pushwall(
                     cell, trace, pushwall, vert)
                 if pwhit:
-                    return self.get_perp_dist(trace), pvert, pcell
+                    return pdist, pvert, pcell
                 return None
 
             return self.get_perp_dist(trace), vert, cell
@@ -172,7 +203,7 @@ class Raycaster:
         hw = self.map.wall_width // 2
         for ray_dir in self.observer.directions:
             rayctx = self.get_ray_context(ray_dir)
-            trace = self.observer.pos.copy()                    
+            trace = self.observer.pos.copy()
             while True:
                 if (hitinfo := self.ray_step(trace, hw, rayctx)):
                     dist, vert, cell = hitinfo
