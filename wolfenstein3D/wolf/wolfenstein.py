@@ -57,11 +57,17 @@ class WolfRenderer(RayRenderer):
             # transform each weapon sprite to match the screen size
             self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size(),
                                                     resample=Image.Resampling.NEAREST))
+            surf = self.weapons[i].surface
+            self.wpn_xoffset = self.width // 6
+            x = self.wpn_xoffset
+            self.weapons[i].surface = surf.subsurface(
+                (x, surf.get_height()//2, 
+                 surf.get_width()-x*2, surf.get_height()//2))
 
     def render_weapon(self):
         self.pgsurface.blit(
             self.weapons[self.player.weapon_sprite].surface,
-            (0, 0))
+            (self.wpn_xoffset, self.height // 2))
 
     def render_statusbar(self):
         sfont = FONT.render(
@@ -247,7 +253,7 @@ class WolfGame:
         # can shoot
         self.player.shooting = True
         self.player.dec_ammo()
-        
+
         # handle shooting animation
         old = self.player.weapon_sprite
         rapid = ongoing.real

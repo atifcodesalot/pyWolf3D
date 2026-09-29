@@ -44,7 +44,7 @@ class Observer:
 
 
 class Raycaster:
-    atol = 0.000001
+    atol = 1e-10
 
     def __init__(self, observer: Observer, map: WolfMap):
         self.observer = observer
@@ -72,6 +72,19 @@ class Raycaster:
 
         dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
         dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
+        mags = [dx / rx, dy / ry]
+        return mags
+
+    def mags_offset(self, trace, rx, ry, xnn, ynn, xoff, yoff):
+        w = self.map.wall_width
+        dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
+        dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
+        dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
+        dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
+
+        dx += xoff * w if xnn else xoff * -w
+        dy += yoff * w if ynn else yoff * -w
+
         mags = [dx / rx, dy / ry]
         return mags
 
@@ -107,13 +120,47 @@ class Raycaster:
             if farside_hit:
                 return hh_vert, 36, True
             # the ray passes through
-            return vert_intercept, cell, False
+            return vert_intercept, None, False
 
     def handle_pushwall(self, cell, trace, pushwall: WolfPushWall,
                         vert_intercept: int, *rayctx):
-        if pushwall.offset == 1:
+        perpd = self.get_perp_dist
+        w = self.map.wall_width
+        if pushwall.offset == 0:
             return self.get_perp_dist(trace), vert_intercept, cell, True
         # the wall has slided
+        rx, ry, xnn, ynn = rayctx
+        slv = pushwall.sliding_vert
+        print(slv, vert_intercept)
+        if slv ^ vert_intercept:
+            # the ray hits in the sliding orientation
+            if plain_dot((rx, ry), pushwall.sliding_dir) < 0:
+                # the wall is sliding in the opposite direction
+                # relative to the ray
+                return perpd(trace), vert_intercept, cell, True
+            # the ray hits in the sliding face
+            ttrace, offvert = self.test_march_ray_offset(
+                trace, *rayctx, pushwall.offset * (~slv+2),
+                pushwall.offset * slv)
+            if offvert ^ slv:
+                # the ray hits the sliding side
+                # update trace
+                trace[0] = ttrace[0]
+                trace[1] = ttrace[1]
+                return perpd(trace), offvert, cell, True
+            else:
+                # the ray passes through the slide gap
+                return perpd(trace), offvert, None, False
+
+        # the ray hits perp to the sliding orientation
+        offset = trace[vert_intercept] % w
+        if pushwall.sliding_sign != 1:
+            offset = w - offset
+        if offset > w * offset:
+            # the ray passes through the opening
+            pass
+        else:
+            return perpd(trace), vert_intercept, cell, True
 
     def get_perp_dist(self, trace):
         to_trace = plain_sub(self.observer.pos, trace)
@@ -153,16 +200,17 @@ class Raycaster:
         trace[1] += ry * mag
         return vert_hit
 
-    def march_ray_offset(self, trace, rx, ry, xnn, ynn, xoffset, yoffset) -> int:
+    def test_march_ray_offset(self, trace, rx, ry, xnn, ynn, xoff, yoff) -> int:
         # if xoffset and yoffset:
         #     raise RuntimeError(
         #         "march_ray: cannot march step in both offseted directions")
-        mags = self.mags_offset(trace, rx, ry, xnn, ynn, xoffset, yoffset)
+        ttrace = trace.copy()
+        mags = self.mags_offset(ttrace, rx, ry, xnn, ynn, xoff, yoff)
         mag = min(mags, key=abs)
         vert_hit = ~mags.index(mag) + 2
-        trace[0] += rx * mag
-        trace[1] += ry * mag
-        return vert_hit
+        ttrace[0] += rx * mag
+        ttrace[1] += ry * mag
+        return ttrace, vert_hit
 
     def ray_step(self, trace, hw, rayctx) -> tuple:
         rx, ry, xnn, ynn = rayctx
@@ -188,11 +236,12 @@ class Raycaster:
             elif biased_pos in self.map.pushwalls:
                 pushwall = self.map.get_pushwall(biased_pos)
                 pdist, pvert, pcell, pwhit = self.handle_pushwall(
-                    cell, trace, pushwall, vert)
+                    cell, trace, pushwall, vert, *rayctx)
                 if pwhit:
                     return pdist, pvert, pcell
                 return None
 
+            # hit non special cell
             return self.get_perp_dist(trace), vert, cell
         # no hit on an occupied cell
         # returns None

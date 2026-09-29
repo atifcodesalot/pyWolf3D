@@ -104,7 +104,7 @@ class AttackState(ActorState):
         return col + self.heartbeats // self.hb_perframe
     
     def attack(self, game_ctx):
-        damage = game_ctx.calculate_damage(self.actor, reduction=0.2)
+        damage = game_ctx.calculate_damage(self.actor, reduction=0.4)
         game_ctx.dec_player_health(damage)
 
     def act(self, _):

@@ -2,6 +2,7 @@ import unittest
 
 from .gamemaps import *
 from .wolfenstein import *
+import cProfile
 
 
 class ParserTest(unittest.TestCase):
@@ -54,11 +55,9 @@ class WolfGameTest(unittest.TestCase):
 
     def test_quick_render(self):
         mymap = SHAREWARE_MAPS[0]
-        print(mymap.pushwalls)
-        mymap.add_item(WolfItem.CHAINGUN, (400, 400))
-        mymap.add_actor(Guard(mymap, (400, 500), [1, 0]))
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL)
-        player.ammo = 10
+        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL, fov=64)
+        mymap.add_item(WolfItem.CHAINGUN, plain_add(player.pos, (10, 0)))
+        player.ammo = 2
         screen = pygame.display.set_mode((128*4, 128*4))
         sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
@@ -69,7 +68,7 @@ class WolfGameTest(unittest.TestCase):
         self.assertEqual(map_.size, (64, 64))
         bird_view = pygame.Surface(
             (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
-        bw_scale = 0.25
+        bw_scale = 0.5
         while game.ongoing:
             game.heartbeat()
             screen.blit(pygame.transform.scale(
@@ -90,4 +89,7 @@ class WolfGameTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # with cProfile.Profile() as pr:
+    unittest.main(exit=False)
+
+    # pr.dump_stats("wolf.prof")

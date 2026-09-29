@@ -135,6 +135,7 @@ class GameMapsAdaptor:
         return wolfmap
 
 
+
 def get_shareware_maps():
     global SHAREWARE_MAPS
     maphead = open(path.join(ASSETS_PATH, "maps", "MAPHEAD.WL1"), "rb")
