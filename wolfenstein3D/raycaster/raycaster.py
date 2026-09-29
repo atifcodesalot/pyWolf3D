@@ -77,13 +77,14 @@ class Raycaster:
 
     def mags_offset(self, trace, rx, ry, xnn, ynn, xoff, yoff):
         w = self.map.wall_width
-        dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
-        dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
-        dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
-        dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
-
-        dx += xoff * w if xnn else xoff * -w
-        dy += yoff * w if ynn else yoff * -w
+        if xoff:
+            dx = xoff * w if xnn else -xoff * w
+        else:
+            dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
+        if yoff:
+            dy = yoff * w if ynn else -yoff * w
+        else:
+            dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
 
         mags = [dx / rx, dy / ry]
         return mags
@@ -126,29 +127,29 @@ class Raycaster:
                         vert_intercept: int, *rayctx):
         perpd = self.get_perp_dist
         w = self.map.wall_width
-        if pushwall.offset == 0:
+        absoff = pushwall.offset % 1
+        if absoff == 0:
             return self.get_perp_dist(trace), vert_intercept, cell, True
-        # the wall has slided
-        rx, ry, xnn, ynn = rayctx
+        # the wall has offset
+        rx, ry, *_ = rayctx
         slv = pushwall.sliding_vert
-        print(slv, vert_intercept)
         if slv ^ vert_intercept:
             # the ray hits in the sliding orientation
             if plain_dot((rx, ry), pushwall.sliding_dir) < 0:
                 # the wall is sliding in the opposite direction
                 # relative to the ray
                 return perpd(trace), vert_intercept, cell, True
-            # the ray hits in the sliding face
+            # the ray hits on the sliding face
             ttrace, offvert = self.test_march_ray_offset(
-                trace, *rayctx, pushwall.offset * (~slv+2),
-                pushwall.offset * slv)
+                trace, *rayctx, absoff * (~slv+2),
+                absoff * slv)
             if offvert ^ slv:
                 # the ray hits the sliding side
                 # update trace
                 trace[0] = ttrace[0]
                 trace[1] = ttrace[1]
                 return perpd(trace), offvert, cell, True
-            else:
+            else:    
                 # the ray passes through the slide gap
                 return perpd(trace), offvert, None, False
 
@@ -158,7 +159,7 @@ class Raycaster:
             offset = w - offset
         if offset > w * offset:
             # the ray passes through the opening
-            pass
+            raise NotImplementedError()
         else:
             return perpd(trace), vert_intercept, cell, True
 
@@ -184,6 +185,7 @@ class Raycaster:
     def march_ray(self, trace, rx, ry, xnn, ynn) -> int:
         mags = self.mags_for_step(trace, rx, ry, xnn, ynn)
         mag = min(mags, key=abs)
+        
         vert_hit = ~mags.index(mag) + 2
         trace[0] += rx * mag
         trace[1] += ry * mag
@@ -294,14 +296,16 @@ class Raycaster:
     def render_bird_view(self, colls, pygame, pgsurface):
         m = self.map
         ww = m.wall_width
-        for b in range(m.size[0]):
-            for a in range(m.size[1]):
-                if (cell := m.raw[b][a]):
+        for x in range(m.size[0]):
+            for y in range(m.size[1]):
+                if (cell := m.raw[y][x]):
                     color = (255, 0, 0)
                     if cell in self.map.DOOR:
                         color = (0, 255, 0)
+                    elif (x, y) in m.pushwalls:
+                        color = (23, 42, 255)
                     pygame.draw.rect(pgsurface, color,
-                                     (a*ww, b*ww, ww, ww))
+                                     (x*ww, y*ww, ww, ww))
 
         for coll in colls:
             if coll is not None:

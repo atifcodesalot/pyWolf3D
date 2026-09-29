@@ -22,7 +22,6 @@ class WolfPlayer(Observer):
         self.score = 0
 
         self.shooting = False
-        self.weapon_sprite = self.weapon.value * 5
 
     def has_auto(self):
         return self.weapon.value > 1
@@ -83,7 +82,7 @@ class WolfPlayer(Observer):
         self.score += 500
 
     def get_ammo(self):
-        if getattr(self, "empty_weapon", None):
+        if getattr(self, "empty_weapon", None) and self.out_of_ammo():
             self.switch_weapon(self.empty_weapon)
         self.ammo += 5
         
@@ -94,7 +93,6 @@ class WolfPlayer(Observer):
         if forced_switch:
             self.empty_weapon = copy.copy(self.weapon)
         self.weapon = new
-        self.weapon_sprite = self.weapon.value * 5
         
     def has_knife(self):
         return self.weapon == WolfWeapon.KNIFE

@@ -1,6 +1,6 @@
 
 from raycaster.sprites import Sprite
-from raycaster.aux_math import plain_dot, plain_add, plain_mul
+from raycaster.aux_math import plain_dot, plain_add
 from .game_objects import *
 from .assets import SPRITES
 
@@ -35,6 +35,7 @@ class WolfDoor:
 
 class WolfPushWall:
     SLIDE = 0.01
+    ATOL = 1e-10
 
     def __init__(self, cell, pos, offset=0):
         self.cell = cell
@@ -42,28 +43,39 @@ class WolfPushWall:
         self.offset = offset
         self.sliding_vert = 0
         self.sliding = False
+        self.slid = False
 
     def begin_sliding(self, dir):
+        if self.slid:
+            return
         self.sliding = True
         self.sliding_dir = dir
-        self.sliding_vert = plain_dot(self.sliding_dir, (0, 1)) != 0
+        self.sliding_vert = (plain_dot(self.sliding_dir, (0, 1)) != 0).real
         self.sliding_sign = sum(self.sliding_dir)
 
     def slide_open(self, wolfmap):
-        self.offset = max(self.opening + self.SLIDE, 3)
-        if (bdist := self.offset // 1):
-            adjpos = plain_add(self.pos, plain_mul(self.sliding_dir, bdist))
+        self.offset = min(self.offset + self.SLIDE, 2)
+        if (self.ATOL > self.offset % 1 > -self.ATOL):
+            adjpos = plain_add(self.pos, self.sliding_dir)
+            adjpos = (int(adjpos[0]), int(adjpos[1]))
             # unoccupy current cell
-            self.wolfmap[self.pos[1]][self.pos[0]] = 0
+            wolfmap.raw[self.pos[1]][self.pos[0]] = 0
             # occupy adjacent cell
-            wolfmap.raw[int(adjpos[1])][int(adjpos[0])] = self.cell
+            wolfmap.raw[adjpos[1]][adjpos[0]] = self.cell
+            del wolfmap.pushwalls[self.pos]
+            
             self.pos = adjpos
+            wolfmap.pushwalls[self.pos] = self
+            if self.offset == 2:
+                self.sliding = False
+                self.slid = True
+                return
 
 
 # map class,
 # 0: empty, nonzero: wall with texture
 # DOOR has door tile numbers
-# contains actors, items, etc.
+# contains actors, items, sprites to render etc.
 class WolfMap:
     DOOR = [0x1f + 1, (0x1f << 1) + 1, 0x22 + 1, (0x22 << 1) + 1]
     HORIZ_DOOR = [(0x1f << 1) + 1, (0x22 << 1) + 1]
@@ -85,13 +97,13 @@ class WolfMap:
         self.abs_size = self.size[0] * \
             self.wall_width, self.size[1] * self.wall_width
 
-        self.sprites = []
+        self.sprites: list[Sprite] = []
         self.sprite_lookup = {}
 
         self.items = {}
-        self.actors = []
+        self.actors: list = []
 
-        self.pushwalls = {}
+        self.pushwalls: list[WolfPushWall] = {}
 
     def add_sprite(self, sprite_src: Sprite, coor):
         if type(sprite_src) is not Sprite:
@@ -168,8 +180,6 @@ class WolfMap:
         if cell in self.DOOR:
             door = self.get_door(block_pos)
             return door.opening != 0
-        if block_pos in self.pushwalls:
-            return self.pushwalls[block_pos].offset != 1
         return True
 
     def in_boundary(self, coor):

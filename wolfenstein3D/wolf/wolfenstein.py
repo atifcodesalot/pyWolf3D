@@ -44,12 +44,9 @@ class WolfRenderer(RayRenderer):
         random.shuffle(self.shuffled_indices)
         #
 
-    def middle_hitblock(self):
-        if self.colls:
-            middle_hit, _, _ = self.colls[self.player.ray_count // 2]
-            return self.map.to_block_pos(*middle_hit)
-
     def init_weapon_sprites(self):
+        self.sp_per_weap = 5
+        self.weap_sp = self.player.weapon.value * self.sp_per_weap
         weapons: dict = SPRITES["weapons"]
         self.weapons = {}
         for i in weapons:
@@ -61,12 +58,12 @@ class WolfRenderer(RayRenderer):
             self.wpn_xoffset = self.width // 6
             x = self.wpn_xoffset
             self.weapons[i].surface = surf.subsurface(
-                (x, surf.get_height()//2, 
+                (x, surf.get_height()//2,
                  surf.get_width()-x*2, surf.get_height()//2))
 
     def render_weapon(self):
         self.pgsurface.blit(
-            self.weapons[self.player.weapon_sprite].surface,
+            self.weapons[self.weap_sp].surface,
             (self.wpn_xoffset, self.height // 2))
 
     def render_statusbar(self):
@@ -164,6 +161,8 @@ class WolfGame:
         }
 
     def handle_player_requests(self):
+        # placeho0lder
+        self.renderer.weap_sp = self.player.weapon.value * self.renderer.sp_per_weap
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
         if pblock in self.map.items:
@@ -187,9 +186,11 @@ class WolfGame:
                     ldir = self.player.look_dir
                     maxdir = max(ldir, key=abs)
                     # get where the player looks,
-                    # closest to which axis
+                    # i.e closest to which axis
                     vertical = ldir.index(maxdir)
                     sliding_dir[vertical] = sign(ldir[vertical])
+                    wolflogger.debug(
+                        f"player interacted with pushwall: {sliding_dir}")
                     pushwall.begin_sliding(sliding_dir)
 
     def dec_player_health(self, dmg):
@@ -205,13 +206,13 @@ class WolfGame:
 
     def shooting_animation_end(self):
         wolflogger.debug("shooting_animation_end called.")
-        self.player.weapon_sprite = self.player.weapon.value * 5
+        self.renderer.weap_sp = self.player.weapon.value * 5
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_RETURN] and self.player.has_auto():
             # if the player is still holding down the shoot button
             # and they have an automatic weapon
             # don't stop
-            self.handle_shooting(ongoing=True)
+            return self.handle_shooting(ongoing=True)
 
         self.player.shooting = False
         if self.player.out_of_ammo() and not self.player.has_knife():
@@ -255,12 +256,12 @@ class WolfGame:
         self.player.dec_ammo()
 
         # handle shooting animation
-        old = self.player.weapon_sprite
+        old = self.renderer.weap_sp
         rapid = ongoing.real
         self.add_animation(Animation(
             None, None, 20-10*rapid, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
-            self.player, "weapon_sprite")
+            self.renderer, "weap_sp")
         self.handle_hitscan()
 
     def handle_doors(self):
@@ -269,6 +270,13 @@ class WolfGame:
                 self.open_door(door)
             elif door.is_closing:
                 self.close_door(door)
+
+    def handle_secrets(self):
+        revealed = list(filter(lambda p: p.sliding,
+                        self.map.pushwalls.values()))
+        for pushwall in revealed:
+            if pushwall.sliding:
+                pushwall.slide_open(self.map)
 
     def open_door(self, door: WolfDoor):
         if door.opening > 0:
@@ -347,5 +355,6 @@ class WolfGame:
         self.handle_events(pgevents)
         self.handle_game_events()
         self.handle_doors()
+        self.handle_secrets()
         self.handle_animations()
         self.heartbeats += 1
