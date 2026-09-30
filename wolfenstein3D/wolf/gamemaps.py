@@ -6,6 +6,81 @@ from os import path
 from .game_objects import *
 from . import wolflogger
 
+WALL_TEXTURE_MAPPING = {
+    # DOS GAMEMAPS ID : my atlas index
+
+    0x00: 0,   # renderer subtracts 1 from tiles, -1 is for empty.
+    0x01: 1,   # grey stone
+    0x02: 1,   # grey stone
+    0x03: 3,   # grey stone + flag
+    0x04: 4,   # grey stone + Hitler portrait
+    0x05: 10,  # blue stone + cell door
+    0x06: 2,   # grey stone + eagle arch
+    0x07: 10,  # cell door + skeleton -> collapsed to cell texture
+    0x08: 9,   # blue stone
+    0x09: 9,   # blue stone
+
+    0x0A: 6,   # wood + eagle
+    0x0B: 7,   # wood + Hitler portrait
+    0x0C: 5,   # plain wood
+    0x0D: 35,  # elevator entrance / closest Jaguar equivalent
+    0x0E: 20,  # steel + Achtung/Verboten -> Jaguar decorated steel
+    0x0F: 19,  # plain steel
+
+    0x10: 17,  # landscape -- DAY
+               # atlas 17 is the NIGHT variant
+
+    0x11: 11,  # red brick
+    0x12: 14,  # wreath/emblem wall
+    # 0x13     # purple/green -- no direct Jaguar equivalent
+    0x14: 12,  # red brick + eagle tapestry
+
+    0x15: 15,  # elevator interior / rail
+    0x16: 16,  # elevator interior / control panel
+    0x17: 8,   # wood + iron cross
+    0x18: 21,  # moss/slime stone
+    # 0x19     # pink/green -- no direct Jaguar equivalent
+    0x1A: 22,  # second moss/slime stone
+    0x1B: 1,   # grey stone
+    0x1C: 20,  # grey stone + Achtung/Verboten -> closest equivalent
+
+    0x1D: 27,  # brown cave
+    0x1E: 28,  # brown cave + blood
+    0x1F: 28,  # brown cave + blood (collapsed)
+    0x20: 28,  # brown cave + blood (collapsed)
+
+    # 0x21     # Hitler stained glass -- no direct Jaguar equivalent
+
+    0x22: 24,  # blue brick + skulls
+    0x23: 31,  # grey brick
+    0x24: 24,  # blue brick + swastikas -- Jaguar combines the family
+    0x25: 31,  # grey brick + hole -> plain grey brick fallback
+    0x26: 13,  # red/grey/brown wall
+    0x27: 31,  # grey brick + crack -> plain grey brick fallback
+    0x28: 23,  # plain blue brick
+    0x29: 20,  # blue stone + Verboten -> closest decorated steel
+
+    0x2A: 30,  # brown tiles
+    0x2B: 31,  # grey brick + map -> plain grey brick fallback
+    0x2C: 29,  # orange stone
+    0x2D: 29,  # orange stone
+    0x2E: 30,  # brown tiles
+    0x2F: 30,  # brown tiles + banner -> brown tiles fallback
+    0x30: 5,   # orange panel on wood -> wood fallback
+    0x31: 4,   # grey brick + Hitler -> portrait fallback
+
+    # Doors
+    0x5A: 32,  # regular door, orientation A
+    0x5B: (31 << 1) + 1,  # regular door, orientation B
+    0x5C: 33,  # gold-key door
+    0x5D: 33,
+    0x5E: 34,  # silver-key door
+    0x5F: 34,
+
+    0x64: 35,  # elevator door, orientation A
+    0x65: (34 << 1) + 1, # elevator door, orientation A
+}
+
 
 # return n bytes little endian from data
 def get_n_bytes_LI(start, n, data: bytearray):
@@ -106,15 +181,15 @@ class GameMapsAdaptor:
 
     def to_wolfmap(self, level_i) -> WolfMap:
         walls = self.planes[level_i][0]
-        sprite_plane = self.planes[level_i][1]
         walls = [walls[i*64: (i+1)*64] for i in range(64)]
         for i, row in enumerate(walls):
-            walls[i] = [WALL_TEXTURE_MAPPING.get(wall, -1) + 1 for wall in row]
+            walls[i] = [WALL_TEXTURE_MAPPING.get(wall, 0) for wall in row]
 
         wolfmap = WolfMap(array=walls, wall_width=8)
         ww = wolfmap.wall_width
 
         # add sprites, items, pushwalls, doors
+        sprite_plane = self.planes[level_i][1]
         for i, entry in enumerate(sprite_plane):
             if not entry:
                 continue
