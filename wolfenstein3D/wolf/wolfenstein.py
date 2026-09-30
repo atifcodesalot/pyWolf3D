@@ -26,6 +26,9 @@ class WolfRenderer(RayRenderer):
                          topcolor="#6B6404",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
+        # insert 0 for empty
+        self.wall_textures.insert(0, None)
+        #
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
         self.font = pygame.font.SysFont("arial", 6)
