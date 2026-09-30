@@ -13,14 +13,15 @@ class WolfPlayer(Observer):
                  ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=20):
         super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
         self.map = map_
-        self.health = health
         self.weapon = weapon
-        self.pace = 1.5
+        self.pace = 1
         self.rot_pace = 3
+        
+        self.health = health
         self.ammo = ammo
-
         self.score = 0
-
+        self.lives = 3
+        
         self.shooting = False
 
     def has_auto(self):
@@ -96,3 +97,6 @@ class WolfPlayer(Observer):
         
     def has_knife(self):
         return self.weapon == WolfWeapon.KNIFE
+    
+    def is_dead(self):
+        return self.health == 0

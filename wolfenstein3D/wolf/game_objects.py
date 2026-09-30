@@ -146,6 +146,8 @@ class MapItem:
         self.sprite.blocking = item in BLOCKING_SPRITES
         self.pos = self.map.to_block_pos(*pos)
         self.pickcallback = pickcallback
+        
+        self.is_health_item = item in HEALTH_ITEMS
 
     def affect(self, player):
         if callable(self.pickcallback):

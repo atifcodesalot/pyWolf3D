@@ -64,7 +64,7 @@ class WolfPushWall:
             # occupy adjacent cell
             wolfmap.raw[adjpos[1]][adjpos[0]] = self.cell
             del wolfmap.pushwalls[self.pos]
-            
+
             self.pos = adjpos
             wolfmap.pushwalls[self.pos] = self
             if self.offset == 2:

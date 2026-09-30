@@ -1,5 +1,5 @@
-import unittest
 
+import unittest
 from .gamemaps import *
 from .wolfenstein import *
 from .game_objects import *
@@ -54,33 +54,42 @@ class WolfGameTest(unittest.TestCase):
                 self.assertGreater(len(actor.sprites), 8*4)
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
-    def test_quick_render(self):
+    def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
         player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL, fov=64)
         mymap.add_actor(WolfActorType.SCHUTZSTAFFEL, plain_add(player.pos, (20, 0)), (-1, 0))
         player.ammo = 200
         screen = pygame.display.set_mode((128*4, 128*4))
-        sw, sh = screen.get_size()
         renderer = WolfRenderer(player, screen)
         game = WolfGame(player, renderer)
         raycaster = game.renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map
         self.assertEqual(map_.size, (64, 64))
-        bird_view = pygame.Surface(
-            (map_.wall_width * map_.size[0], map_.wall_width * map_.size[1]))
-        bw_scale = 0.25
-        while game.ongoing:
-            game.heartbeat()
-            screen.blit(pygame.transform.scale(
-                bird_view, (int(sw * bw_scale), int(sh * bw_scale))), (0, 0))
-            bird_view.fill((0, 0, 0))
-            raycaster.render_bird_view(renderer.colls, pygame, bird_view)
-            pygame.display.flip()
-            if game.player.health == 0:
-                game.renderer.fizzle_fade()
-                exit("YOU ARE DEAD!")
-
+        game.mainloop()
+        
+    def test_weapon_sprites(self):
+        self.assertIn("weapons", SPRITES)
+        weapons = SPRITES["weapons"]
+        self.assertIsInstance(weapons, dict)
+        self.assertGreater(len(weapons), 0)
+        # weapons[1].image.show()
+        
+    def test_object_sprites(self):
+        self.assertIn("objects", SPRITES)
+        objects = SPRITES["objects"]
+        self.assertIsInstance(objects, dict)
+        self.assertGreater(len(objects), 0)
+        # objects[1].image.show()
+        
+        
+        
+    # def test_maps(self):
+    #     for wolfmap in SHAREWARE_MAPS:
+    #         self.assertIsInstance(wolfmap, WolfMap)
+    #         self.assertGreater(len(wolfmap.actors), 0)
+    #         self.assertGreater(len(wolfmap.sprites), 0)
+        
     # def test_character_sprites(self):
     #     self.assertIn("guard", SPRITES["characters"])
     #     guard_sprites = SPRITES["characters"]["guard"]
@@ -93,5 +102,6 @@ if __name__ == '__main__':
     # uncomment to profile
     # with cProfile.Profile() as pr:
         unittest.main(exit=False)
+        
 
     # pr.dump_stats("wolf.prof")

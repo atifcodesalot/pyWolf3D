@@ -55,7 +55,6 @@ def init_wall_textures():
     WALL_TEXTURES = texmap_parse(0, 0, 0, 0, 128, 128, walls, init=Texture)
     for i in DOUBLE_ARTWORK:
         WALL_TEXTURES[i] = [WALL_TEXTURES[i], WALL_TEXTURES[i+1]]
-    print(WALL_TEXTURES[15])
 
     # extend to 100 slot texture table
     WALL_TEXTURES.extend([0]*100)

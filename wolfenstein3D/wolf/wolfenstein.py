@@ -163,38 +163,50 @@ class WolfGame:
             pygame.K_SPACE: lambda: setattr(self, "interact", True)
         }
 
+    def handle_item_pickup(self, player_block):
+        item = self.map.items[player_block]
+        if not item.is_health_item:
+            self.map.pop_item(player_block)
+            item.affect(self.player)
+            self.renderer.glow = (0, 1)
+        else:
+            if self.player.health != 100:
+                self.map.pop_item(player_block)
+                item.affect(self.player)
+                self.renderer.glow = (0, 1)
+
+    def handle_interaction(self):
+        fblock, fcell = self.player.get_front_cell()
+        if fcell in self.map.DOOR:
+            door = self.map.get_door(fblock)
+            if not door.is_opening:
+                door.begin_opening()
+        elif fblock in self.map.pushwalls:
+            pushwall = self.map.get_pushwall(fblock)
+            if not pushwall.sliding:
+                sliding_dir = [0, 0]
+                ldir = self.player.look_dir
+                maxdir = max(ldir, key=abs)
+                # get where the player looks,
+                # i.e closest to which axis
+                vertical = ldir.index(maxdir)
+                sliding_dir[vertical] = sign(ldir[vertical])
+                wolflogger.debug(
+                    f"player interacted with pushwall: {sliding_dir}")
+                pushwall.begin_sliding(sliding_dir)
+
     def handle_player_requests(self):
         # placeho0lder
         self.renderer.weap_sp = self.player.weapon.value * self.renderer.sp_per_weap
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
         if pblock in self.map.items:
-            item = self.map.pop_item(pblock)
-            item.affect(self.player)
-            self.renderer.glow = (0, 1)
+            self.handle_item_pickup(pblock)
             # set glow false after 40 frames
             self.schedule_game_event(
                 self.renderer.glow_duration, lambda s: s.renderer.glow_end())
-
-        fblock, fcell = self.player.get_front_cell()
         if self.interact:
-            if fcell in self.map.DOOR:
-                door = self.map.get_door(fblock)
-                if not door.is_opening:
-                    door.begin_opening()
-            elif fblock in self.map.pushwalls:
-                pushwall = self.map.get_pushwall(fblock)
-                if not pushwall.sliding:
-                    sliding_dir = [0, 0]
-                    ldir = self.player.look_dir
-                    maxdir = max(ldir, key=abs)
-                    # get where the player looks,
-                    # i.e closest to which axis
-                    vertical = ldir.index(maxdir)
-                    sliding_dir[vertical] = sign(ldir[vertical])
-                    wolflogger.debug(
-                        f"player interacted with pushwall: {sliding_dir}")
-                    pushwall.begin_sliding(sliding_dir)
+            self.handle_interaction()
 
     def dec_player_health(self, dmg):
         self.renderer.glow = (0,)
@@ -361,3 +373,25 @@ class WolfGame:
         self.handle_secrets()
         self.handle_animations()
         self.heartbeats += 1
+
+    def mainloop(self):
+        self.ongoing = True
+        while self.ongoing:
+            self.heartbeat()
+            if self.player.is_dead():
+                if self.player.lives == 0:
+                    return self.game_end()
+                self.life_end()
+            pygame.display.flip()
+
+    def floor_end(self):
+        pass
+
+    def life_end(self):
+        print("YOU ARE DEAD, BJ!")
+        self.renderer.fizzle_fade()
+        
+    def game_end(self):
+        pass
+        
+        
