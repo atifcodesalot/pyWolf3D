@@ -3,6 +3,7 @@ from raycaster.sprites import Sprite
 from raycaster.aux_math import plain_dot, plain_add
 from .game_objects import *
 from .assets import SPRITES
+from .actors import TYPE_ACTOR_OBJ
 
 
 class WolfDoor:
@@ -131,8 +132,11 @@ class WolfMap:
         self.delete_sprite(item.pos)
         return item
 
-    def add_actor(self, actor):
-        self.actors.append(actor)
+    def add_actor(self, actor_type: WolfActorType, pos, look_dir):
+        if actor_type not in WolfActorType:
+            raise TypeError("can't add non actor type")
+        actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir)
+        self.actors.append(actor_obj)
 
     def add_decoration(self, decor: WolfDecoration, coor):
         if decor not in WolfDecoration:

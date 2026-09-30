@@ -5,6 +5,7 @@ from .assets import SPRITES, ASSETS_PATH
 from os import path
 from .game_objects import *
 from . import wolflogger
+from .actors import WolfActorType
 
 WALL_TEXTURE_MAPPING = {
     # DOS GAMEMAPS ID : my atlas index
@@ -148,11 +149,11 @@ class GameMapsAdaptor:
     def add_actor(self, wolfmap, obj, pos):
         # todo: implement all character sprites
         if obj in range(108, 116):
-            wolfmap.add_actor(Guard(wolfmap, pos, [0, 1]))
+            wolfmap.add_actor(WolfActorType.GUARD, pos, [0, 1])
         elif obj in range(126, 135):
-            wolfmap.add_actor(SS(wolfmap, pos, [0, 1]))
+           wolfmap.add_actor(WolfActorType.SCHUTZSTAFFEL, pos, [0, 1])
         elif obj in range(134, 142):
-            wolfmap.add_actor(Shepherd(wolfmap, pos, [0, 1]))
+            wolfmap.add_actor(WolfActorType.DOG, pos, [0, 1])
         elif obj == 124:
             # add dead guard
             wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
@@ -204,6 +205,7 @@ class GameMapsAdaptor:
             else:
                 if entry == self.PUSHWALL:
                     wolfmap.add_pushwall(block_pos)
+                    continue
                 self.add_actor(wolfmap, entry, pos)
                 continue
 

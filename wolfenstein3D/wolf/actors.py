@@ -3,7 +3,7 @@
 from .assets import *
 from raycaster.aux_math import *
 from math import pi, atan2
-from .maps import WolfItem, WolfMap
+from .game_objects import WolfItem, WolfActorType
 import random
 from . import wolflogger
 
@@ -38,7 +38,7 @@ class GuardingState(ActorState):
     def think(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         if dist < self.actor.proximity_radius:
-            if type(self.actor) == Shepherd:
+            if self.actor._type == WolfActorType.DOG:
                 self.next = ChaseState(self.actor, 0, game_ctx)
             elif self.actor.sees_player(game_ctx):
                 self.next = ChaseState(self.actor, 0, game_ctx)
@@ -83,7 +83,7 @@ class HurtState(ActorState):
     def __init__(self, actor):
         super().__init__(actor, 2, nextstate=None, lifetime=20)
         self.inflicted_damage = False
-        
+
     def think(self, game_ctx):
         if type(self.next) is not ChaseState:
             self.next = ChaseState(self.actor, 0, game_ctx)
@@ -102,18 +102,17 @@ class AttackState(ActorState):
     def shapenum(self, _):
         col = self.colnum()
         return col + self.heartbeats // self.hb_perframe
-    
+
     def attack(self, game_ctx):
         damage = game_ctx.calculate_damage(self.actor, reduction=0.4)
         game_ctx.dec_player_health(damage)
 
     def act(self, _):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
-            
+
     def endcallback(self, game_ctx):
         if random.randint(1, 2) == 2:
             self.attack(game_ctx)
-            
 
 
 class ChaseState(ActorState):
@@ -163,7 +162,7 @@ class ChaseState(ActorState):
         self.gonna_attack = diceroll and dist < self.actor.range \
             and self.actor.sees_player(game_ctx)
 
-    def act(self, game_ctx):
+    def act(self, _):
         if self.gonna_attack:
             self.actor.interrupt_transition(AttackState(self.actor))
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
@@ -175,15 +174,15 @@ class ChaseState(ActorState):
 
 
 class Actor:
-    def __init__(self, wolfmap: WolfMap, pos, look_dir, name: str,
+    def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir,
                  sprites: list[Sprite], sprite_layout,
                  death_frames, move_frames, attack_frames,
                  dead_offset, hurt_offset, health=100, drop=None, _range=100):
         self.wolfmap = wolfmap
+        self._type = _type
         self.pos = list(pos)
         self.look_dir = look_dir
         self.left = [-self.look_dir[1], self.look_dir[0]]
-        self.name = name
         self.state = GuardingState(self)
         self.health = health
         self.drop = drop
@@ -226,7 +225,7 @@ class Actor:
         obs_space = (plain_dot(to_self, self.left),
                      plain_dot(to_self, self.look_dir))
         return obs_space
-    
+
     def get_current_block(self):
         return self.wolfmap.to_block_pos(*self.pos)
 
@@ -284,12 +283,11 @@ class Actor:
             # player is behind the actor
             return False
         return p.get_current_block() in r.get_corridor(*to_player, self.pos)
-            
 
 
 class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir):
-        super().__init__(wolfmap, pos, look_dir, "Guard",
+        super().__init__(wolfmap, WolfActorType.GUARD, pos, look_dir,
                          sprites=SPRITES["characters"]["guard"],
                          sprite_layout=(8, 7),
                          death_frames=5,
@@ -303,7 +301,7 @@ class Guard(Actor):
 
 class Shepherd(Actor):
     def __init__(self, wolfmap, pos, look_dir):
-        super().__init__(wolfmap, pos, look_dir, "Shepherd",
+        super().__init__(wolfmap, WolfActorType.DOG, pos, look_dir,
                          sprites=SPRITES["characters"]["shepherd"],
                          sprite_layout=(8, 6),
                          death_frames=3,
@@ -318,7 +316,7 @@ class Shepherd(Actor):
 
 class SS(Actor):
     def __init__(self, wolfmap, pos, look_dir):
-        super().__init__(wolfmap, pos, look_dir, "SS",
+        super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir, 
                          sprites=SPRITES["characters"]["SS"],
                          sprite_layout=(8, 7),
                          death_frames=5,
@@ -328,3 +326,10 @@ class SS(Actor):
                          hurt_offset=0,
                          health=120,
                          drop=WolfItem.MACHINEGUN)
+        
+        
+TYPE_ACTOR_OBJ = {
+    WolfActorType.GUARD: Guard,
+    WolfActorType.DOG: Shepherd,
+    WolfActorType.SCHUTZSTAFFEL: SS,
+}
