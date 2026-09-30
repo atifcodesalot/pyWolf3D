@@ -67,10 +67,14 @@ class RayRenderer:
             if door:
                 offset = m.wall_width * door.opening - offset
 
-        texture = self.wall_textures[coll[2] - 1]
+        tex_src = self.wall_textures[coll[2]]
+        if type(tex_src) is list:
+            tex = tex_src[vertical]
+        else:
+            tex = tex_src
         # map to 0 to len(columns)
-        ci = offset / self.wall_width * (texture.width - 1)
-        return texture.get_column(round(ci),
+        ci = offset / self.wall_width * (tex.width - 1)
+        return tex.get_column(round(ci),
                                   int(repeat), int(height), factor, self.height)
 
     def sprite_is_visible(self, projected, sprite) -> bool:
