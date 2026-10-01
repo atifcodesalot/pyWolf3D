@@ -6,6 +6,7 @@ from math import pi, atan2
 from .game_objects import WolfItem, WolfActorType
 import random
 from . import wolflogger
+import copy
 
 
 class ActorState:
@@ -198,7 +199,7 @@ class Actor:
         self.hurt_offset = hurt_offset
 
         self.ticks_since_trans = 0
-        self.pace = 0.5
+        self.pace = 0.4
         self.proximity_radius = self.wolfmap.wall_width * 6
 
     def tick(self, game_ctx, heartbeats):
@@ -284,6 +285,17 @@ class Actor:
             return False
         return p.get_current_block() in r.get_corridor(*to_player, self.pos)
 
+    def snapshot(self):
+        state = self.pos, self.look_dir, self.health
+        return tuple([copy.deepcopy(att) for att in state])
+
+    def reload_snapshot(self, snapshot):
+        self.pos = snapshot[0]
+        self.look_dir = snapshot[1]
+        self.health = snapshot[2]
+        self.state = GuardingState(self)
+        self.ticks_since_trans = 0
+
 
 class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir):
@@ -311,12 +323,12 @@ class Shepherd(Actor):
                          hurt_offset=0,
                          health=60,
                          _range=(wolfmap.wall_width)*2)
-        self.pace = 1.01
+        self.pace = 0.7
 
 
 class SS(Actor):
     def __init__(self, wolfmap, pos, look_dir):
-        super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir, 
+        super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir,
                          sprites=SPRITES["characters"]["SS"],
                          sprite_layout=(8, 7),
                          death_frames=5,
@@ -326,8 +338,8 @@ class SS(Actor):
                          hurt_offset=0,
                          health=120,
                          drop=WolfItem.MACHINEGUN)
-        
-        
+
+
 TYPE_ACTOR_OBJ = {
     WolfActorType.GUARD: Guard,
     WolfActorType.DOG: Shepherd,

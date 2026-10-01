@@ -40,6 +40,11 @@ class WolfPlayer(Observer):
             # wolflogger.debug(f"Can't displace to {new_pos}")
             return
         self.translate(disp)
+        
+    def look_at(self, look_dir):
+        self.look_dir = look_dir.copy()
+        self.left = get_perp(self.look_dir)
+        self.update_directions()
 
     def turn_cc(self):
         self.rotate(self.rot_pace)
@@ -100,3 +105,11 @@ class WolfPlayer(Observer):
     
     def is_dead(self):
         return self.health == 0
+    
+    
+    def reset(self):
+        self.health = 100
+        self.pos = self.map.init_pos.copy()
+        self.look_at(self.map.init_look)
+        self.weapon = WolfWeapon.PISTOL
+        self.ammo = 5

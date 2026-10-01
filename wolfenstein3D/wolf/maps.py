@@ -4,6 +4,7 @@ from raycaster.aux_math import plain_dot, plain_add
 from .game_objects import *
 from .assets import SPRITES
 from .actors import TYPE_ACTOR_OBJ
+from copy import deepcopy
 
 
 class WolfDoor:
@@ -12,13 +13,12 @@ class WolfDoor:
     def __init__(self, pos, opening: float, horizontal=True):
         self.pos = pos
         self.opening = opening
-        self.open = opening == 1
         self.horiz = horizontal
         self.is_opening = False
         self.is_closing = False
 
     def is_open(self):
-        return self.openning == 1
+        return self.opening == 1
 
     def slide_open(self):
         self.opening = max(self.opening - self.SLIDE, 0)
@@ -32,6 +32,11 @@ class WolfDoor:
 
     def begin_closing(self):
         self.is_closing = True
+
+    def reset(self):
+        self.is_opening = False
+        self.is_closing = False
+        self.opening = 1
 
 
 class WolfPushWall:
@@ -72,6 +77,12 @@ class WolfPushWall:
                 self.slid = True
                 return
 
+    def reset(self):
+        self.offset = 0
+        self.sliding_vert = 0
+        self.sliding = False
+        self.slid = False
+
 
 # map class,
 # 0: empty, nonzero: wall with texture
@@ -82,18 +93,12 @@ class WolfMap:
     HORIZ_DOOR = [(0x1f << 1) + 1, (0x22 << 1) + 1]
 
     def __init__(self, size=(64, 64), array=None,
-                 wall_width=20, init_pos=(0, 0), init_look_dir=[1, 0]):
+                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0]):
         self.size = size
-        self.doors = {}
-        if array is None:
-            self.construct_map()
-        else:
-            self.raw = array
-            self.init_doors()
 
         self.wall_width = wall_width
-        self.init_pos = init_pos
-        self.init_look = init_look_dir
+        self.init_pos = list(init_pos)
+        self.init_look = list(init_look_dir)
 
         self.abs_size = self.size[0] * \
             self.wall_width, self.size[1] * self.wall_width
@@ -101,10 +106,38 @@ class WolfMap:
         self.sprites: list[Sprite] = []
         self.sprite_lookup = {}
 
-        self.items = {}
         self.actors: list = []
 
-        self.pushwalls: list[WolfPushWall] = {}
+        self.item_lookup: dict[tuple: WolfItemObj] = {}
+        self.pushwalls: dict[tuple: WolfPushWall] = {}
+        self.doors: dict[tuple: WolfDoor] = {}
+        self.raw = array
+        self.init_doors()
+
+    def snapshot(self):
+        state = (deepcopy(self.raw),
+                 [act.snapshot() for act in self.actors],
+                 self.item_lookup.copy(),
+                 self.sprite_lookup.copy(),
+                 self.sprites.copy(),
+                 deepcopy(self.pushwalls))
+
+        return state
+
+    def reload_snapshot(self, snapshot):
+        raw, actsnaps, itemsnap, spdsnap, spsnap, pws = snapshot
+        self.raw = deepcopy(raw)
+        for snap, act in zip(actsnaps, self.actors):
+            act.reload_snapshot(snap)
+        self.item_lookup = itemsnap.copy()
+        self.sprite_lookup = spdsnap.copy()
+        self.sprites = spsnap.copy()
+        self.pushwalls = deepcopy(pws)
+
+    def reset(self):
+        self.reload_snapshot(self.init_snap)
+        for k in self.doors:
+            self.doors[k].reset()
 
     def add_sprite(self, sprite_src: Sprite, coor):
         if type(sprite_src) is not Sprite:
@@ -122,13 +155,13 @@ class WolfMap:
 
     def add_item(self, item: WolfItem, pos):
         effect = ITEM_AFFECT.get(item, None)
-        mapitem = MapItem(self, item, pos, effect)
-        self.items[mapitem.pos] = mapitem
-        self.sprites.append(mapitem.sprite)
-        self.sprite_lookup[mapitem.pos] = mapitem.sprite
+        itemobj = WolfItemObj(self, item, pos, effect)
+        self.item_lookup[itemobj.pos] = itemobj
+        self.sprites.append(itemobj.sprite)
+        self.sprite_lookup[itemobj.pos] = itemobj.sprite
 
     def pop_item(self, pos):
-        item = self.items.pop(pos)
+        item = self.item_lookup.pop(pos)
         self.delete_sprite(item.pos)
         return item
 

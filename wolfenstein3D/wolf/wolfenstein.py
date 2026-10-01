@@ -123,6 +123,23 @@ class WolfRenderer(RayRenderer):
                 pass
 
         del pixelref
+        
+    def unfizzle(self):
+        self.render(1)
+        mirror = self.pgsurface.copy()
+        self.pgsurface.fill("0xff0000")
+        pixelref = pygame.PixelArray(self.pgsurface) 
+        w, h = pixelref.shape
+        unfizzled = 0
+        for i in self.shuffled_indices[::-1]:
+            pos = (i % w, i // h)
+            pixelref[pos] = mirror.get_at(pos)
+            unfizzled += 1
+            if not unfizzled % 15:
+                # update display per 15 writes
+                pygame.display.flip()
+                pass
+        
 
     def glow_end(self):
         self.rgb_offset = [0, 0, 0]
@@ -164,7 +181,7 @@ class WolfGame:
         }
 
     def handle_item_pickup(self, player_block):
-        item = self.map.items[player_block]
+        item = self.map.item_lookup[player_block]
         if not item.is_health_item:
             self.map.pop_item(player_block)
             item.affect(self.player)
@@ -200,7 +217,7 @@ class WolfGame:
         self.renderer.weap_sp = self.player.weapon.value * self.renderer.sp_per_weap
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
-        if pblock in self.map.items:
+        if pblock in self.map.item_lookup:
             self.handle_item_pickup(pblock)
             # set glow false after 40 frames
             self.schedule_game_event(
@@ -264,6 +281,9 @@ class WolfGame:
             (no_ammo and not self.player.has_knife())
         )
         if cant_shoot:
+            if ongoing and no_ammo:
+                self.player.shooting = False
+                self.player.switch_weapon(WolfWeapon.KNIFE, forced_switch=True)
             wolflogger.debug("player can't shoot.")
             return
         # can shoot
@@ -388,8 +408,11 @@ class WolfGame:
         pass
 
     def life_end(self):
-        print("YOU ARE DEAD, BJ!")
         self.renderer.fizzle_fade()
+        self.player.reset()
+        self.heartbeat()
+        self.map.reset()
+        self.renderer.unfizzle()
         
     def game_end(self):
         pass

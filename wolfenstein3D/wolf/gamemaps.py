@@ -159,7 +159,7 @@ class GameMapsAdaptor:
             wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
 
     def add_player(self, wolfmap, obj, pos):
-        wolfmap.init_pos = pos
+        wolfmap.init_pos = list(pos)
         wolfmap.init_look = self.entry_lookdir[obj]
 
     def add_decoration(self, wolfmap, obj, pos):
@@ -209,6 +209,7 @@ class GameMapsAdaptor:
                 self.add_actor(wolfmap, entry, pos)
                 continue
 
+        wolfmap.init_snap = wolfmap.snapshot()
         return wolfmap
 
 

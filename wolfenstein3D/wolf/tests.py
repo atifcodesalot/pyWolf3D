@@ -57,8 +57,7 @@ class WolfGameTest(unittest.TestCase):
     def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
         player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL, fov=64)
-        mymap.add_actor(WolfActorType.SCHUTZSTAFFEL, plain_add(player.pos, (20, 0)), (-1, 0))
-        player.ammo = 200
+        player.ammo = 5
         screen = pygame.display.set_mode((128*4, 128*4))
         renderer = WolfRenderer(player, screen)
         game = WolfGame(player, renderer)

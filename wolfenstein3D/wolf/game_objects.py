@@ -138,7 +138,7 @@ BLOCKING_SPRITES = [
 OBJECT_SPRITES = set(list(ITEM_SPRITES_MAPPING.values()) +
                      list(DECORATION_SPRITES_MAPPING.values()))
     
-class MapItem:
+class WolfItemObj:
     def __init__(self, map_, item: WolfItem, pos, pickcallback):
         self.map = map_
         self.pyindex = ITEM_SPRITES_MAPPING[item]
