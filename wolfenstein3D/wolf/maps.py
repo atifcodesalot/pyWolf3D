@@ -18,7 +18,7 @@ class WolfDoor:
         self.is_closing = False
 
     def is_open(self):
-        return self.opening == 1
+        return self.opening == 0
 
     def slide_open(self):
         self.opening = max(self.opening - self.SLIDE, 0)
@@ -99,9 +99,6 @@ class WolfMap:
         self.wall_width = wall_width
         self.init_pos = list(init_pos)
         self.init_look = list(init_look_dir)
-
-        self.abs_size = self.size[0] * \
-            self.wall_width, self.size[1] * self.wall_width
 
         self.sprites: list[Sprite] = []
         self.sprite_lookup = {}
@@ -207,6 +204,8 @@ class WolfMap:
         return self.raw[block_pos[1]][block_pos[0]]
 
     def cell_occupied(self, block_pos):
+        if not self.in_boundary(block_pos):
+            return True
         cell = self.raw[block_pos[1]][block_pos[0]]
         if not cell:
             if block_pos in self.sprite_lookup:
@@ -219,9 +218,9 @@ class WolfMap:
             return door.opening != 0
         return True
 
-    def in_boundary(self, coor):
-        return 0 <= coor[0] < self.abs_size[0] and\
-            0 <= coor[1] < self.abs_size[1]
+    def in_boundary(self, block_pos):
+        return 0 <= block_pos[0] < self.size[0] and\
+            0 <= block_pos[1] < self.size[1]
 
     def set_random(self, amount, num=1):
         import random

@@ -9,7 +9,7 @@ from .actors import *
 from .assets import SPRITES, WALL_TEXTURES
 from . import wolflogger, pygame
 import numpy as np
-
+import time
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
 
@@ -114,10 +114,14 @@ class WolfRenderer(RayRenderer):
         w, h = pixelref.shape
         red = 0
         for i in self.shuffled_indices:
-            pos = (i % w, i // h)
-            pixelref[pos] = 0xFF0000
+            pos = (i % w, i // w)
+            try:
+                pixelref[pos] = 0xFF0000
+            except:
+                print(pos, i)
+                exit()
             red += 1
-            if not red % 15:
+            if not red % 60:
                 # update display per 15 writes
                 pygame.display.flip()
                 pass
@@ -132,10 +136,10 @@ class WolfRenderer(RayRenderer):
         w, h = pixelref.shape
         unfizzled = 0
         for i in self.shuffled_indices[::-1]:
-            pos = (i % w, i // h)
+            pos = (i % w, i // w)
             pixelref[pos] = mirror.get_at(pos)
             unfizzled += 1
-            if not unfizzled % 15:
+            if not unfizzled % 80:
                 # update display per 15 writes
                 pygame.display.flip()
                 pass
@@ -412,6 +416,7 @@ class WolfGame:
         self.player.reset()
         self.heartbeat()
         self.map.reset()
+        time.sleep(0.6)
         self.renderer.unfizzle()
         
     def game_end(self):

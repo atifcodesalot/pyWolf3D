@@ -112,7 +112,11 @@ class AttackState(ActorState):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
 
     def endcallback(self, game_ctx):
-        if random.randint(1, 2) == 2:
+        dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
+        dist //= game_ctx.map.wall_width
+        hitprob = int(dist * self.actor.accuracy)
+        hitprob = 1 if hitprob == 0 else hitprob
+        if random.randint(1, hitprob) in range(1, 3):
             self.attack(game_ctx)
 
 
@@ -125,9 +129,13 @@ class ChaseState(ActorState):
         self.hb_perframe = self.lifetime // self.actor.move_frames
         self.move_off = walk_cycle
         self.heartbeats = 0
-        self.find_move_dir(game_ctx)
+        self.prev_dir = [0, 0]
+        self.decide_dir(game_ctx)
 
-    def find_move_dir(self, game_ctx):
+        self.waiting_door = False
+
+    def decide_dir(self, game_ctx):
+        self.prev_dir = self.actor.look_dir.copy()
         delta = plain_sub(self.actor.pos, game_ctx.player.pos)
         wolflogger.debug(f"delta: {delta}")
         wolflogger.debug(f"actor pos: {self.actor.pos}")
@@ -137,14 +145,36 @@ class ChaseState(ActorState):
         dirs = [[1, 0], [0, 1]]
         dirs[vertical] = plain_mul(dirs[vertical], sign(maxd))
         dirs[~vertical + 2] = plain_mul(dirs[~vertical + 2], sign(mind))
-        move_dir = dirs[vertical]
-        self.actor.update_direction(move_dir)
-        fblock = self.actor.get_front_block()
-        if self.actor.wolfmap.cell_occupied(tuple(fblock)):
+        first_try = dirs[vertical]
+        if not self.try_direction(first_try):
             if delta[~vertical + 2]:
-                move_dir = dirs[~vertical + 2]
-                self.actor.update_direction(move_dir)
+                print("fallback")
+                self.try_direction(dirs[~vertical + 2], allow_reverse=True)
         wolflogger.debug(f"actor look dir: {self.actor.look_dir}")
+
+    def try_direction(self, dir_, allow_reverse=False):
+        m = self.actor.wolfmap
+        self.actor.update_direction(dir_)
+        fblock = self.actor.get_front_block()
+        lookup = tuple(fblock)
+        if self.actor.wolfmap.cell_occupied(lookup):
+            if lookup in m.doors:
+                door = m.get_door(lookup)
+                self.waiting_door = door
+                if not (door.is_opening or door.is_open()):
+                    wolflogger.debug(f"{self.actor}, openned door!")
+                    door.begin_opening()
+            return False
+        if not any(plain_add(self.prev_dir, dir_)) and not allow_reverse:
+            print("reverse prevented", self.prev_dir, dir_)
+            return False
+        return True
+
+    def actor_in_middle(self):
+        w = self.actor.wolfmap.wall_width
+        hw = w // 2
+        pos = self.actor.pos
+        return int(pos[0]) % w == hw or int(pos[1]) % w == hw
 
     def colnum(self):
         return super().colnum() + \
@@ -162,23 +192,32 @@ class ChaseState(ActorState):
         diceroll = random.randint(1, int(dist)) == 1
         self.gonna_attack = diceroll and dist < self.actor.range \
             and self.actor.sees_player(game_ctx)
+        if self.waiting_door:
+            if self.waiting_door.is_open():
+                print("wait is over!")
+                self.waiting_door = False
 
     def act(self, _):
         if self.gonna_attack:
             self.actor.interrupt_transition(AttackState(self.actor))
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
-        self.actor.move()
+
+        if not self.waiting_door:
+            self.actor.move()
+        else:
+            print("waiting!!")
 
     def endcallback(self, game_ctx):
-        self.find_move_dir(game_ctx)
+        if not self.waiting_door:
+            self.decide_dir(game_ctx)
 
 
 class Actor:
     def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir,
                  sprites: list[Sprite], sprite_layout,
-                 death_frames, move_frames, attack_frames,
-                 dead_offset, hurt_offset, health=100, drop=None, _range=100):
+                 death_frames, move_frames, attack_frames, dead_offset, hurt_offset,
+                 health=100, drop=None, _range=100, accuracy=1):
         self.wolfmap = wolfmap
         self._type = _type
         self.pos = list(pos)
@@ -188,6 +227,7 @@ class Actor:
         self.health = health
         self.drop = drop
         self.range = _range
+        self.accuracy = accuracy
 
         self.sprites = [sprite.copy(self.pos) for sprite in sprites.values()]
         self.sprite_layout = sprite_layout
@@ -199,7 +239,7 @@ class Actor:
         self.hurt_offset = hurt_offset
 
         self.ticks_since_trans = 0
-        self.pace = 0.4
+        self.pace = 0.5
         self.proximity_radius = self.wolfmap.wall_width * 6
 
     def tick(self, game_ctx, heartbeats):
@@ -230,8 +270,8 @@ class Actor:
     def get_current_block(self):
         return self.wolfmap.to_block_pos(*self.pos)
 
-    def update_direction(self, _dir):
-        self.look_dir = _dir
+    def update_direction(self, dir_):
+        self.look_dir = dir_
         self.left = [-self.look_dir[1], self.look_dir[0]]
 
     def move(self):

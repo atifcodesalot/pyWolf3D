@@ -14,7 +14,7 @@ class WolfPlayer(Observer):
         super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
         self.map = map_
         self.weapon = weapon
-        self.pace = 1
+        self.pace = 0.8
         self.rot_pace = 3
         
         self.health = health

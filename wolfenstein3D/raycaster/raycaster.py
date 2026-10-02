@@ -265,7 +265,7 @@ class Raycaster:
         return colls, distbuff
 
     def get_corridor(self, rx, ry, start_pos):
-        visited = []
+        visited = [start_pos,]
         hw = self.map.wall_width // 2
         trace = start_pos.copy()
         rayctx = self.get_ray_context((rx, ry))
