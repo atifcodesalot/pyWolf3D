@@ -99,10 +99,19 @@ class AttackState(ActorState):
         super().__init__(actor, 3, nextstate=None, lifetime=30)
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
+        self.auto = False
+    
+    def go_auto(self):
+        self.auto = True
+        self.lifetime = 20
+        self.next = self
+            
+    def set_sprite_offset(self, off):
+        self.offset = off
 
     def shapenum(self, _):
         col = self.colnum()
-        return col + self.heartbeats // self.hb_perframe
+        return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
         damage = game_ctx.calculate_damage(self.actor, reduction=0.4)
@@ -118,11 +127,17 @@ class AttackState(ActorState):
         hitprob = 1 if hitprob == 0 else hitprob
         if random.randint(1, hitprob) in range(1, 3):
             self.attack(game_ctx)
-
+        
     def act(self, game_ctx):
         if self.heartbeats + 2 == self.lifetime:
             self.try_attacking(game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
+        
+    def endcallback(self, _):
+        if self.actor._type == WolfActorType.SCHUTZSTAFFEL:
+            diceroll = random.randint(1, 2) == 2
+            if diceroll:
+                self.go_auto()
 
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
@@ -240,6 +255,7 @@ class Actor:
         self.ticks_since_trans = 0
         self.pace = 0.5
         self.proximity_radius = self.wolfmap.wall_width * 6
+        self.interrupted = False
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
@@ -252,9 +268,13 @@ class Actor:
         self.state.endcallback(game_ctx)
         self.state = self.state.next
         # if the state was interrupted, restore old ticks
-        self.ticks_since_trans = getattr(self.state, "heartbeats", 0)
+        if self.interrupted:    
+            self.ticks_since_trans = getattr(self.state, "heartbeats", 0)
+        else:
+            self.ticks_since_trans = 0
 
     def interrupt_transition(self, state: ActorState):
+        self.interrupted = True
         self.ticks_since_trans = 0
         old = self.state
         state.next = old

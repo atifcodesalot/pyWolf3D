@@ -47,7 +47,7 @@ class WolfGameTest(unittest.TestCase):
             self.assertTrue(
                 any([sprite.blocking for sprite in _map.sprites])
             )
-            
+
     def test_actor_sprite_count(self):
         for _map in SHAREWARE_MAPS:
             for actor in _map.actors:
@@ -56,7 +56,8 @@ class WolfGameTest(unittest.TestCase):
 
     def test_quick(self):
         mymap = SHAREWARE_MAPS[1]
-        player = WolfPlayer(mymap, ray_count=128, weapon=WolfWeapon.PISTOL, fov=64)
+        player = WolfPlayer(mymap, ray_count=128,
+                            weapon=WolfWeapon.PISTOL, fov=64)
         player.ammo = 5
         screen = pygame.display.set_mode((128*6, 128*5))
         renderer = WolfRenderer(player, screen)
@@ -65,30 +66,30 @@ class WolfGameTest(unittest.TestCase):
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map
         self.assertEqual(map_.size, (64, 64))
+        game.map.add_actor(WolfActorType.SCHUTZSTAFFEL,
+                           vec_add(player.pos, (0, -30)), [1, 0])
         game.mainloop()
-        
+
     def test_weapon_sprites(self):
         self.assertIn("weapons", SPRITES)
         weapons = SPRITES["weapons"]
         self.assertIsInstance(weapons, dict)
         self.assertGreater(len(weapons), 0)
         # weapons[1].image.show()
-        
+
     def test_object_sprites(self):
         self.assertIn("objects", SPRITES)
         objects = SPRITES["objects"]
         self.assertIsInstance(objects, dict)
         self.assertGreater(len(objects), 0)
         # objects[1].image.show()
-        
-        
-        
+
     # def test_maps(self):
     #     for wolfmap in SHAREWARE_MAPS:
     #         self.assertIsInstance(wolfmap, WolfMap)
     #         self.assertGreater(len(wolfmap.actors), 0)
     #         self.assertGreater(len(wolfmap.sprites), 0)
-        
+
     # def test_character_sprites(self):
     #     self.assertIn("guard", SPRITES["characters"])
     #     guard_sprites = SPRITES["characters"]["guard"]
@@ -100,7 +101,6 @@ class WolfGameTest(unittest.TestCase):
 if __name__ == '__main__':
     # uncomment to profile
     # with cProfile.Profile() as pr:
-        unittest.main(exit=False)
-        
+    unittest.main(exit=False)
 
     # pr.dump_stats("wolf.prof")
