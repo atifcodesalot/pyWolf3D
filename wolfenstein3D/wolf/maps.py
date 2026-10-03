@@ -5,6 +5,7 @@ from .game_objects import *
 from .assets import SPRITES
 from .actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
+from .assets import SOUNDS
 
 
 class WolfDoor:
@@ -27,10 +28,14 @@ class WolfDoor:
         self.opening = min(self.opening + self.SLIDE, 1)
 
     def begin_opening(self):
+        if self.is_opening:
+            return
+        SOUNDS["doors"]["OPENDOORSND.WAV"].play()
         self.is_opening = True
         self.is_closing = False
 
     def begin_closing(self):
+        SOUNDS["doors"]["CLOSEDOORSND.WAV"].play()
         self.is_closing = True
 
     def reset(self):
@@ -54,6 +59,7 @@ class WolfPushWall:
     def begin_sliding(self, dir):
         if self.slid:
             return
+        SOUNDS["doors"]["PUSHWALLSND.WAV"].play()
         self.sliding = True
         self.sliding_dir = dir
         self.sliding_vert = (vec_dot(self.sliding_dir, (0, 1)) != 0).real

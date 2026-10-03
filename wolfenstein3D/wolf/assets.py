@@ -11,11 +11,13 @@ ASSETS_PATH = os.path.join('.', 'assets')
 FONT_PATH = os.path.join(ASSETS_PATH, 'fonts')
 SPRITE_PATH = os.path.join(ASSETS_PATH, 'sprites')
 TEXTURE_PATH = os.path.join(ASSETS_PATH, 'textures')
+SOUND_PATH = os.path.join(ASSETS_PATH, 'sound')
 
 WALLS_PATH = os.path.join(TEXTURE_PATH, 'wallmap.png')
 
-OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
-WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
+SPRITE_OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
+SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
+
 
 # code used for creating transparency
 # def convert_sheet_trans(sheet: Image.Image, target: tuple, savename: str):
@@ -67,13 +69,13 @@ def init_textures():
 
 
 def init_object_sprites():
-    objects_sheet = Image.open(OBJECTS_PATH)
+    objects_sheet = Image.open(SPRITE_OBJECTS_PATH)
     objects_ = texmap_parse(0, 0, 0, 0, 64, 64, objects_sheet, init=Sprite)
     SPRITES["objects"] = dict(enumerate(objects_))
 
 
 def init_weapon_srites():
-    weapons_sheet = Image.open(WEAPONS_PATH)
+    weapons_sheet = Image.open(SPRITE_WEAPONS_PATH)
     weapons = texmap_parse(34, 16, 16, 1, 64, 64, weapons_sheet, Sprite, 1, 1)
     SPRITES["weapons"] = dict(enumerate(weapons))
 
@@ -119,6 +121,22 @@ def init_font():
     FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
 
 
+
+def init_sounds(root=SOUND_PATH, depth=0):
+    if depth == 0:
+        global SOUNDS
+        SOUNDS = {}
+    SOUNDS[os.path.basename(root)] = {}
+    for entry in os.scandir(root):
+        if entry.is_dir():
+            init_sounds(root=entry.path, depth=depth+1)
+        elif entry.is_file():
+            SOUNDS[os.path.basename(root)][entry.name] = pygame.mixer.Sound(entry.path)
+        
+        
+
+
 init_textures()
 init_sprites()
 init_font()
+init_sounds()

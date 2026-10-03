@@ -28,6 +28,9 @@ class ActorState:
         col = (spps * (self.spcolumn + off))
         return col
 
+    def start(self):
+        return
+
     def endcallback(self, game_ctx):
         return
 
@@ -66,6 +69,11 @@ class DyingState(ActorState):
         self.hb_perframe = self.lifetime // actor.death_frames
         self.heartbeats = 0
 
+    def start(self):
+        if snds := self.actor.death_sounds:
+            deathsnd: pygame.mixer.Sound = random.choice(snds)
+            deathsnd.play()
+
     def act(self, _):
         self.heartbeats += 1
 
@@ -100,12 +108,12 @@ class AttackState(ActorState):
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.auto = False
-    
+
     def go_auto(self):
         self.auto = True
         self.lifetime = 20
         self.next = self
-            
+
     def set_sprite_offset(self, off):
         self.offset = off
 
@@ -121,23 +129,26 @@ class AttackState(ActorState):
             game_ctx.player_slayer = self.actor
 
     def try_attacking(self, game_ctx):
+        if snd := self.actor.attack_sound:
+            snd.play()
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist //= game_ctx.map.wall_width
         hitprob = int(dist * self.actor.accuracy)
         hitprob = 1 if hitprob == 0 else hitprob
         if random.randint(1, hitprob) in range(1, 3):
             self.attack(game_ctx)
-        
+
     def act(self, game_ctx):
         if self.heartbeats + 2 == self.lifetime:
             self.try_attacking(game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
-        
+
     def endcallback(self, _):
         if self.actor._type == WolfActorType.SCHUTZSTAFFEL:
             diceroll = random.randint(1, 2) == 2
             if diceroll:
                 self.go_auto()
+
 
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
@@ -231,7 +242,8 @@ class Actor:
     def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir,
                  sprites: list[Sprite], sprite_layout,
                  death_frames, move_frames, attack_frames, dead_offset, hurt_offset,
-                 health=100, drop=None, _range=100, accuracy=1):
+                 health=100, drop=None, _range=100, accuracy=1,
+                 death_sounds=[], attack_sound=None):
         self.wolfmap = wolfmap
         self._type = _type
         self.pos = list(pos)
@@ -257,6 +269,9 @@ class Actor:
         self.proximity_radius = self.wolfmap.wall_width * 6
         self.interrupted = False
 
+        self.death_sounds = death_sounds
+        self.attack_sound = attack_sound
+
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
         if self.ticks_since_trans == self.state.lifetime:
@@ -268,10 +283,11 @@ class Actor:
         self.state.endcallback(game_ctx)
         self.state = self.state.next
         # if the state was interrupted, restore old ticks
-        if self.interrupted:    
+        if self.interrupted:
             self.ticks_since_trans = getattr(self.state, "heartbeats", 0)
         else:
             self.ticks_since_trans = 0
+        self.state.start()
 
     def interrupt_transition(self, state: ActorState):
         self.interrupted = True
@@ -279,6 +295,7 @@ class Actor:
         old = self.state
         state.next = old
         self.state = state
+        self.state.start()
 
     def to_this_space(self, pos):
         to_self = vec_sub(pos, self.pos)
@@ -367,7 +384,9 @@ class Guard(Actor):
                          dead_offset=4,
                          hurt_offset=7,
                          health=100,
-                         drop=WolfItem.AMMUNITION)
+                         drop=WolfItem.AMMUNITION,
+                         death_sounds=list(SOUNDS["death"].values()),
+                         attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"])
 
 
 class Shepherd(Actor):
@@ -381,7 +400,8 @@ class Shepherd(Actor):
                          dead_offset=3,
                          hurt_offset=0,
                          health=60,
-                         _range=(wolfmap.wall_width)*2)
+                         _range=(wolfmap.wall_width)*2,
+                         attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"])
         self.pace = 0.7
 
 
@@ -396,7 +416,9 @@ class SS(Actor):
                          dead_offset=5,
                          hurt_offset=0,
                          health=120,
-                         drop=WolfItem.MACHINEGUN)
+                         drop=WolfItem.MACHINEGUN,
+                         death_sounds=list(SOUNDS["death"].values()),
+                         )
 
 
 TYPE_ACTOR_OBJ = {

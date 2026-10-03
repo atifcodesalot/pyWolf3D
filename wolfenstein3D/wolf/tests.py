@@ -55,7 +55,7 @@ class WolfGameTest(unittest.TestCase):
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[1]
+        mymap = SHAREWARE_MAPS[0]
         player = WolfPlayer(mymap, ray_count=128,
                             weapon=WolfWeapon.PISTOL, fov=64)
         player.ammo = 5

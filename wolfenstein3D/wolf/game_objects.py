@@ -7,6 +7,14 @@ class WolfWeapon(Enum):
     PISTOL = 1
     MP4 = 2
     MINIGUN = 3
+    
+    
+WEAPON_SOUND = {
+    WolfWeapon.KNIFE: None,
+    WolfWeapon.PISTOL: "ATKPISTOLSND.WAV",
+    WolfWeapon.MP4: "ATKMACHINEGUNSND.WAV",
+    WolfWeapon.MINIGUN: "ATKGATLINGSND.WAV"
+}
 
 class WolfDecoration(Enum):
     WATERPUDDLE = 23

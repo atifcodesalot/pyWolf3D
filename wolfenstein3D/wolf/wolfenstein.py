@@ -1,6 +1,6 @@
 
 from raycaster.aux_math import *
-from raycaster.raycaster import Observer, Raycaster
+from raycaster.raycaster import Raycaster
 from raycaster.renderer import RayRenderer, PointLight
 from .animations import Animation
 from .maps import *
@@ -10,6 +10,7 @@ from .assets import SPRITES, WALL_TEXTURES
 from . import wolflogger, pygame
 import numpy as np
 import time
+from .game_objects import WEAPON_SOUND
 
 LIGHT_OPTIONS = [PointLight((0, 0))]
 
@@ -280,6 +281,7 @@ class WolfGame:
         return min(int(inflicted * reduction), 100)
 
     def handle_shooting(self, ongoing=False):
+        print(SOUNDS)
         wolflogger.debug("called handle_shooting")
         no_ammo = self.player.out_of_ammo()
         cant_shoot = (
@@ -293,6 +295,9 @@ class WolfGame:
             wolflogger.debug("player can't shoot.")
             return
         # can shoot
+        shootsnd = SOUNDS["weapons"].get(WEAPON_SOUND[self.player.weapon])
+        if shootsnd:
+            shootsnd.play()
         self.player.shooting = True
         self.player.dec_ammo()
 

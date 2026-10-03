@@ -3,6 +3,7 @@ import pygame
 import logging
 
 pygame.font.init()
+pygame.mixer.init()
 
 SPRITES = {}
 WALL_TEXTURES = {}
