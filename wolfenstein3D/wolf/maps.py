@@ -1,6 +1,6 @@
 
 from raycaster.sprites import Sprite
-from raycaster.aux_math import plain_dot, plain_add
+from raycaster.aux_math import vec_dot, vec_add
 from .game_objects import *
 from .assets import SPRITES
 from .actors import TYPE_ACTOR_OBJ
@@ -56,13 +56,13 @@ class WolfPushWall:
             return
         self.sliding = True
         self.sliding_dir = dir
-        self.sliding_vert = (plain_dot(self.sliding_dir, (0, 1)) != 0).real
+        self.sliding_vert = (vec_dot(self.sliding_dir, (0, 1)) != 0).real
         self.sliding_sign = sum(self.sliding_dir)
 
     def slide_open(self, wolfmap):
         self.offset = min(self.offset + self.SLIDE, 2)
         if (self.ATOL > self.offset % 1 > -self.ATOL):
-            adjpos = plain_add(self.pos, self.sliding_dir)
+            adjpos = vec_add(self.pos, self.sliding_dir)
             adjpos = (int(adjpos[0]), int(adjpos[1]))
             # unoccupy current cell
             wolfmap.raw[self.pos[1]][self.pos[0]] = 0

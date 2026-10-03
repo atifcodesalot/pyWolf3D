@@ -5,7 +5,9 @@ from .game_objects import WolfWeapon
 from .maps import WolfMap
 from raycaster.aux_math import *
 from .actors import Actor
+from math import acos, pi, degrees
 import copy
+import pygame
 
 
 class WolfPlayer(Observer):
@@ -16,34 +18,34 @@ class WolfPlayer(Observer):
         self.weapon = weapon
         self.pace = 0.8
         self.rot_pace = 3
-        
+
         self.health = health
         self.ammo = ammo
         self.score = 0
         self.lives = 3
-        
+
         self.shooting = False
 
     def has_auto(self):
         return self.weapon.value > 1
 
     def move_forward(self):
-        self.displace(plain_mul(self.look_dir, self.pace))
+        self.displace(vec_mul(self.look_dir, self.pace))
 
     def move_backward(self):
-        self.displace(disp=plain_mul(self.look_dir, -self.pace*1.2))
+        self.displace(disp=vec_mul(self.look_dir, -self.pace*1.2))
 
     # collide with occupied cells
     def displace(self, disp):
-        new_pos = plain_add(self.pos, plain_mul(disp, 4))
+        new_pos = vec_add(self.pos, vec_mul(disp, 4))
         if self.map.cell_occupied(self.map.to_block_pos(*new_pos)):
             # wolflogger.debug(f"Can't displace to {new_pos}")
             return
         self.translate(disp)
-        
-    def look_at(self, look_dir):
-        self.look_dir = look_dir.copy()
-        self.left = get_perp(self.look_dir)
+
+    def look_at(self, point):
+        self.look_dir = vec_norm(vec_sub(self.pos, point))
+        self.left = vec_get_perp(self.look_dir)
         self.update_directions()
 
     def turn_cc(self):
@@ -69,7 +71,7 @@ class WolfPlayer(Observer):
         # get if looking towards y
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
-        front_block = plain_add(pblock, offset)
+        front_block = vec_add(pblock, offset)
         front = self.map.raw[front_block[1]][front_block[0]]
         return tuple(front_block), front
 
@@ -80,7 +82,7 @@ class WolfPlayer(Observer):
 
     def regain_health(self, aid):
         self.health = min(self.health + aid, 100)
-        
+
     def dec_health(self, dmg):
         self.health = max(self.health - dmg, 0)
 
@@ -91,7 +93,7 @@ class WolfPlayer(Observer):
         if getattr(self, "empty_weapon", None) and self.out_of_ammo():
             self.switch_weapon(self.empty_weapon)
         self.ammo += 5
-        
+
     def dec_ammo(self):
         self.ammo = max(self.ammo - 1, 0)
 
@@ -99,17 +101,29 @@ class WolfPlayer(Observer):
         if forced_switch:
             self.empty_weapon = copy.copy(self.weapon)
         self.weapon = new
-        
+
     def has_knife(self):
         return self.weapon == WolfWeapon.KNIFE
-    
+
     def is_dead(self):
         return self.health == 0
-    
-    
+
     def reset(self):
         self.health = 100
         self.pos = self.map.init_pos.copy()
         self.look_at(self.map.init_look)
         self.weapon = WolfWeapon.PISTOL
         self.ammo = 5
+        
+    def turn_to_killer(self, game_ctx, killer: Actor):
+        to_killer = vec_norm(vec_sub(self.pos, killer.pos))
+        angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
+        da = sign(vec_dot(self.left, to_killer)) * 4
+        print(da, self.left, to_killer)
+        while angle_diff > 2:
+            self.rotate(da)
+            angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
+            game_ctx.renderer.render(1, weapon=False)
+            pygame.display.flip()
+            
+            

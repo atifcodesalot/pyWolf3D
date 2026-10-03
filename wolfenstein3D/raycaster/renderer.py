@@ -47,15 +47,15 @@ class RayRenderer:
         d = d if d != 0 else 0.0001
         return (self.height / d) * scaler
 
-    def cast(self):
-        self.colls, self.db = self.raycaster.raycast()
+    def cast(self, camera_pos):
+        self.colls, self.db = self.raycaster.raycast(camera_pos)
 
     def lamberts_cosine(self, coll, light: PointLight):
         pos, vertical, _ = coll
         n = BASIS[~vertical + 2]
-        light_to_coll = plain_sub(pos, light.pos)
-        light_to_coll = plain_normalize(light_to_coll)
-        return abs(plain_dot(n, light_to_coll))
+        light_to_coll = vec_sub(pos, light.pos)
+        light_to_coll = vec_norm(light_to_coll)
+        return abs(vec_dot(n, light_to_coll))
 
     def get_wall_col(self, coll, repeat, height, factor):
         vertical = coll[1]
@@ -82,12 +82,12 @@ class RayRenderer:
         shw = sprite.width // 2
         vpl = o.vp_length
         on_vp = vpl + shw > projected[0] > -vpl - shw
-        in_front = plain_dot(o.look_dir, plain_sub(o.pos, sprite.pos)) > 0
+        in_front = vec_dot(o.look_dir, vec_sub(o.pos, sprite.pos)) > 0
         return on_vp and in_front
 
     def draw_sprite(self, sprite: Sprite):
         o = self.raycaster.observer
-        perp_dist = plain_dot(plain_sub(o.pos, sprite.pos), o.look_dir)
+        perp_dist = vec_dot(vec_sub(o.pos, sprite.pos), o.look_dir)
         if perp_dist < 3:
             return
         projected = sprite.project()
@@ -144,7 +144,7 @@ class RayRenderer:
             chh = min(chh, hh)
             self.pgsurface.blit(column, (start, hh - chh))
 
-    def render(self, light: PointLight):
-        self.cast()
+    def render(self, camera_pos, light: PointLight):
+        self.cast(camera_pos)
         self.render_walls(light)
         self.render_sprites()

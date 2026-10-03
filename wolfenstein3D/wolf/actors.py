@@ -77,7 +77,7 @@ class DyingState(ActorState):
         if self.actor.drop is None:
             return
         game_ctx.map.add_item(self.actor.drop,
-                              plain_add(self.actor.pos, (2, 0)))
+                              vec_add(self.actor.pos, (2, 0)))
 
 
 class HurtState(ActorState):
@@ -107,11 +107,11 @@ class AttackState(ActorState):
     def attack(self, game_ctx):
         damage = game_ctx.calculate_damage(self.actor, reduction=0.4)
         game_ctx.dec_player_health(damage)
+        if game_ctx.player.is_dead():
+            # killed the player
+            game_ctx.player_slayer = self.actor
 
-    def act(self, _):
-        self.heartbeats = (self.heartbeats + 1) % self.lifetime
-
-    def endcallback(self, game_ctx):
+    def try_attacking(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist //= game_ctx.map.wall_width
         hitprob = int(dist * self.actor.accuracy)
@@ -119,6 +119,10 @@ class AttackState(ActorState):
         if random.randint(1, hitprob) in range(1, 3):
             self.attack(game_ctx)
 
+    def act(self, game_ctx):
+        if self.heartbeats + 2 == self.lifetime:
+            self.try_attacking(game_ctx)
+        self.heartbeats = (self.heartbeats + 1) % self.lifetime
 
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
@@ -136,19 +140,18 @@ class ChaseState(ActorState):
 
     def decide_dir(self, game_ctx):
         self.prev_dir = self.actor.look_dir.copy()
-        delta = plain_sub(self.actor.pos, game_ctx.player.pos)
+        delta = vec_sub(self.actor.pos, game_ctx.player.pos)
         wolflogger.debug(f"delta: {delta}")
         wolflogger.debug(f"actor pos: {self.actor.pos}")
         maxd = max(delta, key=abs)
         vertical = delta.index(maxd)
         mind = delta[~vertical + 2]
         dirs = [[1, 0], [0, 1]]
-        dirs[vertical] = plain_mul(dirs[vertical], sign(maxd))
-        dirs[~vertical + 2] = plain_mul(dirs[~vertical + 2], sign(mind))
+        dirs[vertical] = vec_mul(dirs[vertical], sign(maxd))
+        dirs[~vertical + 2] = vec_mul(dirs[~vertical + 2], sign(mind))
         first_try = dirs[vertical]
         if not self.try_direction(first_try):
             if delta[~vertical + 2]:
-                print("fallback")
                 self.try_direction(dirs[~vertical + 2], allow_reverse=True)
         wolflogger.debug(f"actor look dir: {self.actor.look_dir}")
 
@@ -165,8 +168,7 @@ class ChaseState(ActorState):
                     wolflogger.debug(f"{self.actor}, openned door!")
                     door.begin_opening()
             return False
-        if not any(plain_add(self.prev_dir, dir_)) and not allow_reverse:
-            print("reverse prevented", self.prev_dir, dir_)
+        if not any(vec_add(self.prev_dir, dir_)) and not allow_reverse:
             return False
         return True
 
@@ -194,7 +196,6 @@ class ChaseState(ActorState):
             and self.actor.sees_player(game_ctx)
         if self.waiting_door:
             if self.waiting_door.is_open():
-                print("wait is over!")
                 self.waiting_door = False
 
     def act(self, _):
@@ -205,8 +206,6 @@ class ChaseState(ActorState):
 
         if not self.waiting_door:
             self.actor.move()
-        else:
-            print("waiting!!")
 
     def endcallback(self, game_ctx):
         if not self.waiting_door:
@@ -262,9 +261,9 @@ class Actor:
         self.state = state
 
     def to_this_space(self, pos):
-        to_self = plain_sub(pos, self.pos)
-        obs_space = (plain_dot(to_self, self.left),
-                     plain_dot(to_self, self.look_dir))
+        to_self = vec_sub(pos, self.pos)
+        obs_space = (vec_dot(to_self, self.left),
+                     vec_dot(to_self, self.look_dir))
         return obs_space
 
     def get_current_block(self):
@@ -276,12 +275,12 @@ class Actor:
 
     def move(self):
         m = self.wolfmap
-        disp = plain_mul(self.look_dir, self.pace)
-        new_pos = plain_add(self.pos, plain_mul(disp, self.pace))
+        disp = vec_mul(self.look_dir, self.pace)
+        new_pos = vec_add(self.pos, vec_mul(disp, self.pace))
         new_block = m.to_block_pos(*new_pos)
         if m.cell_occupied(new_block):
             return
-        self.pos = plain_add(self.pos, disp)
+        self.pos = vec_add(self.pos, disp)
 
     def orientation_idx(self, observer, sectors=8):
         myspace = self.to_this_space(observer.pos)
@@ -314,13 +313,13 @@ class Actor:
         mag = max(self.look_dir, key=abs)
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
-        return plain_add(pblock, offset)
+        return vec_add(pblock, offset)
 
     def sees_player(self, game_ctx):
         r = game_ctx.renderer.raycaster
         p = game_ctx.player
-        to_player = plain_normalize(plain_sub(self.pos, p.pos))
-        if plain_dot(self.look_dir, to_player) < 0:
+        to_player = vec_norm(vec_sub(self.pos, p.pos))
+        if vec_dot(self.look_dir, to_player) < 0:
             # player is behind the actor
             return False
         return p.get_current_block() in r.get_corridor(*to_player, self.pos)

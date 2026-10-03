@@ -10,8 +10,8 @@ from wolf.maps import WolfMap, WolfDoor, WolfPushWall
 class Observer:
     def __init__(self, pos, look_dir=[1, 0], fov=120, ray_count=200):
         self.pos = list(pos)
-        self.look_dir = plain_normalize(look_dir)
-        self.left = get_perp(self.look_dir)
+        self.look_dir = vec_norm(look_dir)
+        self.left = vec_get_perp(self.look_dir)
         self.fov = math.radians(fov)
         self.vp_length = math.tan(self.fov / 2)
         self.ray_count = ray_count
@@ -21,17 +21,17 @@ class Observer:
 
     def update_directions(self):
         self.directions.clear()
-        self.left_dir = rotate_vector_angle(
+        left_ray = rotate_vector_angle(
             self.look_dir, self.fov / -2).tolist()
         da = self.gap
         for i in range(self.ray_count):
-            vec = rotate_vector_angle(self.left_dir, i*da)
+            vec = rotate_vector_angle(left_ray, i*da)
             self.directions.append(vec.tolist())
 
     def to_this_space(self, pos):
-        to_pos = plain_sub(self.pos, pos)
-        return (plain_dot(to_pos, self.left),
-                plain_dot(to_pos, self.look_dir))
+        to_pos = vec_sub(self.pos, pos)
+        return (vec_dot(to_pos, self.left),
+                vec_dot(to_pos, self.look_dir))
 
     def rotate(self, angle):
         rm = ROT_MATRIX(math.radians(angle))
@@ -40,7 +40,7 @@ class Observer:
         self.update_directions()
 
     def translate(self, tvec):
-        self.pos = plain_add(self.pos, tvec)
+        self.pos = vec_add(self.pos, tvec)
 
 
 class Raycaster:
@@ -135,7 +135,7 @@ class Raycaster:
         slv = pushwall.sliding_vert
         if slv ^ vert_intercept:
             # the ray hits in the sliding orientation
-            if plain_dot((rx, ry), pushwall.sliding_dir) < 0:
+            if vec_dot((rx, ry), pushwall.sliding_dir) < 0:
                 # the wall is sliding in the opposite direction
                 # relative to the ray
                 return perpd(trace), vert_intercept, cell, True
@@ -164,8 +164,8 @@ class Raycaster:
             return perpd(trace), vert_intercept, cell, True
 
     def get_perp_dist(self, trace):
-        to_trace = plain_sub(self.observer.pos, trace)
-        return plain_dot(to_trace, self.observer.look_dir)
+        to_trace = vec_sub(self.observer.pos, trace)
+        return vec_dot(to_trace, self.observer.look_dir)
 
     @staticmethod
     def get_ray_context(ray):
@@ -248,13 +248,13 @@ class Raycaster:
         # no hit on an occupied cell
         # returns None
 
-    def raycast(self):
+    def raycast(self, camera_pos):
         distbuff = []
         colls = []
         hw = self.map.wall_width // 2
         for ray_dir in self.observer.directions:
             rayctx = self.get_ray_context(ray_dir)
-            trace = self.observer.pos.copy()
+            trace = camera_pos.copy()
             while True:
                 if (hitinfo := self.ray_step(trace, hw, rayctx)):
                     dist, vert, cell = hitinfo

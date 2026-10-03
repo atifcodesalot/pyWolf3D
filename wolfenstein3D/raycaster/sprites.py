@@ -1,7 +1,7 @@
 
 
 from .textures import Texture, os, Image
-from .aux_math import plain_dot, plain_sub, plain_add
+from .aux_math import vec_add
 
 
 class Sprite(Texture):
@@ -28,7 +28,7 @@ class Sprite(Texture):
         return ((projected[0] + vpl) / (2*vpl)) * renderer.width
 
     def translate(self, tvec):
-        self.pos = plain_add(self.pos, tvec)
+        self.pos = vec_add(self.pos, tvec)
         
     def shade(self, _, i):
         return self.columns[i]
