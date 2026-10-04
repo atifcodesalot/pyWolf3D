@@ -163,6 +163,15 @@ class ChaseState(ActorState):
         self.decide_dir(game_ctx)
 
         self.waiting_door = False
+        self.shouted = False
+        
+    def start(self):
+        if self.shouted:
+            return
+        if alrtsnd := self.actor.alert_sound:
+            alrtsnd.play()
+        self.shouted = True
+
 
     def decide_dir(self, game_ctx):
         self.prev_dir = self.actor.look_dir.copy()
@@ -243,7 +252,7 @@ class Actor:
                  sprites: list[Sprite], sprite_layout,
                  death_frames, move_frames, attack_frames, dead_offset, hurt_offset,
                  health=100, drop=None, _range=100, accuracy=1,
-                 death_sounds=[], attack_sound=None):
+                 death_sounds=[], attack_sound=None, alert_sound=None):
         self.wolfmap = wolfmap
         self._type = _type
         self.pos = list(pos)
@@ -271,6 +280,7 @@ class Actor:
 
         self.death_sounds = death_sounds
         self.attack_sound = attack_sound
+        self.alert_sound = alert_sound
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
@@ -386,7 +396,9 @@ class Guard(Actor):
                          health=100,
                          drop=WolfItem.AMMUNITION,
                          death_sounds=list(SOUNDS["death"].values()),
-                         attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"])
+                         attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"],
+                         alert_sound=SOUNDS["common"]["HALTSND.WAV"])
+                         
 
 
 class Shepherd(Actor):
@@ -417,8 +429,7 @@ class SS(Actor):
                          hurt_offset=0,
                          health=120,
                          drop=WolfItem.MACHINEGUN,
-                         death_sounds=list(SOUNDS["death"].values()),
-                         )
+                         death_sounds=list(SOUNDS["death"].values()))
 
 
 TYPE_ACTOR_OBJ = {

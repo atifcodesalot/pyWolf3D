@@ -27,9 +27,6 @@ class WolfRenderer(RayRenderer):
                          topcolor="#6B6404",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
-        # insert 0 for empty
-        self.wall_textures.insert(0, None)
-        #
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
         self.font = pygame.font.SysFont("arial", 6)
@@ -122,7 +119,6 @@ class WolfRenderer(RayRenderer):
             try:
                 pixelref[pos] = 0xFF0000
             except:
-                print(pos, i)
                 exit()
             red += 1
             if not red % 60:
@@ -159,6 +155,11 @@ class WolfRenderer(RayRenderer):
 
 
 class WolfGame:
+    jukebox = [
+        "level1_5.ogg",
+        None,
+        None,
+    ]
     def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=50):
         self.player = player
         self.wolfmap = self.player.map
@@ -281,7 +282,6 @@ class WolfGame:
         return min(int(inflicted * reduction), 100)
 
     def handle_shooting(self, ongoing=False):
-        print(SOUNDS)
         wolflogger.debug("called handle_shooting")
         no_ammo = self.player.out_of_ammo()
         cant_shoot = (
@@ -305,7 +305,7 @@ class WolfGame:
         old = self.renderer.weap_sp
         rapid = ongoing.real
         self.add_animation(Animation(
-            None, None, 20-10*rapid, 5-3*rapid, 0,
+            None, None, 20-15*rapid, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
             self.renderer, "weap_sp")
         self.handle_hitscan()
@@ -404,8 +404,15 @@ class WolfGame:
         self.handle_secrets()
         self.handle_animations()
         self.heartbeats += 1
+        
+    def play_music(self, music=None):
+        if music is None:
+            piece = self.jukebox[0]
+            pygame.mixer.music.load(SOUNDS["music"][piece])
+            pygame.mixer.music.play(loops=-1)
 
-    def mainloop(self):
+    def mainloop(self, music=None):
+        self.play_music(music)
         self.ongoing = True
         while self.ongoing:
             if self.player.is_dead():

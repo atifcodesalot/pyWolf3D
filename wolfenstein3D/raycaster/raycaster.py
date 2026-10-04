@@ -104,7 +104,7 @@ class Raycaster:
         nearside_hit = (half_horiz ^ door.horiz)
         if nearside_hit:
             # return door interior cell
-            return half_vert, 36, True
+            return half_vert, 35, True
 
         offset = trace[vert_intercept] % ww
         door_hit = (offset / ww) < door.opening
@@ -119,7 +119,7 @@ class Raycaster:
             farside_hit = (hh_horiz ^ door.horiz)
             hh_horiz = ~hh_vert + 2
             if farside_hit:
-                return hh_vert, 36, True
+                return hh_vert, 35, True
             # the ray passes through
             return vert_intercept, None, False
 
@@ -221,7 +221,8 @@ class Raycaster:
         yb = hw if not ynn and not vert else 0
         biased_pos = self.map.to_block_pos(
             trace[0] - xb, trace[1] - yb)
-        if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
+        cell = self.map.raw[biased_pos[1]][biased_pos[0]]
+        if cell < 106:
             if cell in self.map.DOOR:
                 door_obj = self.map.get_door(biased_pos)
                 dvert, dcell, door_hit = self.handle_door(
@@ -277,7 +278,8 @@ class Raycaster:
             biased_pos = self.map.to_block_pos(
                 trace[0] - xb, trace[1] - yb)
             visited.append(biased_pos)
-            if (cell := self.map.raw[biased_pos[1]][biased_pos[0]]):
+            cell = self.map.raw[biased_pos[1]][biased_pos[0]]
+            if cell < 106:
                 if cell in self.map.DOOR:
                     door_obj = self.map.get_door(biased_pos)
                     _, _, door_hit = self.handle_door(

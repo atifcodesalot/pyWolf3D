@@ -59,7 +59,7 @@ def init_wall_textures():
         WALL_TEXTURES[i] = [WALL_TEXTURES[i], WALL_TEXTURES[i+1]]
 
     # extend to 100 slot texture table
-    WALL_TEXTURES.extend([0]*100)
+    WALL_TEXTURES.extend([None]*100)
     WALL_TEXTURES[31 << 1] = WALL_TEXTURES[31]
 
 
@@ -126,12 +126,16 @@ def init_sounds(root=SOUND_PATH, depth=0):
     if depth == 0:
         global SOUNDS
         SOUNDS = {}
-    SOUNDS[os.path.basename(root)] = {}
+    base = os.path.basename(root)
+    SOUNDS[base] = {}
     for entry in os.scandir(root):
         if entry.is_dir():
             init_sounds(root=entry.path, depth=depth+1)
         elif entry.is_file():
-            SOUNDS[os.path.basename(root)][entry.name] = pygame.mixer.Sound(entry.path)
+            if base == "music":
+                SOUNDS[base][entry.name] = entry.path
+            else:
+                SOUNDS[base][entry.name] = pygame.mixer.Sound(entry.path)
         
         
 

@@ -2,10 +2,9 @@
 from raycaster.sprites import Sprite
 from raycaster.aux_math import vec_dot, vec_add
 from .game_objects import *
-from .assets import SPRITES
+from .assets import SPRITES, SOUNDS
 from .actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
-from .assets import SOUNDS
 
 
 class WolfDoor:
@@ -70,8 +69,8 @@ class WolfPushWall:
         if (self.ATOL > self.offset % 1 > -self.ATOL):
             adjpos = vec_add(self.pos, self.sliding_dir)
             adjpos = (int(adjpos[0]), int(adjpos[1]))
-            # unoccupy current cell
-            wolfmap.raw[self.pos[1]][self.pos[0]] = 0
+            # unoccupy current cell, set it an ambush tile
+            wolfmap.raw[self.pos[1]][self.pos[0]] = 106
             # occupy adjacent cell
             wolfmap.raw[adjpos[1]][adjpos[0]] = self.cell
             del wolfmap.pushwalls[self.pos]
@@ -95,8 +94,8 @@ class WolfPushWall:
 # DOOR has door tile numbers
 # contains actors, items, sprites to render etc.
 class WolfMap:
-    DOOR = [0x1f + 1, (0x1f << 1) + 1, 0x22 + 1, (0x22 << 1) + 1]
-    HORIZ_DOOR = [(0x1f << 1) + 1, (0x22 << 1) + 1]
+    DOOR = [0x1f, 0x1f << 1, 0x22, 0x22 << 1]
+    HORIZ_DOOR = [0x1f << 1, 0x22 << 1]
 
     def __init__(self, size=(64, 64), array=None,
                  wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0]):
@@ -213,7 +212,8 @@ class WolfMap:
         if not self.in_boundary(block_pos):
             return True
         cell = self.raw[block_pos[1]][block_pos[0]]
-        if not cell:
+        if cell >= 106:
+            # cell is empty
             if block_pos in self.sprite_lookup:
                 sprite = self.sprite_lookup[block_pos]
                 return sprite.blocking
