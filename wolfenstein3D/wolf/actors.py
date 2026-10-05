@@ -115,11 +115,20 @@ class AttackState(ActorState):
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.auto = False
+        self.exit_auto = None
 
     def go_auto(self):
+        if self.auto:
+            return
         self.auto = True
-        self.lifetime = 20
+        self.lifetime = 15
+        self.before_auto = self.next
         self.next = self
+        
+    def quit_auto(self):
+        self.auto = False
+        self.next = self.before_auto
+        self.exit_auto = True
 
     def set_sprite_offset(self, off):
         self.offset = off
@@ -149,11 +158,18 @@ class AttackState(ActorState):
         if self.heartbeats + 2 == self.lifetime:
             self.try_attacking(game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
+        
+    def think(self, game_ctx):
+        if not self.auto:
+            return
+        if not self.actor.sees_player(game_ctx):
+            self.quit_auto()
+            
 
     def endcallback(self, _):
         if self.actor._type == WolfActorType.SCHUTZSTAFFEL:
-            diceroll = random.randint(1, 2) == 2
-            if diceroll:
+            diceroll = random.randint(1, 2) == 1
+            if diceroll and not self.exit_auto:
                 self.go_auto()
 
 
@@ -346,7 +362,7 @@ class Actor:
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
-        if self.ticks_since_trans == self.state.lifetime:
+        if self.ticks_since_trans >= self.state.lifetime:
             self.timeout_transition(game_ctx)
         self.state.think(game_ctx)
         self.state.act(game_ctx)
