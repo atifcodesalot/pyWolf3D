@@ -202,8 +202,10 @@ class ChaseState(ActorState):
             wolflogger.debug(f"direction {dir_} is occupied.")
             if vblock in m.doors:
                 door = m.get_door(vblock)
-                self.open_door(door)
-                return True
+                if self.actor._type != WolfActorType.DOG:
+                    self.open_door(door)
+                    return True
+                return False
             return False
         return True
 
@@ -368,6 +370,9 @@ class Actor:
         self.state.start()
         
     def alert(self, game_ctx):
+        if type(self.state) is ChaseState:
+            # already chasing
+            return
         self.state.next = ChaseState(self, 0, game_ctx)
         if alrtsnd := self.alert_sound:
             alrtsnd.play()
