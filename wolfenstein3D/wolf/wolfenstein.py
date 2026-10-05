@@ -51,21 +51,23 @@ class WolfRenderer(RayRenderer):
         weapons: dict = SPRITES["weapons"]
         self.weapons = {}
         for i in weapons:
-            w: Sprite = weapons[i]
+            wepspr: Sprite = weapons[i]
             # transform each weapon sprite to match the screen size
-            self.weapons[i] = Sprite(w.image.resize(self.pgsurface.get_size(),
+            scres = self.pgsurface.get_size()
+            wepres = (int(scres[0]*0.8), scres[1])
+            self.weapons[i] = Sprite(wepspr.image.resize(wepres,
                                                     resample=Image.Resampling.NEAREST))
+            self.wpn_xoffset = (scres[0] - wepres[0]) // 2
+            self.wpn_yoffset = scres[1]//3
             surf = self.weapons[i].surface
-            self.wpn_xoffset = self.width // 6
-            x = self.wpn_xoffset
             self.weapons[i].surface = surf.subsurface(
-                (x, surf.get_height()//2,
-                 surf.get_width()-x*2, surf.get_height()//2))
+                (0, surf.get_height()//3,
+                 surf.get_width(), 2*surf.get_height()//3))
 
     def render_weapon(self):
         self.pgsurface.blit(
             self.weapons[self.weap_sp].surface,
-            (self.wpn_xoffset, self.height // 2))
+            (self.wpn_xoffset, self.wpn_yoffset))
 
     def render_statusbar(self):
         sfont = FONT.render(
@@ -207,6 +209,11 @@ class WolfGame:
         player_area = self.player.get_current_area()
         self.areabyplayer = self.map.area_matrix[player_area]
         self.areabyplayer[player_area] = 1
+        
+    def door_alert(self, door: WolfDoor):
+        actors = self.wolfmap.actorsby_areas(door.area0, door.area1)
+        for act in actors:
+            act.alert(self)
 
     def handle_interaction(self):
         fblock, fcell = self.player.get_front_cell()
@@ -214,6 +221,7 @@ class WolfGame:
             door = self.map.get_door(fblock)
             if not door.is_opening:
                 door.begin_opening()
+                self.door_alert(door)
         elif fblock in self.map.pushwalls:
             pushwall = self.map.get_pushwall(fblock)
             if not pushwall.sliding:
@@ -421,7 +429,7 @@ class WolfGame:
             pygame.mixer.music.play(loops=-1)
 
     def mainloop(self, music=None):
-        # self.play_music(music)
+        self.play_music(music)
         self.ongoing = True
         while self.ongoing:
             if self.player.is_dead():

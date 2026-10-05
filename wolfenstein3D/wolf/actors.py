@@ -38,14 +38,20 @@ class ActorState:
 class GuardingState(ActorState):
     def __init__(self, actor):
         super().__init__(actor, 0, nextstate=self, lifetime=10)
+        self.alerted = False
 
     def think(self, game_ctx):
+        if self.alerted:
+            # already alerted nothing to think
+            return 
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         if self.actor.hears_player(game_ctx):
-            self.next = ChaseState(self.actor, 0, game_ctx)
+            self.actor.alert(game_ctx)
+            self.alerted = True
         elif dist < self.actor.proximity_radius:
             if self.actor.sees_player(game_ctx):
-                self.next = ChaseState(self.actor, 0, game_ctx)
+                self.actor.alert(game_ctx)
+                self.alerted = True
         # continue to guard
 
     def shapenum(self, observer):
@@ -167,14 +173,6 @@ class ChaseState(ActorState):
         self.committo_dest()
 
         self.waiting_door = False
-        self.shouted = False
-
-    def start(self):
-        if self.shouted:
-            return
-        if alrtsnd := self.actor.alert_sound:
-            alrtsnd.play()
-        self.shouted = True
 
     def virtual_block(self, dir_):
         return vec_add(self.actor.get_current_block(), dir_)
@@ -196,7 +194,8 @@ class ChaseState(ActorState):
             # reverses previous direction
             return False
         else:
-            wolflogger.debug(f"direction {dir_} does not reverse direction: {self.prev_dir}")
+            wolflogger.debug(
+                f"direction {dir_} does not reverse direction: {self.prev_dir}")
         m = self.actor.wolfmap
         vblock, occupied = self.dir_occupied(dir_)
         if occupied:
@@ -235,7 +234,8 @@ class ChaseState(ActorState):
                 if self.valid_dir(second_try):
                     self.actor.update_dir(second_try)
                 else:
-                    wolflogger.debug(f"third fallback, trying prev dir: {self.prev_dir}")
+                    wolflogger.debug(
+                        f"third fallback, trying prev dir: {self.prev_dir}")
                     # third fallback
                     if self.valid_dir(self.prev_dir):
                         self.actor.update_dir(self.prev_dir)
@@ -243,7 +243,8 @@ class ChaseState(ActorState):
                         wolflogger.debug(f"fourth fallback, random chains")
                         #  fourth fallback
                         if not self.random_dir_fallback():
-                            wolflogger.debug(f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
+                            wolflogger.debug(
+                                f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
                             self.actor.reverse_dir()
 
         wolflogger.debug(
@@ -365,6 +366,11 @@ class Actor:
         state.next = old
         self.state = state
         self.state.start()
+        
+    def alert(self, game_ctx):
+        self.state.next = ChaseState(self, 0, game_ctx)
+        if alrtsnd := self.alert_sound:
+            alrtsnd.play()
 
     def to_this_space(self, pos):
         to_self = vec_sub(pos, self.pos)

@@ -18,7 +18,7 @@ class WolfDoor:
         self.is_opening = False
         self.is_closing = False
         self.init_areas()
-        
+
     def init_areas(self):
         dir_ = BASIS[self.horiz.real]
         area0pos = vec_add(self.pos, dir_)
@@ -34,11 +34,12 @@ class WolfDoor:
 
     def slide_close(self):
         self.opening = min(self.opening + self.SLIDE, 1)
-        
+
     def connect_areas(self):
         self.map.area_matrix[self.area1][self.area0] = 1
         self.map.area_matrix[self.area0][self.area1] = 1
-        
+        # self.alert_areas(game_ctx)
+
     def disconnect_areas(self):
         self.map.area_matrix[self.area1][self.area0] = 0
         self.map.area_matrix[self.area0][self.area1] = 0
@@ -60,7 +61,7 @@ class WolfDoor:
         self.is_opening = False
         self.is_closing = False
         self.opening = 1
-        
+
     def open_callback(self):
         pass
 
@@ -137,7 +138,7 @@ class WolfMap:
         self.doors: dict[tuple: WolfDoor] = {}
         self.raw = array
         self.init_doors()
-        
+
         self.area_matrix = []
         for i in range(37):
             row = [0,] * 37
@@ -201,6 +202,11 @@ class WolfMap:
         actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir)
         self.actors.append(actor_obj)
 
+    def actorsby_areas(self, *areas):
+        def ffunc(act): return act.get_current_area(
+        ) in areas and not act.is_dead()
+        return filter(ffunc, self.actors)
+
     def add_decoration(self, decor: WolfDecoration, coor):
         if decor not in WolfDecoration:
             raise TypeError("can't add non decoration")
@@ -222,7 +228,7 @@ class WolfMap:
 
     def add_door(self, block_pos, horizontal):
         self.doors[block_pos] = WolfDoor(self,
-            block_pos, 1, horizontal=horizontal)
+                                         block_pos, 1, horizontal=horizontal)
 
     def init_doors(self):
         self.doors.clear()
@@ -255,9 +261,3 @@ class WolfMap:
     def in_boundary(self, block_pos):
         return 0 <= block_pos[0] < self.size[0] and\
             0 <= block_pos[1] < self.size[1]
-
-    def set_random(self, amount, num=1):
-        import random
-        w, h = self.size
-        for _ in range(amount):
-            self.raw[random.randint(0, h-1)][random.randint(0, w-1)] = num
