@@ -41,11 +41,15 @@ class GuardingState(ActorState):
 
     def think(self, game_ctx):
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
-        if dist < self.actor.proximity_radius:
+        if self.actor.hears_player(game_ctx):
+            self.next = ChaseState(self.actor, 0, game_ctx)
+        elif dist < self.actor.proximity_radius:
             if self.actor._type == WolfActorType.DOG:
                 self.next = ChaseState(self.actor, 0, game_ctx)
-            elif self.actor.sees_player(game_ctx):
-                self.next = ChaseState(self.actor, 0, game_ctx)
+            else:
+                if self.actor.sees_player(game_ctx):
+                    self.next = ChaseState(self.actor, 0, game_ctx)
+        # continue to guard
 
     def shapenum(self, observer):
         col = self.colnum()
@@ -164,14 +168,13 @@ class ChaseState(ActorState):
 
         self.waiting_door = False
         self.shouted = False
-        
+
     def start(self):
         if self.shouted:
             return
         if alrtsnd := self.actor.alert_sound:
             alrtsnd.play()
         self.shouted = True
-
 
     def decide_dir(self, game_ctx):
         self.prev_dir = self.actor.look_dir.copy()
@@ -316,6 +319,14 @@ class Actor:
     def get_current_block(self):
         return self.wolfmap.to_block_pos(*self.pos)
 
+    def get_current_area(self):
+        ablock = self.get_current_block()
+        cell = self.wolfmap.raw[ablock[1]][ablock[0]]
+        if cell in self.wolfmap.DOOR:
+            # if inside door tile, return the second area
+            return self.wolfmap.get_door(ablock).area1
+        return cell - 107
+
     def update_direction(self, dir_):
         self.look_dir = dir_
         self.left = [-self.look_dir[1], self.look_dir[0]]
@@ -371,6 +382,14 @@ class Actor:
             return False
         return p.get_current_block() in r.get_corridor(*to_player, self.pos)
 
+    def hears_player(self, game_ctx):
+        actor_area = self.get_current_area()
+        if actor_area == 106:
+            # in ambush tile
+            return False
+        can_hear = game_ctx.areabyplayer[actor_area]
+        return game_ctx.player.shooting and can_hear
+
     def snapshot(self):
         state = self.pos, self.look_dir, self.health
         return tuple([copy.deepcopy(att) for att in state])
@@ -398,7 +417,6 @@ class Guard(Actor):
                          death_sounds=list(SOUNDS["death"].values()),
                          attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"],
                          alert_sound=SOUNDS["common"]["HALTSND.WAV"])
-                         
 
 
 class Shepherd(Actor):

@@ -160,6 +160,7 @@ class WolfGame:
         None,
         None,
     ]
+
     def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=50):
         self.player = player
         self.wolfmap = self.player.map
@@ -178,6 +179,8 @@ class WolfGame:
 
         self.ongoing = True
         self.interact = False
+
+        self.areabyplayer = [[0,]*37]*37
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -199,6 +202,11 @@ class WolfGame:
                 self.map.pop_item(player_block)
                 item.affect(self.player)
                 self.renderer.glow = (0, 1)
+
+    def handle_areas(self):
+        player_area = self.player.get_current_area()
+        self.areabyplayer = self.map.area_matrix[player_area]
+        self.areabyplayer[player_area] = 1
 
     def handle_interaction(self):
         fblock, fcell = self.player.get_front_cell()
@@ -322,7 +330,7 @@ class WolfGame:
                         self.map.pushwalls.values()))
         for pushwall in revealed:
             if pushwall.sliding:
-                pushwall.slide_open(self.map)
+                pushwall.slide_open(self.wolfmap)
 
     def open_door(self, door: WolfDoor):
         if door.opening > 0:
@@ -403,8 +411,9 @@ class WolfGame:
         self.handle_doors()
         self.handle_secrets()
         self.handle_animations()
+        self.handle_areas()
         self.heartbeats += 1
-        
+
     def play_music(self, music=None):
         if music is None:
             piece = self.jukebox[0]

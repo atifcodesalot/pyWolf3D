@@ -57,12 +57,17 @@ class WolfPlayer(Observer):
     def out_of_ammo(self):
         return self.ammo == 0
 
-    def get_current_cell(self):
-        block_pos = self.get_current_block()
-        return self.map.get_cell(block_pos)
-
     def get_current_block(self):
         return self.map.to_block_pos(*self.pos)
+    
+    
+    def get_current_area(self):
+        pblock = self.get_current_block()
+        cell = self.map.raw[pblock[1]][pblock[0]]
+        if cell in self.map.DOOR:
+            # if inside door tile, return the second area
+            return self.map.get_door(pblock).area1
+        return cell - 107
 
     def get_front_cell(self):
         pblock = self.map.to_block_pos(*self.pos)

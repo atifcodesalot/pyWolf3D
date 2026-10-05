@@ -1,6 +1,6 @@
 
 from raycaster.sprites import Sprite
-from raycaster.aux_math import vec_dot, vec_add
+from raycaster.aux_math import *
 from .game_objects import *
 from .assets import SPRITES, SOUNDS
 from .actors import TYPE_ACTOR_OBJ
@@ -10,12 +10,21 @@ from copy import deepcopy
 class WolfDoor:
     SLIDE = 0.02
 
-    def __init__(self, pos, opening: float, horizontal=True):
+    def __init__(self, _map, pos, opening: float, horizontal=True):
+        self.map = _map
         self.pos = pos
         self.opening = opening
         self.horiz = horizontal
         self.is_opening = False
         self.is_closing = False
+        self.init_areas()
+        
+    def init_areas(self):
+        dir_ = BASIS[self.horiz.real]
+        area0pos = vec_add(self.pos, dir_)
+        area1pos = vec_sub(dir_, self.pos)
+        self.area0 = self.map.raw[area0pos[1]][area0pos[0]] - 107
+        self.area1 = self.map.raw[area1pos[1]][area1pos[0]] - 107
 
     def is_open(self):
         return self.opening == 0
@@ -25,15 +34,25 @@ class WolfDoor:
 
     def slide_close(self):
         self.opening = min(self.opening + self.SLIDE, 1)
+        
+    def connect_areas(self):
+        self.map.area_matrix[self.area1][self.area0] = 1
+        self.map.area_matrix[self.area0][self.area1] = 1
+        
+    def disconnect_areas(self):
+        self.map.area_matrix[self.area1][self.area0] = 0
+        self.map.area_matrix[self.area0][self.area1] = 0
 
     def begin_opening(self):
         if self.is_opening:
             return
+        self.connect_areas()
         SOUNDS["doors"]["OPENDOORSND.WAV"].play()
         self.is_opening = True
         self.is_closing = False
 
     def begin_closing(self):
+        self.disconnect_areas()
         SOUNDS["doors"]["CLOSEDOORSND.WAV"].play()
         self.is_closing = True
 
@@ -41,6 +60,9 @@ class WolfDoor:
         self.is_opening = False
         self.is_closing = False
         self.opening = 1
+        
+    def open_callback(self):
+        pass
 
 
 class WolfPushWall:
@@ -115,6 +137,12 @@ class WolfMap:
         self.doors: dict[tuple: WolfDoor] = {}
         self.raw = array
         self.init_doors()
+        
+        self.area_matrix = []
+        for i in range(37):
+            row = [0,] * 37
+            row[i] = 1
+            self.area_matrix.append(row)
 
     def snapshot(self):
         state = (deepcopy(self.raw),
@@ -193,7 +221,7 @@ class WolfMap:
         return self.pushwalls.get(block_pos, None)
 
     def add_door(self, block_pos, horizontal):
-        self.doors[block_pos] = WolfDoor(
+        self.doors[block_pos] = WolfDoor(self,
             block_pos, 1, horizontal=horizontal)
 
     def init_doors(self):

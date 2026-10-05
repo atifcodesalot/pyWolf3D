@@ -189,7 +189,6 @@ class GameMapsAdaptor:
         walls = [walls[i*64: (i+1)*64] for i in range(64)]
         for i, row in enumerate(walls):
             walls[i] = [WALL_TEXTURE_MAPPING.get(wall, 0) for wall in row]
-        print(walls)
 
         wolfmap = WolfMap(array=walls, wall_width=8)
         ww = wolfmap.wall_width
@@ -225,7 +224,6 @@ def get_shareware_maps():
     parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
     adaptor = GameMapsAdaptor(parser)
     SHAREWARE_MAPS = [adaptor.to_wolfmap(level_i) for level_i in range(10)]
-    print(SHAREWARE_MAPS[0].raw)
     maphead.close()
     maptemp.close()
 
