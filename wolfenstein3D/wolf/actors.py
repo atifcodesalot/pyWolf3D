@@ -44,11 +44,8 @@ class GuardingState(ActorState):
         if self.actor.hears_player(game_ctx):
             self.next = ChaseState(self.actor, 0, game_ctx)
         elif dist < self.actor.proximity_radius:
-            if self.actor._type == WolfActorType.DOG:
+            if self.actor.sees_player(game_ctx):
                 self.next = ChaseState(self.actor, 0, game_ctx)
-            else:
-                if self.actor.sees_player(game_ctx):
-                    self.next = ChaseState(self.actor, 0, game_ctx)
         # continue to guard
 
     def shapenum(self, observer):
@@ -155,6 +152,9 @@ class AttackState(ActorState):
 
 
 class ChaseState(ActorState):
+    fallback_chains = [[(0, -1), (-1, -1), (-1, 0)],
+                       [(1, 0), (1, -1), (0, -1)]]
+
     def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 16)
         if type(actor) is Shepherd:
@@ -163,8 +163,8 @@ class ChaseState(ActorState):
         self.hb_perframe = self.lifetime // self.actor.move_frames
         self.move_off = walk_cycle
         self.heartbeats = 0
-        self.prev_dir = [0, 0]
         self.decide_dir(game_ctx)
+        self.committo_dest()
 
         self.waiting_door = False
         self.shouted = False
@@ -176,45 +176,105 @@ class ChaseState(ActorState):
             alrtsnd.play()
         self.shouted = True
 
+    def virtual_block(self, dir_):
+        return vec_add(self.actor.get_current_block(), dir_)
+
+    def dir_occupied(self, dir_):
+        occp = self.actor.wolfmap.cell_occupied
+        vblock = tuple(self.virtual_block(dir_))
+        if all(dir_):
+            # diagonal direction
+            adj1 = tuple(self.virtual_block([-dir_[0], 0]))
+            adj2 = tuple(self.virtual_block([0, -dir_[1]]))
+            return vblock, occp(vblock) or occp(adj1) or occp(adj2)
+        return vblock, occp(vblock)
+
+    def valid_dir(self, dir_):
+        if not any(vec_add(self.prev_dir, dir_)):
+            wolflogger.debug(f"direction {dir_} would reversse prev direction: "
+                             f"{self.prev_dir}, not allowed")
+            # reverses previous direction
+            return False
+        else:
+            wolflogger.debug(f"direction {dir_} does not reverse direction: {self.prev_dir}")
+        m = self.actor.wolfmap
+        vblock, occupied = self.dir_occupied(dir_)
+        if occupied:
+            wolflogger.debug(f"direction {dir_} is occupied.")
+            if vblock in m.doors:
+                door = m.get_door(vblock)
+                self.open_door(door)
+                return True
+            return False
+        return True
+
+    def random_dir_fallback(self):
+        chain = random.choice(self.fallback_chains)
+        wolflogger.debug(f"chain selected: {chain}")
+        for dir_ in chain:
+            if self.valid_dir(dir_):
+                self.actor.update_dir(list(dir_))
+                return True
+        return False
+
     def decide_dir(self, game_ctx):
         self.prev_dir = self.actor.look_dir.copy()
         delta = vec_sub(self.actor.pos, game_ctx.player.pos)
-        wolflogger.debug(f"delta: {delta}")
-        wolflogger.debug(f"actor pos: {self.actor.pos}")
         maxd = max(delta, key=abs)
         vertical = delta.index(maxd)
         mind = delta[~vertical + 2]
         dirs = [[1, 0], [0, 1]]
-        dirs[vertical] = vec_mul(dirs[vertical], sign(maxd))
-        dirs[~vertical + 2] = vec_mul(dirs[~vertical + 2], sign(mind))
-        first_try = dirs[vertical]
-        if not self.try_direction(first_try):
-            if delta[~vertical + 2]:
-                self.try_direction(dirs[~vertical + 2], allow_reverse=True)
-        wolflogger.debug(f"actor look dir: {self.actor.look_dir}")
+        first_try = vec_mul(dirs[vertical], sign(maxd))
+        second_try = vec_mul(dirs[~vertical + 2], sign(mind))
+        if self.valid_dir(first_try):
+            self.actor.update_dir(first_try)
+        else:
+            # if the fallback delta is not zero
+            if second_try:
+                wolflogger.debug(f"tried {first_try}, fallback: {second_try}")
+                if self.valid_dir(second_try):
+                    self.actor.update_dir(second_try)
+                else:
+                    wolflogger.debug(f"third fallback, trying prev dir: {self.prev_dir}")
+                    # third fallback
+                    if self.valid_dir(self.prev_dir):
+                        self.actor.update_dir(self.prev_dir)
+                    else:
+                        wolflogger.debug(f"fourth fallback, random chains")
+                        #  fourth fallback
+                        if not self.random_dir_fallback():
+                            wolflogger.debug(f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
+                            self.actor.reverse_dir()
 
-    def try_direction(self, dir_, allow_reverse=False):
-        m = self.actor.wolfmap
-        self.actor.update_direction(dir_)
-        fblock = self.actor.get_front_block()
-        lookup = tuple(fblock)
-        if self.actor.wolfmap.cell_occupied(lookup):
-            if lookup in m.doors:
-                door = m.get_door(lookup)
-                self.waiting_door = door
-                if not (door.is_opening or door.is_open()):
-                    wolflogger.debug(f"{self.actor}, openned door!")
-                    door.begin_opening()
-            return False
-        if not any(vec_add(self.prev_dir, dir_)) and not allow_reverse:
-            return False
-        return True
+        wolflogger.debug(
+            f"decided actor {self.actor._type} look dir: {self.actor.look_dir}")
 
-    def actor_in_middle(self):
+    def open_door(self, door):
+        self.waiting_door = door
+        if not (door.is_opening or door.is_open()):
+            wolflogger.debug(f"{self.actor}, openned door!")
+            door.begin_opening()
+
+    def committo_dest(self):
+        ldir = self.actor.look_dir
         w = self.actor.wolfmap.wall_width
-        hw = w // 2
-        pos = self.actor.pos
-        return int(pos[0]) % w == hw or int(pos[1]) % w == hw
+        self.mov_budget = w
+        if all(ldir):
+            # diagonal movement
+            self.mov_budget *= math.sqrt(2)
+
+        self.dest_block = vec_add(
+            self.actor.pos, vec_mul(ldir, self.mov_budget))
+
+    def seek_dest(self, game_ctx):
+        self.actor.move()
+        self.mov_budget = max(self.mov_budget - self.actor.pace, 0)
+        if self.mov_budget == 0:
+            # clamp to center
+            self.actor.pos = self.dest_block
+            #
+            self.decide_dir(game_ctx)
+            self.committo_dest()
 
     def colnum(self):
         return super().colnum() + \
@@ -236,18 +296,14 @@ class ChaseState(ActorState):
             if self.waiting_door.is_open():
                 self.waiting_door = False
 
-    def act(self, _):
+    def act(self, game_ctx):
         if self.gonna_attack:
             self.actor.interrupt_transition(AttackState(self.actor))
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
 
         if not self.waiting_door:
-            self.actor.move()
-
-    def endcallback(self, game_ctx):
-        if not self.waiting_door:
-            self.decide_dir(game_ctx)
+            self.seek_dest(game_ctx)
 
 
 class Actor:
@@ -327,8 +383,12 @@ class Actor:
             return self.wolfmap.get_door(ablock).area1
         return cell - 107
 
-    def update_direction(self, dir_):
+    def update_dir(self, dir_):
         self.look_dir = dir_
+        self.left = [-self.look_dir[1], self.look_dir[0]]
+
+    def reverse_dir(self):
+        self.look_dir = vec_mul(self.look_dir, -1)
         self.left = [-self.look_dir[1], self.look_dir[0]]
 
     def move(self):
@@ -366,12 +426,16 @@ class Actor:
         self.interrupt_transition(newst)
 
     def get_front_block(self):
-        pblock = self.wolfmap.to_block_pos(*self.pos)
+        ablock = self.wolfmap.to_block_pos(*self.pos)
         offset = [0, 0]
         mag = max(self.look_dir, key=abs)
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
-        return vec_add(pblock, offset)
+        return vec_add(ablock, offset)
+
+    def front_occupied(self):
+        fblock = self.get_front_block()
+        return self.wolfmap.cell_occupied(fblock)
 
     def sees_player(self, game_ctx):
         r = game_ctx.renderer.raycaster

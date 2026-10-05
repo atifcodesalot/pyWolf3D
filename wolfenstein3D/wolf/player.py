@@ -124,7 +124,6 @@ class WolfPlayer(Observer):
         to_killer = vec_norm(vec_sub(self.pos, killer.pos))
         angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
         da = sign(vec_dot(self.left, to_killer)) * 4
-        print(da, self.left, to_killer)
         while angle_diff > 2:
             self.rotate(da)
             angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))

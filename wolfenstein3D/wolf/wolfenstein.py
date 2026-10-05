@@ -421,7 +421,7 @@ class WolfGame:
             pygame.mixer.music.play(loops=-1)
 
     def mainloop(self, music=None):
-        self.play_music(music)
+        # self.play_music(music)
         self.ongoing = True
         while self.ongoing:
             if self.player.is_dead():

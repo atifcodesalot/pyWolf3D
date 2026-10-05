@@ -56,7 +56,7 @@ class WolfGameTest(unittest.TestCase):
 
     def test_quick(self):
         mymap = SHAREWARE_MAPS[1]
-        player = WolfPlayer(mymap, ray_count=128,
+        player = WolfPlayer(mymap, ray_count=256,
                             weapon=WolfWeapon.PISTOL, fov=64)
         player.ammo = 5
         screen = pygame.display.set_mode((128*6, 128*5))
@@ -66,8 +66,6 @@ class WolfGameTest(unittest.TestCase):
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map
         self.assertEqual(map_.size, (64, 64))
-        game.map.add_actor(WolfActorType.SCHUTZSTAFFEL,
-                           vec_add(player.pos, (0, -30)), [1, 0])
         game.mainloop()
 
     def test_weapon_sprites(self):
