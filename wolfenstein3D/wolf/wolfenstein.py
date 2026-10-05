@@ -320,8 +320,17 @@ class WolfGame:
         # handle shooting animation
         old = self.renderer.weap_sp
         rapid = ongoing.real
+        if rapid:
+            if self.player.weapon.value == 2:
+                # machine gun
+                rate = 10
+            else:
+                # chain gun
+                rate = 5
+        else:
+            rate = 25
         self.add_animation(Animation(
-            None, None, 20-15*rapid, 5-3*rapid, 0,
+            None, None, rate, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
             self.renderer, "weap_sp")
         self.handle_hitscan()
