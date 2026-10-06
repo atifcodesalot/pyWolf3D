@@ -1,6 +1,6 @@
 
 
-from .textures import Texture, os, Image
+from .textures import Texture, pygame, Image
 from .aux_math import vec_add
 
 
@@ -10,6 +10,9 @@ class Sprite(Texture):
         self.pos = pos
         self.image = image
         self.blocking = blocking
+
+        # sprites dont get shaded so it is easy to cache?
+        self.column_cache = {}
 
     def to_observer_space(self, observer):
         self.obs_space = observer.to_this_space(self.pos)
@@ -29,11 +32,38 @@ class Sprite(Texture):
 
     def translate(self, tvec):
         self.pos = vec_add(self.pos, tvec)
-        
-    def shade(self, _, i):
-        return self.columns[i]
-    
+
+    def get_column(self, i, repeat, height, screen_height):
+        if (i, repeat, height) in self.column_cache:
+            # cache hit
+            return self.column_cache[(i, repeat, height)]
+
+        # cache miss
+        column = self.columns[i]
+
+        if height > screen_height:
+            # clip before scaling
+            off = screen_height / height * self.half_height
+            column = column.subsurface(
+                (0, self.half_height - off, 1, off*2))
+            height = screen_height
+
+        height = max(height, 0)
+        scaled = pygame.transform.scale(
+            column, (repeat, height))
+        # save to cache
+        self.column_cache[(i, repeat, height)] = scaled
+        return scaled
+
+    def get_scaled_portion(self, xoff1, xoff2, width, height, screen_height):
+        height = int(height)
+        scaled = self.scale_column(
+            self.surface, width, height, screen_height)
+        return scaled.subsurface(
+            (xoff1, 0, xoff2-xoff1, height))
+
     def copy(self, pos):
         copied = self.__new__(self.__class__)
         copied.__init__(self.image, pos=pos, blocking=self.blocking)
+        copied.column_cache = self.column_cache
         return copied

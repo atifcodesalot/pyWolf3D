@@ -12,6 +12,9 @@ def ROT_MATRIX(a): return np.array(
 def np_norm(vec):
     return np.divide(vec, np.linalg.norm(vec))
 
+def vec_mag(vec):
+    return math.sqrt(vec[0]**2 + vec[1]**2)
+
 def vec_norm(vec):
     mag = math.sqrt(vec[0]**2 + vec[1]**2)
     return [vec[0] / mag, vec[1] / mag]

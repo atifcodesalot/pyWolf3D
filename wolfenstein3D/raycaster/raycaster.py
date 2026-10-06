@@ -250,7 +250,6 @@ class Raycaster:
         # returns None
 
     def raycast(self, camera_pos):
-        distbuff = []
         colls = []
         hw = self.map.wall_width // 2
         for ray_dir in self.observer.directions:
@@ -259,11 +258,10 @@ class Raycaster:
             while True:
                 if (hitinfo := self.ray_step(trace, hw, rayctx)):
                     dist, vert, cell = hitinfo
-                    distbuff.append(dist)
-                    colls.append((trace, vert, cell))
+                    colls.append((dist, trace, vert, cell))
                     break
                 # hitinfo is none
-        return colls, distbuff
+        return colls
 
     def get_corridor(self, rx, ry, start_pos):
         visited = [start_pos,]
