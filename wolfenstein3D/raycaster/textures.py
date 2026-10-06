@@ -35,6 +35,8 @@ class Texture:
             height = screen_height
 
         height = max(height, 0)
+        if not height:
+            print(height)
         scaled = pygame.transform.scale(
             column, (repeat, height))
         return scaled

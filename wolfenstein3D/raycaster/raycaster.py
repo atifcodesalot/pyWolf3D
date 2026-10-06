@@ -249,19 +249,17 @@ class Raycaster:
         # no hit on an occupied cell
         # returns None
 
-    def raycast(self, camera_pos):
-        colls = []
+    def raycast(self, ray_dir, camera_pos):
         hw = self.map.wall_width // 2
-        for ray_dir in self.observer.directions:
-            rayctx = self.get_ray_context(ray_dir)
-            trace = camera_pos.copy()
-            while True:
-                if (hitinfo := self.ray_step(trace, hw, rayctx)):
-                    dist, vert, cell = hitinfo
-                    colls.append((dist, trace, vert, cell))
-                    break
-                # hitinfo is none
-        return colls
+        rayctx = self.get_ray_context(ray_dir)
+        trace = camera_pos.copy()
+        while True:
+            if (hitinfo := self.ray_step(trace, hw, rayctx)):
+                dist, vert, cell = hitinfo
+                break
+            # hitinfo is none
+            
+        return (dist, trace, vert, cell)
 
     def get_corridor(self, rx, ry, start_pos):
         visited = [start_pos,]
