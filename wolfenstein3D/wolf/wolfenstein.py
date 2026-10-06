@@ -56,7 +56,7 @@ class WolfRenderer(RayRenderer):
             scres = self.pgsurface.get_size()
             wepres = (int(scres[0]*0.8), scres[1])
             self.weapons[i] = Sprite(wepspr.image.resize(wepres,
-                                                    resample=Image.Resampling.NEAREST))
+                                                         resample=Image.Resampling.NEAREST))
             self.wpn_xoffset = (scres[0] - wepres[0]) // 2
             self.wpn_yoffset = scres[1]//3
             surf = self.weapons[i].surface
@@ -186,8 +186,8 @@ class WolfGame:
 
     def init_keymappings(self):
         self.key_mappings = {
-            pygame.K_w: self.player.move_forward,
-            pygame.K_s: self.player.move_backward,
+            pygame.K_w: self.move_player,
+            pygame.K_s: lambda: self.move_player(sign_=-1),
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
             pygame.K_SPACE: lambda: setattr(self, "interact", True)
@@ -205,11 +205,29 @@ class WolfGame:
                 item.affect(self.player)
                 self.renderer.glow = (0, 1)
 
+    def move_player(self, clip=True, sign_=1):
+        disp = vec_mul(self.player.look_dir, self.player.pace * sign_)
+        m = self.map
+        pos = self.player.pos
+        xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
+        ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
+        if not clip:
+            return self.player.translate(vec_add(xdisp, ydisp))
+        xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 3)))
+        if not m.cell_occupied(xtry):
+            self.player.pos = vec_add(pos, xdisp)
+        ytry = m.to_block_pos(*vec_add(pos, vec_mul(ydisp, 3)))
+        if not m.cell_occupied(ytry):
+            self.player.pos = vec_add(self.player.pos, ydisp)
+
     def handle_areas(self):
         player_area = self.player.get_current_area()
+        if player_area > 37 or 0 > player_area:
+            wolflogger.warning("player area out of bounds!")
+            return
         self.areabyplayer = self.map.area_matrix[player_area]
         self.areabyplayer[player_area] = 1
-        
+
     def door_alert(self, door: WolfDoor):
         actors = self.wolfmap.actorsby_areas(door.area0, door.area1)
         for act in actors:
@@ -384,7 +402,6 @@ class WolfGame:
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     self.interact = False
-
         self.handle_keystate()
 
     def schedule_game_event(self, _time, action):
@@ -438,7 +455,7 @@ class WolfGame:
             pygame.mixer.music.play(loops=-1)
 
     def mainloop(self, music=None):
-        self.play_music(music)
+        # self.play_music(music)
         self.ongoing = True
         while self.ongoing:
             if self.player.is_dead():

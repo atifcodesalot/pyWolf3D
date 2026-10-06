@@ -29,20 +29,6 @@ class WolfPlayer(Observer):
     def has_auto(self):
         return self.weapon.value > 1
 
-    def move_forward(self):
-        self.displace(vec_mul(self.look_dir, self.pace))
-
-    def move_backward(self):
-        self.displace(disp=vec_mul(self.look_dir, -self.pace*1.2))
-
-    # collide with occupied cells
-    def displace(self, disp):
-        new_pos = vec_add(self.pos, vec_mul(disp, 4))
-        if self.map.cell_occupied(self.map.to_block_pos(*new_pos)):
-            # wolflogger.debug(f"Can't displace to {new_pos}")
-            return
-        self.translate(disp)
-
     def look_at(self, point):
         self.look_dir = vec_norm(vec_sub(self.pos, point))
         self.left = vec_get_perp(self.look_dir)
