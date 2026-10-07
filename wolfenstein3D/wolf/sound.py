@@ -76,6 +76,8 @@ class WolfSoundManager:
         if ch is None:
             ch = pygame.mixer.find_channel(force=True)
         sndeff.channel = ch
+        # cap to master before playing
+        sndeff.channel.set_volume(self.master)
         # add to the playing sounds
         self.playing_effects.append(sndeff)
 
@@ -90,6 +92,7 @@ class WolfSoundManager:
         elif new < 0:
             new = 0
         self.master = new
+        self.set_music_volume(self.master)
         
     def set_music_volume(self, new):
         self.music_vol = self.cap_volume(new)

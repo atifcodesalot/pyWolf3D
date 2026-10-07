@@ -80,7 +80,6 @@ class WolfPushWall:
     def begin_sliding(self, dir):
         if self.slid:
             return
-        SOUNDS["doors"]["PUSHWALLSND.WAV"].play()
         self.sliding = True
         self.sliding_dir = dir
         self.sliding_vert = (vec_dot(self.sliding_dir, (0, 1)) != 0).real
