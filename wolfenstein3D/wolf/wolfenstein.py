@@ -78,7 +78,8 @@ class WolfGame:
             pygame.K_s: lambda: self.move_player(sign_=-1),
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
-            pygame.K_SPACE: lambda: setattr(self, "interact", True)
+            pygame.K_SPACE: lambda: setattr(self, "interact", True),
+            pygame.K_LSHIFT: lambda: setattr(self.player, "running", True)
         }
 
     def handle_item_pickup(self, player_block):
@@ -94,17 +95,18 @@ class WolfGame:
                 self.renderer.glow = (0, 1)
 
     def move_player(self, clip=True, sign_=1):
-        disp = vec_mul(self.player.look_dir, self.player.pace * sign_)
+        pace = self.player.pace*2 if self.player.running else self.player.pace
+        disp = vec_mul(self.player.look_dir, pace * sign_)
         m = self.map
         pos = self.player.pos
         xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
         ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
         if not clip:
             return self.player.translate(vec_add(xdisp, ydisp))
-        xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 3)))
+        xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 5)))
         if not m.cell_occupied(xtry):
             self.player.pos = vec_add(pos, xdisp)
-        ytry = m.to_block_pos(*vec_add(pos, vec_mul(ydisp, 3)))
+        ytry = m.to_block_pos(*vec_add(pos, vec_mul(ydisp, 5)))
         if not m.cell_occupied(ytry):
             self.player.pos = vec_add(self.player.pos, ydisp)
 
@@ -254,7 +256,6 @@ class WolfGame:
         door.begin_opening()
         self.door_alert(door)
         snd = SOUNDS["doors"]["OPENDOORSND.WAV"]
-        print(door.pos)
         self.schedule_sound_effect(snd, origin=door.globpos, _time=1)
         
     def shut_door(self, door):
@@ -306,6 +307,8 @@ class WolfGame:
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     self.interact = False
+                if event.key == pygame.K_LSHIFT:
+                    self.player.running = False
         self.handle_keystate()
 
     def schedule_game_event(self, _time, action):

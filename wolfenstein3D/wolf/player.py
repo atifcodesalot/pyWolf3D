@@ -26,6 +26,7 @@ class WolfPlayer(Observer):
         self.lives = 3
 
         self.shooting = False
+        self.running = False
 
     def has_auto(self):
         return self.weapon.value > 1
