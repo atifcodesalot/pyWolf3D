@@ -13,6 +13,7 @@ class WolfDoor:
     def __init__(self, _map, pos, opening: float, horizontal=True):
         self.map = _map
         self.pos = pos
+        self.globpos = vec_mul(pos, self.map.wall_width)
         self.opening = opening
         self.horiz = horizontal
         self.is_opening = False
@@ -48,13 +49,11 @@ class WolfDoor:
         if self.is_opening:
             return
         self.connect_areas()
-        SOUNDS["doors"]["OPENDOORSND.WAV"].play()
         self.is_opening = True
         self.is_closing = False
 
     def begin_closing(self):
         self.disconnect_areas()
-        SOUNDS["doors"]["CLOSEDOORSND.WAV"].play()
         self.is_closing = True
 
     def reset(self):

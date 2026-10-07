@@ -37,7 +37,7 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_actor_instances(self):
-        mymap = SHAREWARE_MAPS[4]
+        mymap = SHAREWARE_MAPS[1]
         self.assertFalse(id(mymap.actors[0]) == id(mymap.actors[1]))
         self.assertFalse(id(mymap.actors[0].sprites[0]) == id(
             mymap.actors[1].sprites[0]))
@@ -56,12 +56,14 @@ class WolfGameTest(unittest.TestCase):
 
     def test_quick(self):
         mymap = SHAREWARE_MAPS[1]
-        player = WolfPlayer(mymap, ray_count=256,
-                            weapon=WolfWeapon.PISTOL, fov=64)
-        player.ammo = 5
-        screen = pygame.display.set_mode((128*6, 128*5))
+        player = WolfPlayer(mymap, ray_count=128,
+                            weapon=WolfWeapon.PISTOL, fov=54)
+        player.ammo = 10
+        screen = pygame.display.set_mode((128*5, 128*4))
         renderer = WolfRenderer(player, screen)
-        game = WolfGame(player, renderer)
+        game = WolfGame(player, renderer, sound_off=False)
+        game.sound_manager.set_music_volume(0.2)
+        game.sound_manager.set_master(0.6)
         raycaster = game.renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map
@@ -81,6 +83,12 @@ class WolfGameTest(unittest.TestCase):
         self.assertIsInstance(objects, dict)
         self.assertGreater(len(objects), 0)
         # objects[1].image.show()
+        
+    def test_actor_positions_middle(self):
+        for _map in SHAREWARE_MAPS:
+            for actor in _map.actors:
+                self.assertEqual(actor.pos[0] % _map.wall_width, _map.wall_width // 2)
+                self.assertEqual(actor.pos[1] % _map.wall_width, _map.wall_width // 2)
 
     # def test_maps(self):
     #     for wolfmap in SHAREWARE_MAPS:
@@ -99,6 +107,6 @@ class WolfGameTest(unittest.TestCase):
 if __name__ == '__main__':
     # uncomment to profile
     # with cProfile.Profile() as pr:
-    unittest.main(exit=False)
+        unittest.main(exit=False)
 
     # pr.dump_stats("wolf.prof")

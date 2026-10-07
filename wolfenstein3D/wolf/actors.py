@@ -28,7 +28,7 @@ class ActorState:
         col = (spps * (self.spcolumn + off))
         return col
 
-    def start(self):
+    def start(self, game_ctx):
         return
 
     def endcallback(self, game_ctx):
@@ -76,10 +76,10 @@ class DyingState(ActorState):
         self.hb_perframe = self.lifetime // actor.death_frames
         self.heartbeats = 0
 
-    def start(self):
+    def start(self, gamectx):
         if snds := self.actor.death_sounds:
             deathsnd: pygame.mixer.Sound = random.choice(snds)
-            deathsnd.play()
+            gamectx.schedule_sound_effect(deathsnd, self.actor.pos, 3)
 
     def act(self, _):
         self.heartbeats += 1
@@ -146,7 +146,7 @@ class AttackState(ActorState):
 
     def try_attacking(self, game_ctx):
         if snd := self.actor.attack_sound:
-            snd.play()
+            game_ctx.schedule_sound_effect(snd, self.actor.pos, 1)
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist //= game_ctx.map.wall_width
         hitprob = int(dist * self.actor.accuracy)
@@ -317,7 +317,7 @@ class ChaseState(ActorState):
 
     def act(self, game_ctx):
         if self.gonna_attack:
-            self.actor.interrupt_transition(AttackState(self.actor))
+            self.actor.interrupt_transition(AttackState(self.actor), game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
 
@@ -375,15 +375,15 @@ class Actor:
             self.ticks_since_trans = getattr(self.state, "heartbeats", 0)
         else:
             self.ticks_since_trans = 0
-        self.state.start()
+        self.state.start(game_ctx)
 
-    def interrupt_transition(self, state: ActorState):
+    def interrupt_transition(self, state: ActorState, game_ctx):
         self.interrupted = True
         self.ticks_since_trans = 0
         old = self.state
         state.next = old
         self.state = state
-        self.state.start()
+        self.state.start(game_ctx)
         
     def alert(self, game_ctx):
         if type(self.state) is ChaseState:
@@ -391,7 +391,7 @@ class Actor:
             return
         self.state.next = ChaseState(self, 0, game_ctx)
         if alrtsnd := self.alert_sound:
-            alrtsnd.play()
+            game_ctx.schedule_sound_effect(alrtsnd, origin=self.pos, _time=1)
 
     def to_this_space(self, pos):
         to_self = vec_sub(pos, self.pos)
@@ -444,13 +444,13 @@ class Actor:
     def is_dead(self):
         return self.health == 0
 
-    def get_shot(self, damage):
+    def get_shot(self, damage, game_ctx):
         self.dec_health(damage)
         dead = self.is_dead()
         if dead:
             self.state = DeadState(self)
         newst = DyingState(self) if dead else HurtState(self)
-        self.interrupt_transition(newst)
+        self.interrupt_transition(newst, game_ctx)
 
     def get_front_block(self):
         ablock = self.wolfmap.to_block_pos(*self.pos)

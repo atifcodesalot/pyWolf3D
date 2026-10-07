@@ -1,159 +1,42 @@
 
 from raycaster.aux_math import *
-from raycaster.raycaster import Raycaster
-from raycaster.renderer import RayRenderer, PointLight
-from .animations import Animation
 from .maps import *
 from .player import *
 from .actors import *
-from .assets import SPRITES, WALL_TEXTURES
+from .sound import WolfSoundManager
+from .renderer import WolfRenderer, PointLight
 from . import wolflogger, pygame
-import numpy as np
 import time
 from .game_objects import WEAPON_SOUND
 
-LIGHT_OPTIONS = [PointLight((0, 0))]
 
-
-class WolfRenderer(RayRenderer):
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-
-    def __init__(self, player: WolfPlayer, pgsurface: pygame.Surface):
-        self.player = player
-        self.map = self.player.map
-        raycaster = Raycaster(player, player.map)
-        super().__init__(raycaster, pgsurface,
-                         topcolor="#6B6404",
-                         bottomcolor="#707070",
-                         wall_textures=WALL_TEXTURES)
-        self.light = LIGHT_OPTIONS[0]
-        self.init_weapon_sprites()
-        self.font = pygame.font.SysFont("arial", 6)
-
-        # for when items are picked up or other stuff
-        self.glow = False
-
-        self.heartbeats = 0
-        self.rgb_offset = [0, 0, 0]
+class Animation:
+    def __init__(self, obj, target_attr: str, duration,
+                 frame_count, shapenum=0, endcallback=None, offset=0):
         # in heartbeats
-        self.glow_duration = 16
-        self.glow_cycle = 0
-
-        # for fizzle fade
-        self.shuffled_indices = list(range(self.width*self.height))
-        random.shuffle(self.shuffled_indices)
+        self.duration = duration
         #
+        self.obj = obj
+        self.target_attr = target_attr
+        self.frame_count = frame_count
+        self.shapenum = shapenum
+        self.hb_perframe = self.duration / self.frame_count
 
-    def init_weapon_sprites(self):
-        self.sp_per_weap = 5
-        self.weap_sp = self.player.weapon.value * self.sp_per_weap
-        weapons: dict = SPRITES["weapons"]
-        self.weapons = {}
-        for i in weapons:
-            wepspr: Sprite = weapons[i]
-            # transform each weapon sprite to match the screen size
-            scres = self.pgsurface.get_size()
-            wepres = (int(scres[0]*0.8), scres[1])
-            self.weapons[i] = Sprite(wepspr.image.resize(wepres,
-                                                         resample=Image.Resampling.NEAREST))
-            self.wpn_xoffset = (scres[0] - wepres[0]) // 2
-            self.wpn_yoffset = scres[1]//3
-            surf = self.weapons[i].surface
-            self.weapons[i].surface = surf.subsurface(
-                (0, surf.get_height()//3,
-                 surf.get_width(), 2*surf.get_height()//3))
+        self.lifetime = 0
+        self.endcallback = endcallback
+        self.offset = offset
 
-    def render_weapon(self):
-        self.pgsurface.blit(
-            self.weapons[self.weap_sp].surface,
-            (self.wpn_xoffset, self.wpn_yoffset))
+    def tick(self, heartbeats):
+        self.lifetime += heartbeats
+        if self.ended():
+            if callable(self.endcallback):
+                self.endcallback()
+            return
+        self.shapenum = self.lifetime // self.hb_perframe
+        setattr(self.obj, self.target_attr, self.shapenum + self.offset)
 
-    def render_statusbar(self):
-        sfont = FONT.render(
-            f"Score: {self.player.score} Health: {self.player.health}  Ammo: {self.player.ammo}", True, self.WHITE)
-        self.pgsurface.blit(sfont, (150, 10))
-
-    def render_sprites(self):
-        # also render actors
-        actor_sprites = [act.current_sprite(
-            self.player) for act in self.map.actors]
-        all_sprites = self.sort_sprites(actor_sprites + self.map.sprites)
-        for sprite in all_sprites:
-            self.draw_sprite(sprite)
-
-    def handle_glow(self):
-        self.glow_cycle += 1
-        half_cycle: bool = (self.glow_duration // self.glow_cycle) == 1
-        pixelref = pygame.surfarray.pixels3d(self.pgsurface)
-        offchannels = [pixelref[:, :, i].astype(
-            np.uint16) + self.rgb_offset[i] for i in self.glow]
-        for i in self.glow:
-            pixelref[:, :, i] = np.minimum(offchannels[i], 255)
-
-        addition = -8 if half_cycle else 8
-        for i in self.glow:
-            self.rgb_offset[i] += addition
-
-        del pixelref
-
-    def render(self, heartbeats, weapon=True):
-        self.pgsurface.fill(self.topcolor, rect=self.toprect)
-        self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
-        offset = vec_mul(self.player.look_dir, -0.6)
-        camera_pos = vec_add(self.player.pos, offset)
-        super().render(camera_pos, self.light)
-        if self.glow:
-            self.handle_glow()
-        if weapon:
-            self.render_weapon()
-        self.render_statusbar()
-        self.heartbeats += heartbeats
-
-    def fizzle_fade(self):
-        # grab a cheap pixel reference
-        pixelref = pygame.PixelArray(self.pgsurface)
-        #
-        w, h = pixelref.shape
-        red = 0
-        for i in self.shuffled_indices:
-            pos = (i % w, i // w)
-            try:
-                pixelref[pos] = 0xFF0000
-            except:
-                exit()
-            red += 1
-            if not red % 60:
-                # update display per 15 writes
-                pygame.display.flip()
-                pass
-
-        del pixelref
-
-    def unfizzle(self):
-        self.render(1)
-        mirror = self.pgsurface.copy()
-        self.pgsurface.fill("0xff0000")
-        pixelref = pygame.PixelArray(self.pgsurface)
-        w, h = pixelref.shape
-        unfizzled = 0
-        for i in self.shuffled_indices[::-1]:
-            pos = (i % w, i // w)
-            pixelref[pos] = mirror.get_at(pos)
-            unfizzled += 1
-            if not unfizzled % 80:
-                # update display per 15 writes
-                pygame.display.flip()
-                pass
-
-    def glow_end(self):
-        self.rgb_offset = [0, 0, 0]
-        self.glow = False
-        self.glow_cycle = 0
-
-    def clear_screen(self):
-        self.pgsurface.fill(self.WHITE)
-        self.pgsurface.fill(self.BLACK)
+    def ended(self) -> bool:
+        return self.lifetime >= self.duration
 
 
 class WolfGame:
@@ -163,7 +46,7 @@ class WolfGame:
         None,
     ]
 
-    def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=50):
+    def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=60, sound_off=False):
         self.player = player
         self.wolfmap = self.player.map
         self.renderer = renderer
@@ -183,6 +66,11 @@ class WolfGame:
         self.interact = False
 
         self.areabyplayer = [[0,]*37]*37
+        
+        self.sound_manager = WolfSoundManager(master=1)
+        
+        if sound_off:
+            self.sound_manager.set_master(0)
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -238,8 +126,8 @@ class WolfGame:
         if fcell in self.map.DOOR:
             door = self.map.get_door(fblock)
             if not door.is_opening:
-                door.begin_opening()
-                self.door_alert(door)
+                self.open_door(door)
+                
         elif fblock in self.map.pushwalls:
             pushwall = self.map.get_pushwall(fblock)
             if not pushwall.sliding:
@@ -301,10 +189,10 @@ class WolfGame:
                     ablock = self.map.to_block_pos(*act.pos)
                     pblock = self.player.get_current_block()
                     if euclidean_distance(ablock, pblock) < 2:
-                        act.get_shot(damage=75)
+                        act.get_shot(damage=75, game_ctx=self)
                 else:
                     damage = self.calculate_damage(act)
-                    act.get_shot(damage)
+                    act.get_shot(damage, self)
 
     def calculate_damage(self, actor: Actor, reduction=1):
         pblock = self.player.get_current_block()
@@ -331,7 +219,7 @@ class WolfGame:
         # can shoot
         shootsnd = SOUNDS["weapons"].get(WEAPON_SOUND[self.player.weapon])
         if shootsnd:
-            shootsnd.play()
+            self.schedule_sound_effect(shootsnd, None, 1)
         self.player.shooting = True
         self.player.dec_ammo()
 
@@ -356,9 +244,40 @@ class WolfGame:
     def handle_doors(self):
         for door in self.map.doors.values():
             if door.is_opening:
-                self.open_door(door)
+                self.slide_door_open(door)
             elif door.is_closing:
-                self.close_door(door)
+                self.slide_door_close(door)
+                
+    # door related methods start here
+    #
+    def open_door(self, door):
+        door.begin_opening()
+        self.door_alert(door)
+        snd = SOUNDS["doors"]["OPENDOORSND.WAV"]
+        print(door.pos)
+        self.schedule_sound_effect(snd, origin=door.globpos, _time=1)
+        
+    def shut_door(self, door):
+        snd = SOUNDS["doors"]["CLOSEDOORSND.WAV"]
+        self.schedule_sound_effect(snd, origin=door.globpos, _time=1)
+        door.is_closing = False
+        
+    def slide_door_open(self, door: WolfDoor):
+        if door.opening > 0:
+            door.slide_open()
+        else:
+            # door has finished opening
+            door.is_opening = False
+            self.schedule_game_event(200, lambda _: door.begin_closing())
+    
+    def slide_door_close(self, door: WolfDoor):
+        if door.opening < 1:
+            door.slide_close()
+        else:
+            # door has finished closing
+            self.shut_door(door)
+
+    # door related methods end here
 
     def handle_secrets(self):
         revealed = list(filter(lambda p: p.sliding,
@@ -366,21 +285,6 @@ class WolfGame:
         for pushwall in revealed:
             if pushwall.sliding:
                 pushwall.slide_open(self.wolfmap)
-
-    def open_door(self, door: WolfDoor):
-        if door.opening > 0:
-            door.slide_open()
-        else:
-            # door has finished opening
-            door.is_opening = False
-            self.schedule_game_event(200, lambda _: door.begin_closing())
-
-    def close_door(self, door: WolfDoor):
-        if door.opening < 1:
-            door.slide_close()
-        else:
-            # door has finished closing
-            door.is_closing = False
 
     def handle_keystate(self):
         pressed = pygame.key.get_pressed()
@@ -410,6 +314,10 @@ class WolfGame:
             # schedule one tick later so they dont collide
             future += 1
         self.game_events[future] = action
+        
+    def schedule_sound_effect(self, snd, origin, _time):
+        future = self.heartbeats + _time
+        self.sound_manager.queue_sound_effect(snd, origin, self, future)
 
     def handle_game_events(self):
         if not self.heartbeats in self.game_events:
@@ -446,16 +354,13 @@ class WolfGame:
         self.handle_secrets()
         self.handle_animations()
         self.handle_areas()
+        self.sound_manager.handle_sound(self)
         self.heartbeats += 1
 
-    def play_music(self, music=None):
-        if music is None:
-            piece = self.jukebox[0]
-            pygame.mixer.music.load(SOUNDS["music"][piece])
-            pygame.mixer.music.play(loops=-1)
-
     def mainloop(self, music=None):
-        # self.play_music(music)
+        if music is None:
+            music = self.jukebox[0]
+        self.sound_manager.play_music(music)
         self.ongoing = True
         while self.ongoing:
             if self.player.is_dead():

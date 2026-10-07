@@ -256,10 +256,10 @@ class Raycaster:
         while True:
             if (hitinfo := self.ray_step(trace, hw, rayctx)):
                 dist, vert, cell = hitinfo
-                break
+                return (dist, trace, vert, cell)
             # hitinfo is none
             
-        return (dist, trace, vert, cell)
+        
 
     def get_corridor(self, rx, ry, start_pos):
         visited = [start_pos,]

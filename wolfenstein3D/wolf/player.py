@@ -5,10 +5,11 @@ from .game_objects import WolfWeapon
 from .maps import WolfMap
 from raycaster.aux_math import *
 from .actors import Actor
-from math import acos, pi, degrees
 import copy
 import pygame
 
+
+from math import acos, degrees
 
 class WolfPlayer(Observer):
     def __init__(self, map_: WolfMap, fov=60,
