@@ -6,6 +6,10 @@ from math import pow
 from dataclasses import dataclass
 
 
+# get 32 channels
+pygame.mixer.set_num_channels(32)
+
+
 @dataclass
 class WolfSoundEffect:
     snd: pygame.mixer.Sound
@@ -39,7 +43,6 @@ class WolfSoundManager:
         oblock = game_ctx.map.to_block_pos(*origin)
         dist = euclidean_distance(pblock, oblock)
         level = self.cap_volume(self.attenuate_func(dist))
-        print("distance:", dist, "snd level:", level)
         return level
 
     def queue_sound_effect(self, snd: pygame.mixer.Sound, origin, game_ctx, future):
@@ -70,6 +73,8 @@ class WolfSoundManager:
 
     def start_sound_effect(self, sndeff):
         ch = sndeff.snd.play()
+        if ch is None:
+            ch = pygame.mixer.find_channel(force=True)
         sndeff.channel = ch
         # add to the playing sounds
         self.playing_effects.append(sndeff)
