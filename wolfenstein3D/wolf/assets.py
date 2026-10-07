@@ -34,7 +34,7 @@ SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
 #     sheet.putdata(new)
 #     sheet.save(savename, "PNG")
 
-DOUBLE_ARTWORK = {15, 13, 14, 18}
+DOUBLE_ARTWORK = {12, 14, 16, 18}
 
 
 def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
