@@ -178,7 +178,7 @@ class ChaseState(ActorState):
                        [(1, 0), (1, -1), (0, -1)]]
 
     def __init__(self, actor, walk_cycle, game_ctx):
-        super().__init__(actor, 1, self, 16)
+        super().__init__(actor, 1, self, 20)
         if type(actor) is Shepherd:
             # dogs dont have standing sprites
             self.spcolumn = 0
@@ -352,7 +352,7 @@ class Actor:
         self.hurt_offset = hurt_offset
 
         self.ticks_since_trans = 0
-        self.pace = 0.5
+        self.pace = 0.25
         self.proximity_radius = self.wolfmap.wall_width * 6
         self.interrupted = False
 
@@ -465,7 +465,7 @@ class Actor:
         return self.wolfmap.cell_occupied(fblock)
 
     def sees_player(self, game_ctx):
-        r = game_ctx.renderer.raycaster
+        r = game_ctx.game_renderer.raycaster
         p = game_ctx.player
         to_player = vec_norm(vec_sub(self.pos, p.pos))
         if vec_dot(self.look_dir, to_player) < 0:
@@ -508,6 +508,7 @@ class Guard(Actor):
                          death_sounds=list(SOUNDS["death"].values()),
                          attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"],
                          alert_sound=SOUNDS["common"]["HALTSND.WAV"])
+        self.pace = 0.25
 
 
 class Shepherd(Actor):

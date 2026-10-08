@@ -14,6 +14,7 @@ TEXTURE_PATH = os.path.join(ASSETS_PATH, 'textures')
 SOUND_PATH = os.path.join(ASSETS_PATH, 'sound')
 
 WALLS_PATH = os.path.join(TEXTURE_PATH, 'wallmap.png')
+HUD_PATH = os.path.join(TEXTURE_PATH, 'hud.png')
 
 SPRITE_OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
 SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
@@ -63,8 +64,25 @@ def init_wall_textures():
     WALL_TEXTURES[31 << 1] = WALL_TEXTURES[31]
 
 
+def init_hud_textures():
+    def to_surf(im):
+        return pygame.image.frombytes(
+            im.tobytes(),
+            im.size,
+            "RGBA",
+        )
+    global FACE_TEXTURES
+    hudim = Image.open(HUD_PATH)
+    FACE_TEXTURES = texmap_parse(
+        52, 42, 1, 1, 24, 32, hudim, init=to_surf, lmarg=1, rmarg=91)
+    hudsurf = to_surf(hudim)
+    global STATUSBAR
+    STATUSBAR = hudsurf.subsurface((1, 1, 320, 40))
+
+
 def init_textures():
     init_wall_textures()
+    init_hud_textures()
     # init more textures in the future?
 
 
@@ -121,7 +139,6 @@ def init_font():
     FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
 
 
-
 def init_sounds(root=SOUND_PATH, depth=0):
     if depth == 0:
         global SOUNDS
@@ -136,8 +153,6 @@ def init_sounds(root=SOUND_PATH, depth=0):
                 SOUNDS[base][entry.name] = entry.path
             else:
                 SOUNDS[base][entry.name] = pygame.mixer.Sound(entry.path)
-        
-        
 
 
 init_textures()

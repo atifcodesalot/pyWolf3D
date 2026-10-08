@@ -14,7 +14,7 @@ import numpy as np
 LIGHT_OPTIONS = [PointLight((0, 0))]
 
 
-class WolfRenderer(RayRenderer):
+class Wolf3DRenderer(RayRenderer):
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
 
@@ -106,16 +106,16 @@ class WolfRenderer(RayRenderer):
             self.handle_glow()
         if weapon:
             self.render_weapon()
-        self.render_statusbar()
+        # self.render_statusbar()
         self.heartbeats += heartbeats
 
-    def fizzle_fade(self):
-        # grab a cheap pixel reference
-        pixelref = pygame.PixelArray(self.pgsurface)
-        #
-        w, h = pixelref.shape
+    def fizzle_fade(self, master, update_dest):
         red = 0
         for i in self.shuffled_indices:
+            # grab a cheap pixel reference
+            pixelref = pygame.PixelArray(self.pgsurface)
+            w, h = pixelref.shape
+            #
             pos = (i % w, i // w)
             try:
                 pixelref[pos] = 0xFF0000
@@ -124,24 +124,28 @@ class WolfRenderer(RayRenderer):
             red += 1
             if not red % 60:
                 # update display per 15 writes
+                del pixelref
+                master.blit(self.pgsurface, update_dest)
                 pygame.display.flip()
-                pass
 
-        del pixelref
+        
 
-    def unfizzle(self):
+    def unfizzle(self, master, update_dest):
         self.render(1)
         mirror = self.pgsurface.copy()
         self.pgsurface.fill("0xff0000")
         pixelref = pygame.PixelArray(self.pgsurface)
-        w, h = pixelref.shape
         unfizzled = 0
         for i in self.shuffled_indices[::-1]:
+            pixelref = pygame.PixelArray(self.pgsurface)
+            w, h = pixelref.shape
             pos = (i % w, i // w)
             pixelref[pos] = mirror.get_at(pos)
             unfizzled += 1
             if not unfizzled % 80:
                 # update display per 15 writes
+                del pixelref
+                master.blit(self.pgsurface, update_dest)
                 pygame.display.flip()
                 pass
 

@@ -4,7 +4,8 @@ from .maps import *
 from .player import *
 from .actors import *
 from .sound import WolfSoundManager
-from .renderer import WolfRenderer, PointLight
+from ._3Drenderer import Wolf3DRenderer, PointLight
+from ._2Drenderer import Wolf2DRenderer
 from . import wolflogger, pygame
 import time
 from .game_objects import WEAPON_SOUND
@@ -46,10 +47,14 @@ class WolfGame:
         None,
     ]
 
-    def __init__(self, player: WolfPlayer, renderer: WolfRenderer, framerate=60, sound_off=False):
+    def __init__(self, player: WolfPlayer, root_display, framerate=60, sound_off=False):
         self.player = player
+        self.root_display = root_display
         self.wolfmap = self.player.map
-        self.renderer = renderer
+        self.game_res = (640, 512)
+        self.game_surf = pygame.Surface(self.game_res)
+        self.game_renderer = Wolf3DRenderer(self.player, self.game_surf)
+        self.renderer = Wolf2DRenderer(root_display.get_size(), self.game_res)
         self.map = self.player.map
         self.actors = self.map.actors
         self.framerate = framerate
@@ -66,9 +71,9 @@ class WolfGame:
         self.interact = False
 
         self.areabyplayer = [[0,]*37]*37
-        
+
         self.sound_manager = WolfSoundManager(master=1)
-        
+
         if sound_off:
             self.sound_manager.set_master(0)
 
@@ -87,12 +92,12 @@ class WolfGame:
         if not item.is_health_item:
             self.map.pop_item(player_block)
             item.affect(self.player)
-            self.renderer.glow = (0, 1)
+            self.game_renderer.glow = (0, 1)
         else:
             if self.player.health != 100:
                 self.map.pop_item(player_block)
                 item.affect(self.player)
-                self.renderer.glow = (0, 1)
+                self.game_renderer.glow = (0, 1)
 
     def move_player(self, clip=True, sign_=1):
         pace = self.player.pace*2 if self.player.running else self.player.pace
@@ -129,7 +134,7 @@ class WolfGame:
             door = self.map.get_door(fblock)
             if not door.is_opening:
                 self.open_door(door)
-                
+
         elif fblock in self.map.pushwalls:
             pushwall = self.map.get_pushwall(fblock)
             if not pushwall.sliding:
@@ -143,25 +148,30 @@ class WolfGame:
                 wolflogger.debug(
                     f"player interacted with pushwall: {sliding_dir}")
                 pushwall.begin_sliding(sliding_dir)
+                slidesnd = SOUNDS["doors"]["PUSHWALLSND.WAV"]
+                self.schedule_sound_effect(slidesnd, None, 5)
 
     def handle_player_requests(self):
         # placeho0lder
-        self.renderer.weap_sp = self.player.weapon.value * self.renderer.sp_per_weap
+        self.game_renderer.weap_sp = self.player.weapon.value * \
+            self.game_renderer.sp_per_weap
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
         if pblock in self.map.item_lookup:
             self.handle_item_pickup(pblock)
             # set glow false after 40 frames
             self.schedule_game_event(
-                self.renderer.glow_duration, lambda s: s.renderer.glow_end())
+                self.game_renderer.glow_duration,
+                lambda s: s.game_renderer.glow_end())
         if self.interact:
             self.handle_interaction()
 
     def dec_player_health(self, dmg):
-        self.renderer.glow = (0,)
+        self.game_renderer.glow = (0,)
         self.player.dec_health(dmg)
         self.schedule_game_event(
-            self.renderer.glow_duration, lambda s: s.renderer.glow_end())
+            self.game_renderer.glow_duration,
+            lambda s: s.game_renderer.glow_end())
 
     def add_animation(self, anim, obj, target):
         anim.obj = obj
@@ -170,7 +180,7 @@ class WolfGame:
 
     def shooting_animation_end(self):
         wolflogger.debug("shooting_animation_end called.")
-        self.renderer.weap_sp = self.player.weapon.value * 5
+        self.game_renderer.weap_sp = self.player.weapon.value * 5
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_RETURN] and self.player.has_auto():
             # if the player is still holding down the shoot button
@@ -186,7 +196,7 @@ class WolfGame:
         for act in self.actors:
             if act.is_dead():
                 continue
-            if self.player.hits_actor(self.renderer.raycaster, act):
+            if self.player.hits_actor(self.game_renderer.raycaster, act):
                 if self.player.has_knife():
                     ablock = self.map.to_block_pos(*act.pos)
                     pblock = self.player.get_current_block()
@@ -226,7 +236,7 @@ class WolfGame:
         self.player.dec_ammo()
 
         # handle shooting animation
-        old = self.renderer.weap_sp
+        old = self.game_renderer.weap_sp
         rapid = ongoing.real
         if rapid:
             if self.player.weapon.value == 2:
@@ -240,7 +250,7 @@ class WolfGame:
         self.add_animation(Animation(
             None, None, rate, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
-            self.renderer, "weap_sp")
+            self.game_renderer, "weap_sp")
         self.handle_hitscan()
 
     def handle_doors(self):
@@ -249,7 +259,7 @@ class WolfGame:
                 self.slide_door_open(door)
             elif door.is_closing:
                 self.slide_door_close(door)
-                
+
     # door related methods start here
     #
     def open_door(self, door):
@@ -257,12 +267,12 @@ class WolfGame:
         self.door_alert(door)
         snd = SOUNDS["doors"]["OPENDOORSND.WAV"]
         self.schedule_sound_effect(snd, origin=door.globpos, _time=1)
-        
+
     def shut_door(self, door):
         snd = SOUNDS["doors"]["CLOSEDOORSND.WAV"]
         self.schedule_sound_effect(snd, origin=door.globpos, _time=1)
         door.is_closing = False
-        
+
     def slide_door_open(self, door: WolfDoor):
         if door.opening > 0:
             door.slide_open()
@@ -270,7 +280,7 @@ class WolfGame:
             # door has finished opening
             door.is_opening = False
             self.schedule_game_event(200, lambda _: door.begin_closing())
-    
+
     def slide_door_close(self, door: WolfDoor):
         if door.opening < 1:
             door.slide_close()
@@ -317,7 +327,7 @@ class WolfGame:
             # schedule one tick later so they dont collide
             future += 1
         self.game_events[future] = action
-        
+
     def schedule_sound_effect(self, snd, origin, _time):
         future = self.heartbeats + _time
         self.sound_manager.queue_sound_effect(snd, origin, self, future)
@@ -339,17 +349,28 @@ class WolfGame:
                 continue
             anim.tick(heartbeats)
 
-    def heartbeat(self):
-        self.clock.tick(self.framerate)
-        # render everything
-        if type(self.renderer.light) is PointLight:
-            self.renderer.light.pos = self.player.pos
-        self.renderer.clear_screen()
-        self.renderer.render(heartbeats=1)
-        #
+    def handle_actors(self):
         for actor in self.actors:
             actor.tick(self, 1)
+
+    def render_game(self):
+        if type(self.game_renderer.light) is PointLight:
+            self.game_renderer.light.pos = self.player.pos
+        self.game_renderer.clear_screen()
+        self.game_renderer.render(heartbeats=1)
+
+    def render(self):
+        self.render_game()
+        self.renderer.draw_everything(
+            self.game_renderer.pgsurface)
+
+    def heartbeat(self):
+        self.clock.tick(self.framerate)
         pgevents = pygame.event.get()
+        # render everything
+        self.render()
+        #
+        self.handle_actors()
         self.handle_player_requests()
         self.handle_events(pgevents)
         self.handle_game_events()
@@ -369,24 +390,26 @@ class WolfGame:
             if self.player.is_dead():
                 if self.player.lives == 0:
                     return self.game_end()
-                self.life_end()
+                self.life_end(self.root_display, self.renderer.game_off)
             self.heartbeat()
+            self.root_display.blit(self.renderer.pgsurf, (0, 0))
             pygame.display.flip()
 
     def floor_end(self):
         pass
 
-    def life_end(self):
+    def life_end(self, master_surf, dest):
         killer = getattr(self, "player_slayer", None)
         if killer:
-            self.player.turn_to_killer(self, killer=killer)
+            self.player.turn_to_killer(
+                self, killer=killer, master_surf=master_surf, update_dest=dest)
 
-        self.renderer.fizzle_fade()
+        self.game_renderer.fizzle_fade(master_surf, update_dest=dest)
         self.player.reset()
         self.heartbeat()
         self.map.reset()
         time.sleep(0.6)
-        self.renderer.unfizzle()
+        self.game_renderer.unfizzle(master_surf, update_dest=dest)
 
     def game_end(self):
         pass

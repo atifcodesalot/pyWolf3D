@@ -11,6 +11,7 @@ import pygame
 
 from math import acos, degrees
 
+
 class WolfPlayer(Observer):
     def __init__(self, map_: WolfMap, fov=60,
                  ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=20):
@@ -47,8 +48,7 @@ class WolfPlayer(Observer):
 
     def get_current_block(self):
         return self.map.to_block_pos(*self.pos)
-    
-    
+
     def get_current_area(self):
         pblock = self.get_current_block()
         cell = self.map.raw[pblock[1]][pblock[0]]
@@ -107,15 +107,15 @@ class WolfPlayer(Observer):
         self.look_at(self.map.init_look)
         self.weapon = WolfWeapon.PISTOL
         self.ammo = 5
-        
-    def turn_to_killer(self, game_ctx, killer: Actor):
+
+    def turn_to_killer(self, game_ctx, killer: Actor, master_surf, update_dest):
         to_killer = vec_norm(vec_sub(self.pos, killer.pos))
         angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
         da = sign(vec_dot(self.left, to_killer)) * 4
         while angle_diff > 2:
             self.rotate(da)
             angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
-            game_ctx.renderer.render(1, weapon=False)
+            game_ctx.game_renderer.render(1, weapon=False)
+            master_surf.blit(
+                game_ctx.game_renderer.pgsurface, update_dest)
             pygame.display.flip()
-            
-            
