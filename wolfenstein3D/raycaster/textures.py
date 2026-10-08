@@ -8,14 +8,14 @@ import os
 
 class Texture:
     def __init__(self, image: Image.Image):
-        image = image.convert("RGBA")
+        self.image = image.convert("RGBA")
 
         self.width, self.height = image.size
         self.half_height = self.height // 2
 
         self.surface = pygame.image.frombytes(
-            image.tobytes(),
-            image.size,
+            self.image.tobytes(),
+            self.image.size,
             "RGBA",
         )
 

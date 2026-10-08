@@ -8,7 +8,6 @@ class Sprite(Texture):
     def __init__(self, image: Image.Image, pos=None, blocking=None):
         super().__init__(image)
         self.pos = pos
-        self.image = image
         self.blocking = blocking
 
         # sprites dont get shaded so it is easy to cache?
