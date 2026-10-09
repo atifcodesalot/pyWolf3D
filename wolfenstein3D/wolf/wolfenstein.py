@@ -408,6 +408,7 @@ class WolfGame:
         self.player.lives -= 1
         self.renderer.update_hud(self.player)
         self.render()
+        self.sound_manager.handle_sound(self)
         pygame.display.flip()
         killer = getattr(self, "player_slayer", None)
         if killer:
@@ -418,8 +419,8 @@ class WolfGame:
         self.game_renderer.fizzle_fade(
             self.root_display, update_dest=self.renderer.game_off)
         self.player.reset()
-        self.heartbeat()
         self.map.reset()
+        self.game_renderer.glow = False
         time.sleep(0.6)
         if self.player.lives == 0:
             return self.game_end()

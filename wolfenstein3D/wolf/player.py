@@ -15,7 +15,7 @@ from math import acos, degrees
 class WolfPlayer(Observer):
     def __init__(self, map_: WolfMap, fov=60,
                  ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=20):
-        super().__init__(map_.init_pos, map_.init_look, fov, ray_count)
+        super().__init__(map_.init_pos.copy(), map_.init_look.copy(), fov, ray_count)
         self.map = map_
         self.weapon = weapon
         self.pace = 0.8
@@ -24,7 +24,7 @@ class WolfPlayer(Observer):
         self.health = health
         self.ammo = ammo
         self.score = 0
-        self.lives = 3
+        self.lives = 5
         
         
         self.has_gold_key = False
@@ -38,6 +38,11 @@ class WolfPlayer(Observer):
 
     def look_at(self, point):
         self.look_dir = vec_norm(vec_sub(self.pos, point))
+        self.left = vec_get_perp(self.look_dir)
+        self.update_directions()
+        
+    def update_look_dir(self, newldir):
+        self.look_dir = vec_norm(newldir)
         self.left = vec_get_perp(self.look_dir)
         self.update_directions()
 
@@ -108,9 +113,11 @@ class WolfPlayer(Observer):
     def reset(self):
         self.health = 100
         self.pos = self.map.init_pos.copy()
-        self.look_at(self.map.init_look)
+        self.update_look_dir(self.map.init_look)
+        self.update_directions()
         self.weapon = WolfWeapon.PISTOL
-        self.ammo = 5
+        self.ammo = 10
+        self.shooting = False
         
     def _1up(self):
         self.lives = (self.lives + 1) % 10

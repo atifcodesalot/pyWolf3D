@@ -98,7 +98,6 @@ def init_actor_entries():
                 (WolfActorType.MUTANT,
                  WolfDifficulty(i),
                  patrolling)
-        print(ACTOR_ENTRIES)
 
 
 init_actor_entries()

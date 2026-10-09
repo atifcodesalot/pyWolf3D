@@ -526,7 +526,7 @@ class Shepherd(Actor):
                          health=60,
                          _range=(wolfmap.wall_width)*2,
                          attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"])
-        self.pace = 0.7
+        self.pace = 0.5
 
 
 class SS(Actor):
