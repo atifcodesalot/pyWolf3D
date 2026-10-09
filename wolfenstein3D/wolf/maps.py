@@ -2,9 +2,16 @@
 from raycaster.sprites import Sprite
 from raycaster.aux_math import *
 from .game_objects import *
-from .assets import SPRITES, SOUNDS
+from .assets import SPRITES
 from .actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
+from enum import Enum
+
+
+class WolfDifficulty(Enum):
+    BABY = 0
+    TOUGH = 1
+    DEATHINCARNATE = 2
 
 
 # wolf door object
@@ -113,12 +120,6 @@ class WolfPushWall:
                 self.slid = True
                 return
 
-    def reset(self):
-        self.offset = 0
-        self.sliding_vert = 0
-        self.sliding = False
-        self.slid = False
-
 
 # map class,
 # 0: empty, nonzero: wall with texture
@@ -135,10 +136,10 @@ class WolfMap:
                     1, 0x21, 0x21 << 1, 0x22, 0x22 << 1]
     HORIZ_DOOR_INDICES = [0x1f << 1, 0x20 << 1, 0x21 << 1, 0x22 << 1]
 
-    def __init__(self, size=(64, 64), array=None,
-                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0]):
+    def __init__(self, difficulty: WolfDifficulty, size=(64, 64), array=None,
+                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], ):
+        self.difficulty = difficulty
         self.size = size
-
         self.wall_width = wall_width
         self.init_pos = list(init_pos)
         self.init_look = list(init_look_dir)
@@ -146,7 +147,10 @@ class WolfMap:
         self.sprites: list[Sprite] = []
         self.sprite_lookup = {}
 
-        self.actors: list = []
+        self.actors: dict[WolfDifficulty: list] = {}
+        
+        for diff in WolfDifficulty:
+            self.actors[diff] = []
 
         self.item_lookup: dict[tuple: WolfItemObj] = {}
         self.pushwalls: dict[tuple: WolfPushWall] = {}
@@ -165,7 +169,7 @@ class WolfMap:
 
     def snapshot(self):
         state = (deepcopy(self.raw),
-                 [act.snapshot() for act in self.actors],
+                 [act.snapshot() for act in self.get_actors()],
                  self.item_lookup.copy(),
                  self.sprite_lookup.copy(),
                  self.sprites.copy(),
@@ -176,7 +180,7 @@ class WolfMap:
     def reload_snapshot(self, snapshot):
         raw, actsnaps, itemsnap, spdsnap, spsnap, pws = snapshot
         self.raw = deepcopy(raw)
-        for snap, act in zip(actsnaps, self.actors):
+        for snap, act in zip(actsnaps, self.get_actors()):
             act.reload_snapshot(snap)
         self.item_lookup = itemsnap.copy()
         self.sprite_lookup = spdsnap.copy()
@@ -214,16 +218,26 @@ class WolfMap:
         self.delete_sprite(item.pos)
         return item
 
-    def add_actor(self, actor_type: WolfActorType, pos, look_dir):
+    def add_actor(self, actor_type: WolfActorType, pos, look_dir, difficulty):
         if actor_type not in WolfActorType:
             raise TypeError("can't add non actor type")
         actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir)
-        self.actors.append(actor_obj)
+        if difficulty is WolfDifficulty.BABY:
+            for k in self.actors:
+                self.actors[k].append(actor_obj)
+        elif difficulty is WolfDifficulty.TOUGH:
+            self.actors[WolfDifficulty.TOUGH].append(actor_obj)
+            self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
+        else:
+            self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
+        
+    def get_actors(self):
+        return self.actors[self.difficulty]
 
     def actorsby_areas(self, *areas):
         def ffunc(act): return act.get_current_area(
         ) in areas and not act.is_dead()
-        return filter(ffunc, self.actors)
+        return filter(ffunc, self.get_actors())
 
     def add_decoration(self, decor: WolfDecoration, coor):
         if decor not in WolfDecoration:

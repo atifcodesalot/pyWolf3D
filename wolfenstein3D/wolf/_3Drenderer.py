@@ -70,7 +70,7 @@ class Wolf3DRenderer(RayRenderer):
     def render_sprites(self):
         # also render actors
         actor_sprites = [act.current_sprite(
-            self.player) for act in self.map.actors]
+            self.player) for act in self.map.get_actors()]
         all_sprites = self.sort_sprites(actor_sprites + self.map.sprites)
         for sprite in all_sprites:
             self.draw_sprite(sprite)

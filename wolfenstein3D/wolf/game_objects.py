@@ -163,10 +163,10 @@ class WolfItemObj:
             self.pickcallback(player)
             
 class WolfActorType(Enum):
-    GUARD = 0
-    DOG = 1
-    SCHUTZSTAFFEL = 2
-    MUTANT = 3
+    GUARD = 108
+    SCHUTZSTAFFEL = 126
+    DOG = 134
+    MUTANT = 216
 
 
 WEAPON_MULTIPLIER = 1.2

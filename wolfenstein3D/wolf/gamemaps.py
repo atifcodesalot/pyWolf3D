@@ -1,5 +1,5 @@
 
-from .maps import WolfMap
+from .maps import WolfMap, WolfDifficulty
 from .actors import *
 from .assets import SPRITES, ASSETS_PATH
 from os import path
@@ -8,7 +8,7 @@ from . import wolflogger
 from .actors import WolfActorType
 
 WALL_TEXTURE_MAPPING = {
-    # DOS GAMEMAPS ID : my atlas index  
+    # DOS GAMEMAPS ID : my atlas index
     0x01: 0,  # grey stone
     0x02: 0,  # grey stone
     0x03: 2,  # grey stone + flag
@@ -63,18 +63,49 @@ WALL_TEXTURE_MAPPING = {
     0x5A: 31,  # regular door, vertical
     0x5B: 31 << 1,  # regular door, horizontal
     0x5C: 32,  # gold door vertical
-    0x5D: 32 << 1, # gold door horizontal
+    0x5D: 32 << 1,  # gold door horizontal
     0x5E: 33,  # silver door vertical
-    0x5F: 33 << 1, # horizontal
+    0x5F: 33 << 1,  # horizontal
     0x64: 34,  # elevator door vertical
-    0x65: 34 << 1, # elevator door horizontal
+    0x65: 34 << 1,  # elevator door horizontal
 }
 
 # add empty area tiles
 WALL_TEXTURE_MAPPING.update(dict((i, i) for i in range(0x6A, 0x8F + 1)))
 
 
+def init_actor_entries():
+    # entry: type, difficulty, patrolling (bool)
+    global ACTOR_ENTRIES
+    ACTOR_ENTRIES = {}
+    starts = {108: WolfActorType.GUARD,
+              126: WolfActorType.SCHUTZSTAFFEL, 138: WolfActorType.DOG}
+
+    for start in starts:
+        for i in range(3):
+            for j in range(8):
+                patrolling = j >= 4
+                ACTOR_ENTRIES[start + i * 36 + j] = \
+                    (starts[start],
+                     WolfDifficulty(i),
+                     patrolling)
+    # mutants use 18 offset per difficulty level
+    mutant_start = 216
+    for i in range(3):
+        for j in range(8):
+            patrolling = j >= 4
+            ACTOR_ENTRIES[mutant_start + i * 18 + j] = \
+                (WolfActorType.MUTANT,
+                 WolfDifficulty(i),
+                 patrolling)
+        print(ACTOR_ENTRIES)
+
+
+init_actor_entries()
+
 # return n bytes little endian from data
+
+
 def get_n_bytes_LI(start, n, data: bytearray):
     result = 0
     for i in range(n):
@@ -139,28 +170,13 @@ class GameMapsAdaptor:
         self.planes = self.parser.planes
 
     def add_actor(self, wolfmap, obj, pos):
-        # todo: implement all character sprites
-        if obj in range(108, 116):
-            if obj < 112:
-                wolfmap.add_actor(WolfActorType.GUARD, pos,
-                                  self.actor_orientation[obj-108])
-            else:
-                wolfmap.add_actor(WolfActorType.GUARD, pos,
-                                  self.actor_orientation[obj-112])
-
-        elif obj in range(126, 134):
-            if obj < 130:
-                wolfmap.add_actor(WolfActorType.SCHUTZSTAFFEL, pos,
-                                  self.actor_orientation[obj-126])
-            else:
-                wolfmap.add_actor(WolfActorType.SCHUTZSTAFFEL, pos,
-                                  self.actor_orientation[obj-130])
-        elif obj in range(138, 142):
-            wolfmap.add_actor(WolfActorType.DOG, pos,
-                              self.actor_orientation[obj-138])
-        elif obj == 124:
-            # add dead guard
-            wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
+        if obj not in ACTOR_ENTRIES:
+            return
+        _type, diff, patrol = ACTOR_ENTRIES[obj]
+        # discard patrol for now
+        wolfmap.add_actor(_type, pos,
+                          self.actor_orientation[obj % 4],
+                          difficulty=diff)
 
     def add_player(self, wolfmap, obj, pos):
         wolfmap.init_pos = list(pos)
@@ -190,7 +206,8 @@ class GameMapsAdaptor:
         for i, row in enumerate(walls):
             walls[i] = [WALL_TEXTURE_MAPPING.get(wall, 0) for wall in row]
 
-        wolfmap = WolfMap(array=walls, wall_width=8)
+        wolfmap = WolfMap(array=walls, wall_width=8,
+                          difficulty=WolfDifficulty.DEATHINCARNATE)
         ww = wolfmap.wall_width
 
         # add sprites, items, pushwalls, doors

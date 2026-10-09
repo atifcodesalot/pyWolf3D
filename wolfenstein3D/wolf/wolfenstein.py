@@ -56,7 +56,7 @@ class WolfGame:
         self.game_renderer = Wolf3DRenderer(self.player, self.game_surf)
         self.renderer = Wolf2DRenderer(root_display.get_size(), self.game_res)
         self.map = self.player.map
-        self.actors = self.map.actors
+        self.actors = self.map.get_actors()
         self.framerate = framerate
         self.heartbeats = 0
 
@@ -406,8 +406,6 @@ class WolfGame:
 
     def life_end(self):
         self.player.lives -= 1
-        if self.player.lives == 0:
-            return self.game_end()
         self.renderer.update_hud(self.player)
         self.render()
         pygame.display.flip()
@@ -423,6 +421,8 @@ class WolfGame:
         self.heartbeat()
         self.map.reset()
         time.sleep(0.6)
+        if self.player.lives == 0:
+            return self.game_end()
         self.game_renderer.unfizzle(
             self.root_display, update_dest=self.renderer.game_off)
 
