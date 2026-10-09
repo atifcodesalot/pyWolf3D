@@ -47,11 +47,11 @@ class WolfGame:
         None,
     ]
 
-    def __init__(self, player: WolfPlayer, root_display, framerate=60, sound_off=False):
+    def __init__(self, player: WolfPlayer, root_display, framerate=60, sound_off=False, noclip=False):
         self.player = player
         self.root_display = root_display
         self.wolfmap = self.player.map
-        self.game_res = (640, 512)
+        self.game_res = (640, 420)
         self.game_surf = pygame.Surface(self.game_res)
         self.game_renderer = Wolf3DRenderer(self.player, self.game_surf)
         self.renderer = Wolf2DRenderer(root_display.get_size(), self.game_res)
@@ -76,6 +76,7 @@ class WolfGame:
 
         if sound_off:
             self.sound_manager.set_master(0)
+        self.noclip = noclip
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -99,14 +100,14 @@ class WolfGame:
                 item.affect(self.player)
                 self.game_renderer.glow = (0, 1)
 
-    def move_player(self, clip=True, sign_=1):
+    def move_player(self, sign_=1):
         pace = self.player.pace*2 if self.player.running else self.player.pace
         disp = vec_mul(self.player.look_dir, pace * sign_)
         m = self.map
         pos = self.player.pos
         xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
         ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
-        if not clip:
+        if self.noclip:
             return self.player.translate(vec_add(xdisp, ydisp))
         xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 5)))
         if not m.cell_occupied(xtry):
@@ -130,10 +131,15 @@ class WolfGame:
 
     def handle_interaction(self):
         fblock, fcell = self.player.get_front_cell()
-        if fcell in self.map.DOOR:
+        if self.map.cell_is_door(fcell):
             door = self.map.get_door(fblock)
             if not door.is_opening:
-                self.open_door(door)
+                if type(door) is WolfDoor:
+                    self.open_door(door)
+                    return
+                # door is locked
+                if getattr(self.player, door.key, None):
+                    self.open_door(door)
 
         elif fblock in self.map.pushwalls:
             pushwall = self.map.get_pushwall(fblock)
@@ -152,7 +158,7 @@ class WolfGame:
                 self.schedule_sound_effect(slidesnd, None, 5)
 
     def handle_player_requests(self):
-        # placeho0lder
+        # placeholder
         self.game_renderer.weap_sp = self.player.weapon.value * \
             self.game_renderer.sp_per_weap
         pblock: tuple = self.player.get_current_block()
@@ -172,6 +178,7 @@ class WolfGame:
         self.schedule_game_event(
             self.game_renderer.glow_duration,
             lambda s: s.game_renderer.glow_end())
+        self.renderer.update_hud(self.player)
 
     def add_animation(self, anim, obj, target):
         anim.obj = obj
@@ -361,15 +368,12 @@ class WolfGame:
 
     def render(self):
         self.render_game()
-        self.renderer.draw_everything(
-            self.game_renderer.pgsurface)
+        game_screen = self.game_renderer.pgsurface
+        self.renderer.heartbeat(game_screen, self.player)
 
     def heartbeat(self):
         self.clock.tick(self.framerate)
         pgevents = pygame.event.get()
-        # render everything
-        self.render()
-        #
         self.handle_actors()
         self.handle_player_requests()
         self.handle_events(pgevents)
@@ -379,6 +383,9 @@ class WolfGame:
         self.handle_animations()
         self.handle_areas()
         self.sound_manager.handle_sound(self)
+        # render everything
+        self.render()
+        #
         self.heartbeats += 1
 
     def mainloop(self, music=None):
@@ -388,28 +395,36 @@ class WolfGame:
         self.ongoing = True
         while self.ongoing:
             if self.player.is_dead():
-                if self.player.lives == 0:
-                    return self.game_end()
-                self.life_end(self.root_display, self.renderer.game_off)
+                self.life_end()
             self.heartbeat()
+            self.root_display.fill("#ffffff")
             self.root_display.blit(self.renderer.pgsurf, (0, 0))
             pygame.display.flip()
 
     def floor_end(self):
         pass
 
-    def life_end(self, master_surf, dest):
+    def life_end(self):
+        self.player.lives -= 1
+        if self.player.lives == 0:
+            return self.game_end()
+        self.renderer.update_hud(self.player)
+        self.render()
+        pygame.display.flip()
         killer = getattr(self, "player_slayer", None)
         if killer:
             self.player.turn_to_killer(
-                self, killer=killer, master_surf=master_surf, update_dest=dest)
+                self, killer=killer, master_surf=self.root_display,
+                update_dest=self.renderer.game_off)
 
-        self.game_renderer.fizzle_fade(master_surf, update_dest=dest)
+        self.game_renderer.fizzle_fade(
+            self.root_display, update_dest=self.renderer.game_off)
         self.player.reset()
         self.heartbeat()
         self.map.reset()
         time.sleep(0.6)
-        self.game_renderer.unfizzle(master_surf, update_dest=dest)
+        self.game_renderer.unfizzle(
+            self.root_display, update_dest=self.renderer.game_off)
 
     def game_end(self):
-        pass
+        exit("game over!")

@@ -58,7 +58,7 @@ class RayRenderer:
         m = self.raycaster.map
         offset = coll[1][vertical] % self.wall_width
         # if it is a door, take the opening into account
-        if coll[3] in m.DOOR:
+        if coll[3] in m.DOOR_INDICES:
             door = m.get_door(m.to_block_pos(*coll[1]))
             if door:
                 offset = m.wall_width * door.opening - offset
@@ -85,10 +85,17 @@ class RayRenderer:
         in_front = vec_dot(o.look_dir, vec_sub(o.pos, sprite.pos)) > 0
         return on_vp and in_front
 
+    def spcol_visible(self, dist, col_pos):
+        w_1 = self.width - 1
+        if col_pos > w_1 or col_pos < 0:
+            return False
+            
+        return self.distbuff[int(col_pos // self.repeat)] > dist
+
     def draw_sprite(self, sprite: Sprite):
         o = self.raycaster.observer
         perp_dist = vec_dot(vec_sub(o.pos, sprite.pos), o.look_dir)
-        if perp_dist < 5:
+        if perp_dist < 3:
             return
         projected = sprite.project()
         if not self.sprite_is_visible(projected, sprite):
@@ -104,19 +111,24 @@ class RayRenderer:
         visible_height = min(self.height, height_to_draw)
 
         r = self.repeat
+
         ystart = hh - visible_height // 2
         xstart = screen_pos - (width_to_draw // 2) * r
-        w_1 = self.width - 1
+        last = xstart + (int(width_to_draw)-1)*r
+        # if self.spcol_visible(perp_dist, xstart) \
+        #         and self.spcol_visible(perp_dist, last):
+        #     # both ends visible
+        #     # no need for column basis rendering
+        #     scaled = sprite.get_scaled(width_to_draw*r, height_to_draw, h)
+        #     self.pgsurface.blit(
+        #         scaled, (xstart, ystart))
+        #     pygame.display.flip()
+        #     return
 
         for i in range(int(width_to_draw)):
             col_pos = xstart + (i * r)
-            # if the column isn't in screen width
-            if col_pos > w_1 or col_pos < 0:
+            if not self.spcol_visible(perp_dist, col_pos):
                 continue
-            # if there is a wall that is closer
-            if self.distbuff[int(col_pos // r)] < perp_dist:
-                continue
-
             column = sprite.get_column(
                 int(i*skip), r, height_to_draw, h)
             self.pgsurface.blit(

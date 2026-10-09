@@ -25,6 +25,10 @@ class WolfPlayer(Observer):
         self.ammo = ammo
         self.score = 0
         self.lives = 3
+        
+        
+        self.has_gold_key = False
+        self.has_silver_key = False
 
         self.shooting = False
         self.running = False
@@ -52,7 +56,7 @@ class WolfPlayer(Observer):
     def get_current_area(self):
         pblock = self.get_current_block()
         cell = self.map.raw[pblock[1]][pblock[0]]
-        if cell in self.map.DOOR:
+        if self.map.cell_is_door(cell):
             # if inside door tile, return the second area
             return self.map.get_door(pblock).area1
         return cell - 107
@@ -107,6 +111,9 @@ class WolfPlayer(Observer):
         self.look_at(self.map.init_look)
         self.weapon = WolfWeapon.PISTOL
         self.ammo = 5
+        
+    def _1up(self):
+        self.lives = (self.lives + 1) % 10
 
     def turn_to_killer(self, game_ctx, killer: Actor, master_surf, update_dest):
         to_killer = vec_norm(vec_sub(self.pos, killer.pos))

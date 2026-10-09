@@ -7,6 +7,9 @@ from .actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
 
 
+# wolf door object
+# connects areas upon opening
+
 class WolfDoor:
     SLIDE = 0.02
 
@@ -61,8 +64,15 @@ class WolfDoor:
         self.is_closing = False
         self.opening = 1
 
-    def open_callback(self):
-        pass
+# these classes will be
+
+
+class WolfGoldDoor(WolfDoor):
+    key = "has_gold_key"
+
+
+class WolfSilverDoor(WolfDoor):
+    key = "has_silver_key"
 
 
 class WolfPushWall:
@@ -112,11 +122,18 @@ class WolfPushWall:
 
 # map class,
 # 0: empty, nonzero: wall with texture
-# DOOR has door tile numbers
 # contains actors, items, sprites to render etc.
+# contains area matrix to specify which areas are connected
+
 class WolfMap:
-    DOOR = [0x1f, 0x1f << 1, 0x22, 0x22 << 1]
-    HORIZ_DOOR = [0x1f << 1, 0x22 << 1]
+    # doors are designated as unique cell indices
+    # the issue is that cells in the map class point to texture indices
+    # however, the vertical and horizontal doors have the same texture,
+    # so the indices for horizontal doors are shifted left by 1
+    # WALL_TEXTURES list contains the same texture for each 0x22 and 0x22 << 1
+    DOOR_INDICES = [0x1f, 0x1f << 1, 0x20, 0x20 <<
+                    1, 0x21, 0x21 << 1, 0x22, 0x22 << 1]
+    HORIZ_DOOR_INDICES = [0x1f << 1, 0x20 << 1, 0x21 << 1, 0x22 << 1]
 
     def __init__(self, size=(64, 64), array=None,
                  wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0]):
@@ -142,6 +159,9 @@ class WolfMap:
             row = [0,] * 37
             row[i] = 1
             self.area_matrix.append(row)
+
+    def cell_is_door(self, cell):
+        return cell in self.DOOR_INDICES
 
     def snapshot(self):
         state = (deepcopy(self.raw),
@@ -224,17 +244,23 @@ class WolfMap:
     def get_pushwall(self, block_pos) -> WolfPushWall:
         return self.pushwalls.get(block_pos, None)
 
-    def add_door(self, block_pos, horizontal):
-        self.doors[block_pos] = WolfDoor(self,
-                                         block_pos, 1, horizontal=horizontal)
+    def add_door(self, block_pos, horizontal, _type=WolfDoor):
+        self.doors[block_pos] = _type(self,
+                                      block_pos, 1, horizontal=horizontal)
 
     def init_doors(self):
         self.doors.clear()
         for j, row in enumerate(self.raw):
             for i, entry in enumerate(row):
-                if entry in self.DOOR:
+                if self.cell_is_door(entry):
+                    _type = WolfDoor
+                    if entry in [0x20, 0x20 << 1]:
+                        _type = WolfGoldDoor
+                    elif entry == [0x21, 0x21 << 1]:
+                        _type = WolfSilverDoor
                     self.add_door((i, j),
-                                  horizontal=entry in self.HORIZ_DOOR)
+                                  horizontal=entry in self.HORIZ_DOOR_INDICES,
+                                  _type=_type)
 
     def get_cell(self, coor):
         block_pos = self.to_block_pos(*coor)
@@ -251,7 +277,7 @@ class WolfMap:
                 return sprite.blocking
             else:
                 return False
-        if cell in self.DOOR:
+        if self.cell_is_door(cell):
             door = self.get_door(block_pos)
             return door.opening != 0
         return True

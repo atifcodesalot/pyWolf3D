@@ -205,17 +205,18 @@ class ChaseState(ActorState):
 
     def valid_dir(self, dir_):
         if not any(vec_add(self.prev_dir, dir_)):
-            wolflogger.debug(f"direction {dir_} would reversse prev direction: "
-                             f"{self.prev_dir}, not allowed")
+            # wolflogger.debug(f"direction {dir_} would reversse prev direction: "
+            #                  f"{self.prev_dir}, not allowed")
             # reverses previous direction
             return False
         else:
-            wolflogger.debug(
-                f"direction {dir_} does not reverse direction: {self.prev_dir}")
+            pass
+            # wolflogger.debug(
+            #     f"direction {dir_} does not reverse direction: {self.prev_dir}")
         m = self.actor.wolfmap
         vblock, occupied = self.dir_occupied(dir_)
         if occupied:
-            wolflogger.debug(f"direction {dir_} is occupied.")
+            # wolflogger.debug(f"direction {dir_} is occupied.")
             if vblock in m.doors:
                 door = m.get_door(vblock)
                 if self.actor._type != WolfActorType.DOG:
@@ -227,7 +228,7 @@ class ChaseState(ActorState):
 
     def random_dir_fallback(self):
         chain = random.choice(self.fallback_chains)
-        wolflogger.debug(f"chain selected: {chain}")
+        # wolflogger.debug(f"chain selected: {chain}")
         for dir_ in chain:
             if self.valid_dir(dir_):
                 self.actor.update_dir(list(dir_))
@@ -248,30 +249,31 @@ class ChaseState(ActorState):
         else:
             # if the fallback delta is not zero
             if second_try:
-                wolflogger.debug(f"tried {first_try}, fallback: {second_try}")
+                # wolflogger.debug(f"tried {first_try}, fallback: {second_try}")
                 if self.valid_dir(second_try):
                     self.actor.update_dir(second_try)
                 else:
-                    wolflogger.debug(
-                        f"third fallback, trying prev dir: {self.prev_dir}")
+                    pass
+                    # wolflogger.debug(
+                    #     f"third fallback, trying prev dir: {self.prev_dir}")
                     # third fallback
                     if self.valid_dir(self.prev_dir):
                         self.actor.update_dir(self.prev_dir)
                     else:
-                        wolflogger.debug(f"fourth fallback, random chains")
+                        # wolflogger.debug(f"fourth fallback, random chains")
                         #  fourth fallback
                         if not self.random_dir_fallback():
-                            wolflogger.debug(
-                                f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
+                            # wolflogger.debug(
+                            #     f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
                             self.actor.reverse_dir()
 
-        wolflogger.debug(
-            f"decided actor {self.actor._type} look dir: {self.actor.look_dir}")
+        # wolflogger.debug(
+        #     f"decided actor {self.actor._type} look dir: {self.actor.look_dir}")
 
     def open_door(self, door):
         self.waiting_door = door
         if not (door.is_opening or door.is_open()):
-            wolflogger.debug(f"{self.actor}, openned door!")
+            # wolflogger.debug(f"{self.actor}, openned door!")
             door.begin_opening()
 
     def committo_dest(self):
@@ -405,7 +407,7 @@ class Actor:
     def get_current_area(self):
         ablock = self.get_current_block()
         cell = self.wolfmap.raw[ablock[1]][ablock[0]]
-        if cell in self.wolfmap.DOOR:
+        if cell in self.wolfmap.DOOR_INDICES:
             # if inside door tile, return the second area
             return self.wolfmap.get_door(ablock).area1
         return cell - 107

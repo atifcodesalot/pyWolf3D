@@ -60,14 +60,14 @@ WALL_TEXTURE_MAPPING = {
     0x30: 4,  # orange panel on wood -> wood fallback
     0x31: 3,  # grey brick + Hitler -> portrait fallback
     # Doors
-    0x5A: 31,  # regular door, orientation A
-    0x5B: 31 << 1,  # regular door, orientation B
-    0x5C: 32,  # gold-key door
-    0x5D: 32,
-    0x5E: 33,  # silver-key door
-    0x5F: 33,
-    0x64: 34,  # elevator door
-    0x65: 34 << 1,
+    0x5A: 31,  # regular door, vertical
+    0x5B: 31 << 1,  # regular door, horizontal
+    0x5C: 32,  # gold door vertical
+    0x5D: 32 << 1, # gold door horizontal
+    0x5E: 33,  # silver door vertical
+    0x5F: 33 << 1, # horizontal
+    0x64: 34,  # elevator door vertical
+    0x65: 34 << 1, # elevator door horizontal
 }
 
 # add empty area tiles

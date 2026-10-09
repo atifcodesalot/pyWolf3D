@@ -56,11 +56,11 @@ class WolfGameTest(unittest.TestCase):
 
     def test_quick(self):
         mymap = SHAREWARE_MAPS[0]
-        player = WolfPlayer(mymap, ray_count=128,
+        player = WolfPlayer(mymap, ray_count=160,
                             weapon=WolfWeapon.PISTOL, fov=54)
         player.ammo = 10
-        screen = pygame.display.set_mode((700, 700))
-        game = WolfGame(player, root_display=screen, sound_off=False)
+        screen = pygame.display.set_mode((680, 600))
+        game = WolfGame(player, root_display=screen, sound_off=False, noclip=False)
         raycaster = game.game_renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map

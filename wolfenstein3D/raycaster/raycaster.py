@@ -223,7 +223,7 @@ class Raycaster:
             trace[0] - xb, trace[1] - yb)
         cell = self.map.raw[biased_pos[1]][biased_pos[0]]
         if cell < 106:
-            if cell in self.map.DOOR:
+            if cell in self.map.DOOR_INDICES:
                 door_obj = self.map.get_door(biased_pos)
                 dvert, dcell, door_hit = self.handle_door(
                     cell,
@@ -276,7 +276,7 @@ class Raycaster:
             visited.append(biased_pos)
             cell = self.map.raw[biased_pos[1]][biased_pos[0]]
             if cell < 106:
-                if cell in self.map.DOOR:
+                if cell in self.map.DOOR_INDICES:
                     door_obj = self.map.get_door(biased_pos)
                     _, _, door_hit = self.handle_door(
                         cell,
@@ -298,7 +298,7 @@ class Raycaster:
             for y in range(m.size[1]):
                 if (cell := m.raw[y][x]):
                     color = (255, 0, 0)
-                    if cell in self.map.DOOR:
+                    if cell in self.map.DOOR_INDICES:
                         color = (0, 255, 0)
                     elif (x, y) in m.pushwalls:
                         color = (23, 42, 255)

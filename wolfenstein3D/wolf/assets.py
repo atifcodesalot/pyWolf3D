@@ -48,7 +48,10 @@ def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
             cursor = (i, j)
             subimage = texmap.crop((
                 cursor[0], cursor[1], cursor[0] + tw, cursor[1] + th))
-            textures.append(init(subimage))
+            if callable(init):
+                textures.append(init(subimage))
+            else:
+                textures.append(subimage)
     return textures
 
 
@@ -61,7 +64,13 @@ def init_wall_textures():
 
     # extend to 100 slot texture table
     WALL_TEXTURES.extend([None]*100)
-    WALL_TEXTURES[31 << 1] = WALL_TEXTURES[31]
+
+    # init horizontal door slots
+    WALL_TEXTURES[0x1f << 1] = WALL_TEXTURES[0x1f]
+    WALL_TEXTURES[0x20 << 1] = WALL_TEXTURES[0x20]
+    WALL_TEXTURES[0x21 << 1] = WALL_TEXTURES[0x21]
+    WALL_TEXTURES[0x22 << 1] = WALL_TEXTURES[0x22]
+    #
 
 
 def init_hud_textures():
@@ -71,13 +80,16 @@ def init_hud_textures():
             im.size,
             "RGBA",
         )
-    global FACE_TEXTURES
+    global HUD_FACES, STATUSBAR, HUD_NUMBERS, HUD_WEAPONS
     hudim = Image.open(HUD_PATH)
-    FACE_TEXTURES = texmap_parse(
+    HUD_FACES = texmap_parse(
         52, 42, 1, 1, 24, 32, hudim, init=to_surf, lmarg=1, rmarg=91)
     hudsurf = to_surf(hudim)
-    global STATUSBAR
     STATUSBAR = hudsurf.subsurface((1, 1, 320, 40))
+    HUD_NUMBERS = texmap_parse(
+        68, 75, 0, 1, 8, 16, hudim, init=to_surf, lmarg=301, rmarg=1)
+    HUD_WEAPONS = texmap_parse(
+        1, 109, 1, 1, 48, 24, hudim, init=to_surf, lmarg=226, rmarg=68)
 
 
 def init_textures():

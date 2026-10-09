@@ -10,7 +10,6 @@ import random
 import numpy as np
 
 
-
 LIGHT_OPTIONS = [PointLight((0, 0))]
 
 
@@ -53,26 +52,21 @@ class Wolf3DRenderer(RayRenderer):
             wepspr: Sprite = weapons[i]
             # transform each weapon sprite to match the screen size
             scres = self.pgsurface.get_size()
-            wepres = (int(scres[0]*0.8), scres[1])
+            wepres = (int(scres[0]*0.7), scres[1])
             self.weapons[i] = Sprite(wepspr.image.resize(wepres,
                                                          resample=Image.Resampling.NEAREST))
-            self.wpn_xoffset = (scres[0] - wepres[0]) // 2
+            self.wpn_xoffset = (scres[0] - wepres[0]//2) // 2
             self.wpn_yoffset = scres[1]//3
             surf = self.weapons[i].surface
             self.weapons[i].surface = surf.subsurface(
-                (0, surf.get_height()//3,
-                 surf.get_width(), 2*surf.get_height()//3))
+                (surf.get_width()//4, surf.get_height()//3,
+                 3*surf.get_width()//4, 2*surf.get_height()//3))
 
     def render_weapon(self):
         self.pgsurface.blit(
             self.weapons[self.weap_sp].surface,
             (self.wpn_xoffset, self.wpn_yoffset))
-
-    def render_statusbar(self):
-        sfont = FONT.render(
-            f"Score: {self.player.score} Health: {self.player.health}  Ammo: {self.player.ammo}", True, self.WHITE)
-        self.pgsurface.blit(sfont, (150, 10))
-
+        
     def render_sprites(self):
         # also render actors
         actor_sprites = [act.current_sprite(
@@ -99,7 +93,7 @@ class Wolf3DRenderer(RayRenderer):
     def render(self, heartbeats, weapon=True):
         self.pgsurface.fill(self.topcolor, rect=self.toprect)
         self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
-        offset = vec_mul(self.player.look_dir, -0.6)
+        offset = vec_mul(self.player.look_dir, -1)
         camera_pos = vec_add(self.player.pos, offset)
         super().render(camera_pos, self.light)
         if self.glow:
@@ -127,8 +121,6 @@ class Wolf3DRenderer(RayRenderer):
                 del pixelref
                 master.blit(self.pgsurface, update_dest)
                 pygame.display.flip()
-
-        
 
     def unfizzle(self, master, update_dest):
         self.render(1)

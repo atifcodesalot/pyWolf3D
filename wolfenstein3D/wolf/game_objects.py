@@ -92,12 +92,13 @@ ITEM_AFFECT = {
     WolfItem.CHAINGUN: lambda p: p.switch_weapon(WolfWeapon.MINIGUN),
     WolfItem.MACHINEGUN: lambda p: p.switch_weapon(WolfWeapon.MP4),
     WolfItem.AMMUNITION: lambda p: p.get_ammo(),
-    WolfItem.GOLDKEY: None, # will add key functionality later
-    WolfItem.SILVERKEY: None, #
+    WolfItem.GOLDKEY: lambda p: setattr(p, "has_gold_key", True),
+    WolfItem.SILVERKEY: lambda p: setattr(p, "has_silver_key", True),
     WolfItem.CROSS: lambda p: p.get_money(),
     WolfItem.CHALICE: lambda p: p.get_money(),
     WolfItem.TREASURECHEST: lambda p: p.get_money(),
     WolfItem.CROWN: lambda p: p.get_money(),
+    WolfItem.EXTRALIFE: lambda p: p._1up()
     
 }
 
