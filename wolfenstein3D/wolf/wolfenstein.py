@@ -77,6 +77,8 @@ class WolfGame:
         if sound_off:
             self.sound_manager.set_master(0)
         self.noclip = noclip
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -189,15 +191,16 @@ class WolfGame:
         wolflogger.debug("shooting_animation_end called.")
         self.game_renderer.weap_sp = self.player.weapon.value * 5
         pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_RETURN] and self.player.has_auto():
+        ongoing = pressed[pygame.K_RETURN] or pygame.mouse.get_pressed()[0]
+        if ongoing and self.player.has_auto():
             # if the player is still holding down the shoot button
             # and they have an automatic weapon
             # don't stop
-            return self.handle_shooting(ongoing=True)
+            return self.handle_shooting(ongoing=ongoing)
 
         self.player.shooting = False
         if self.player.out_of_ammo() and not self.player.has_knife():
-            self.player.switch_weapon(WolfWeapon.KNIFE, forced_switch=True)
+            self.player.switch_weapon(WolfWeapon.KNIFE)
 
     def handle_hitscan(self):
         for act in self.actors:
@@ -232,7 +235,7 @@ class WolfGame:
         if cant_shoot:
             if ongoing and no_ammo:
                 self.player.shooting = False
-                self.player.switch_weapon(WolfWeapon.KNIFE, forced_switch=True)
+                self.player.switch_weapon(WolfWeapon.KNIFE)
             wolflogger.debug("player can't shoot.")
             return
         # can shoot
@@ -312,9 +315,19 @@ class WolfGame:
                     action()
 
     def handle_mouse(self):
-        pass
+        rel = pygame.mouse.get_rel()
+        # discard relative y movement
+        xdisp = rel[0] / 8
+        if xdisp > 0:
+            self.player.turn_cc(abs(xdisp))
+        elif xdisp < 0:
+            self.player.turn_cw(abs(xdisp))
+
+        if pygame.mouse.get_pressed()[0]:
+            self.handle_shooting()
 
     def handle_events(self, pgevents):
+        self.handle_mouse()
         for event in pgevents:
             if event.type == pygame.QUIT:
                 self.ongoing = False
