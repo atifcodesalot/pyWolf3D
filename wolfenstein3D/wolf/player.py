@@ -32,6 +32,8 @@ class WolfPlayer(Observer):
         self.shooting = False
         self.running = False
 
+        self.acquired_weapons = set([WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
+
     def has_auto(self):
         return self.weapon.value > 1
 
@@ -45,11 +47,11 @@ class WolfPlayer(Observer):
         self.left = vec_get_perp(self.look_dir)
         self.update_directions()
 
-    def turn_cc(self):
-        self.rotate(self.rot_pace)
+    def turn_cc(self, mag=1):
+        self.rotate(mag*self.rot_pace)
 
-    def turn_cw(self):
-        self.rotate(-self.rot_pace)
+    def turn_cw(self, mag=1):
+        self.rotate(-mag*self.rot_pace)
 
     def out_of_ammo(self):
         return self.ammo == 0
@@ -95,16 +97,23 @@ class WolfPlayer(Observer):
         self.score += 500
 
     def get_ammo(self):
-        if getattr(self, "empty_weapon", None) and self.out_of_ammo():
-            self.switch_weapon(self.empty_weapon)
+        if self.out_of_ammo():
+            if not self.acquired_weapons:
+                self.switch_weapon(WolfWeapon.PISTOL)
+            else:
+                self.switch_weapon(
+                    max(self.acquired_weapons, key=lambda w: w.value))
         self.ammo += 5
 
     def dec_ammo(self):
         self.ammo = max(self.ammo - 1, 0)
 
-    def switch_weapon(self, new: WolfWeapon, forced_switch=False):
-        if forced_switch:
-            self.empty_weapon = copy.copy(self.weapon)
+    def acquire_weapon(self, weap: WolfWeapon):
+        self.ammo += 5 
+        self.acquired_weapons.add(weap)
+        self.switch_weapon(max(self.acquired_weapons, key=lambda w: w.value))
+
+    def switch_weapon(self, new: WolfWeapon):
         self.weapon = new
 
     def has_knife(self):
@@ -121,6 +130,7 @@ class WolfPlayer(Observer):
         self.weapon = WolfWeapon.PISTOL
         self.ammo = 10
         self.shooting = False
+        self.acquired_weapons.clear()
 
     def _1up(self):
         self.lives = (self.lives + 1) % 10
@@ -128,7 +138,7 @@ class WolfPlayer(Observer):
     def turn_to_killer(self, game_ctx, killer: Actor, master_surf, update_dest):
         to_killer = vec_norm(vec_sub(self.pos, killer.pos))
         angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
-        da = sign(vec_dot(self.left, to_killer)) * 4
+        da = sign(vec_dot(self.left, to_killer)) * 2
         while angle_diff > 2:
             self.rotate(da)
             angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
