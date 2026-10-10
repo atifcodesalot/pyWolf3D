@@ -37,10 +37,11 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_actor_instances(self):
-        mymap = SHAREWARE_MAPS[1]
-        self.assertFalse(id(mymap.actors[0]) == id(mymap.actors[1]))
-        self.assertFalse(id(mymap.actors[0].sprites[0]) == id(
-            mymap.actors[1].sprites[0]))
+        mymap = SHAREWARE_MAPS[0]
+        actors = (mymap.actors[WolfDifficulty.BABY])
+        self.assertFalse(id(actors[0]) == id(actors[1]))
+        self.assertFalse(id(actors[0].sprites[0]) == id(
+            actors[1].sprites[0]))
 
     def test_blocking_sprites(self):
         for _map in SHAREWARE_MAPS:
@@ -50,17 +51,18 @@ class WolfGameTest(unittest.TestCase):
 
     def test_actor_sprite_count(self):
         for _map in SHAREWARE_MAPS:
-            for actor in _map.actors:
+            for actor in _map.actors[WolfDifficulty.BABY]:
                 self.assertGreater(len(actor.sprites), 8*4)
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[0]
+        mymap = SHAREWARE_MAPS[3]
         player = WolfPlayer(mymap, ray_count=160,
                             weapon=WolfWeapon.PISTOL, fov=54)
         player.ammo = 10
         screen = pygame.display.set_mode((680, 600))
-        game = WolfGame(player, root_display=screen, sound_off=False, noclip=False)
+        game = WolfGame(player, root_display=screen,
+                        sound_off=False, noclip=False)
         raycaster = game.game_renderer.raycaster
         self.assertEqual(raycaster.observer.pos, player.pos)
         map_ = raycaster.map
@@ -80,12 +82,14 @@ class WolfGameTest(unittest.TestCase):
         self.assertIsInstance(objects, dict)
         self.assertGreater(len(objects), 0)
         # objects[1].image.show()
-        
+
     def test_actor_positions_middle(self):
         for _map in SHAREWARE_MAPS:
-            for actor in _map.actors:
-                self.assertEqual(actor.pos[0] % _map.wall_width, _map.wall_width // 2)
-                self.assertEqual(actor.pos[1] % _map.wall_width, _map.wall_width // 2)
+            for actor in _map.actors[WolfDifficulty.BABY]:
+                self.assertEqual(actor.pos[0] %
+                                 _map.wall_width, _map.wall_width // 2)
+                self.assertEqual(actor.pos[1] %
+                                 _map.wall_width, _map.wall_width // 2)
 
     # def test_maps(self):
     #     for wolfmap in SHAREWARE_MAPS:
@@ -104,6 +108,6 @@ class WolfGameTest(unittest.TestCase):
 if __name__ == '__main__':
     # uncomment to profile
     # with cProfile.Profile() as pr:
-        unittest.main(exit=False)
+    unittest.main(exit=False)
 
     # pr.dump_stats("wolf.prof")

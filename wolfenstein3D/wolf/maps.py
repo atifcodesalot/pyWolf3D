@@ -148,6 +148,7 @@ class WolfMap:
         self.sprite_lookup = {}
 
         self.actors: dict[WolfDifficulty: list] = {}
+        self.actor_lookup = {}
         
         for diff in WolfDifficulty:
             self.actors[diff] = []
@@ -180,8 +181,10 @@ class WolfMap:
     def reload_snapshot(self, snapshot):
         raw, actsnaps, itemsnap, spdsnap, spsnap, pws = snapshot
         self.raw = deepcopy(raw)
+        self.actor_lookup.clear()
         for snap, act in zip(actsnaps, self.get_actors()):
             act.reload_snapshot(snap)
+            self.actor_lookup[tuple(act.pos)] = act
         self.item_lookup = itemsnap.copy()
         self.sprite_lookup = spdsnap.copy()
         self.sprites = spsnap.copy()
@@ -222,6 +225,8 @@ class WolfMap:
         if actor_type not in WolfActorType:
             raise TypeError("can't add non actor type")
         actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir)
+        ablock = self.to_block_pos(*actor_obj.pos)
+        self.actor_lookup[ablock] = actor_obj
         if difficulty is WolfDifficulty.BABY:
             for k in self.actors:
                 self.actors[k].append(actor_obj)

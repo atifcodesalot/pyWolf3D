@@ -25,8 +25,7 @@ class WolfPlayer(Observer):
         self.ammo = ammo
         self.score = 0
         self.lives = 5
-        
-        
+
         self.has_gold_key = False
         self.has_silver_key = False
 
@@ -40,7 +39,7 @@ class WolfPlayer(Observer):
         self.look_dir = vec_norm(vec_sub(self.pos, point))
         self.left = vec_get_perp(self.look_dir)
         self.update_directions()
-        
+
     def update_look_dir(self, newldir):
         self.look_dir = vec_norm(newldir)
         self.left = vec_get_perp(self.look_dir)
@@ -82,6 +81,10 @@ class WolfPlayer(Observer):
         actor_block = actor.get_current_block()
         return actor_block in corridor
 
+    def occupied_forthis(self, block_pos):
+        return self.map.cell_occupied(block_pos) or \
+            block_pos in self.map.actor_lookup
+
     def regain_health(self, aid):
         self.health = min(self.health + aid, 100)
 
@@ -118,7 +121,7 @@ class WolfPlayer(Observer):
         self.weapon = WolfWeapon.PISTOL
         self.ammo = 10
         self.shooting = False
-        
+
     def _1up(self):
         self.lives = (self.lives + 1) % 10
 

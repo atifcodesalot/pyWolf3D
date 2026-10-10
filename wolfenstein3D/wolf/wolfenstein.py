@@ -110,10 +110,10 @@ class WolfGame:
         if self.noclip:
             return self.player.translate(vec_add(xdisp, ydisp))
         xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 5)))
-        if not m.cell_occupied(xtry):
+        if not self.player.occupied_forthis(xtry):
             self.player.pos = vec_add(pos, xdisp)
         ytry = m.to_block_pos(*vec_add(pos, vec_mul(ydisp, 5)))
-        if not m.cell_occupied(ytry):
+        if not self.player.occupied_forthis(ytry):
             self.player.pos = vec_add(self.player.pos, ydisp)
 
     def handle_areas(self):
@@ -336,8 +336,7 @@ class WolfGame:
         self.game_events[future] = action
 
     def schedule_sound_effect(self, snd, origin, _time):
-        future = self.heartbeats + _time
-        self.sound_manager.queue_sound_effect(snd, origin, self, future)
+        self.sound_manager.queue_sound_effect(snd, origin, self, _time)
 
     def handle_game_events(self):
         if not self.heartbeats in self.game_events:
@@ -372,6 +371,7 @@ class WolfGame:
         self.renderer.heartbeat(game_screen, self.player)
 
     def heartbeat(self):
+        self.heartbeats += 1
         self.clock.tick(self.framerate)
         pgevents = pygame.event.get()
         self.handle_actors()
@@ -386,7 +386,6 @@ class WolfGame:
         # render everything
         self.render()
         #
-        self.heartbeats += 1
 
     def mainloop(self, music=None):
         if music is None:
@@ -394,12 +393,12 @@ class WolfGame:
         self.sound_manager.play_music(music)
         self.ongoing = True
         while self.ongoing:
-            if self.player.is_dead():
-                self.life_end()
             self.heartbeat()
-            self.root_display.fill("#ffffff")
+            # self.root_display.fill("#ffffff")
             self.root_display.blit(self.renderer.pgsurf, (0, 0))
             pygame.display.flip()
+            if self.player.is_dead():
+                self.life_end()
 
     def floor_end(self):
         pass

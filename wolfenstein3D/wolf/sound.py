@@ -45,22 +45,23 @@ class WolfSoundManager:
         level = self.cap_volume(self.attenuate_func(dist))
         return level
 
-    def queue_sound_effect(self, snd: pygame.mixer.Sound, origin, game_ctx, future):
+    def queue_sound_effect(self, snd: pygame.mixer.Sound, origin, game_ctx, _time):
         sndeff = WolfSoundEffect(snd, origin, None, None)
         sndeff.volume = self.attenuate(origin, game_ctx)
+        future = game_ctx.heartbeats +_time
         while future in self.sndeff_queue:
             future += 1
         self.sndeff_queue[future] = sndeff
 
-    def handle_queue(self):
-        now = self.heartbeats
+    def handle_queue(self, game_ctx):
+        now = game_ctx.heartbeats 
         if now not in self.sndeff_queue:
             return
         sndeff = self.sndeff_queue.pop(now)
         self.start_sound_effect(sndeff)
-    
-    def handle_sound(self, game_ctx, heartbeats=1):
-        self.handle_queue()    
+
+    def handle_sound(self, game_ctx):
+        self.handle_queue(game_ctx)
         for sndeff in self.playing_effects:
             if sndeff.channel.get_busy():
                 # if the sound is still playing
@@ -68,8 +69,6 @@ class WolfSoundManager:
                 sndeff.channel.set_volume(dynamic)
             else:
                 self.playing_effects.remove(sndeff)
-        
-        self.heartbeats += heartbeats
 
     def start_sound_effect(self, sndeff):
         ch = sndeff.snd.play()
@@ -93,6 +92,6 @@ class WolfSoundManager:
             new = 0
         self.master = new
         self.set_music_volume(self.master)
-        
+
     def set_music_volume(self, new):
         self.music_vol = self.cap_volume(new)

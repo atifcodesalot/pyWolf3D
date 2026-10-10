@@ -149,7 +149,7 @@ class Raycaster:
                 trace[0] = ttrace[0]
                 trace[1] = ttrace[1]
                 return perpd(trace), offvert, cell, True
-            else:    
+            else:
                 # the ray passes through the slide gap
                 return perpd(trace), offvert, None, False
 
@@ -185,7 +185,7 @@ class Raycaster:
     def march_ray(self, trace, rx, ry, xnn, ynn) -> int:
         mags = self.mags_for_step(trace, rx, ry, xnn, ynn)
         mag = min(mags, key=abs)
-        
+
         vert_hit = ~mags.index(mag) + 2
         trace[0] += rx * mag
         trace[1] += ry * mag
@@ -234,7 +234,7 @@ class Raycaster:
                 if door_hit:
                     return self.get_perp_dist(trace), dvert, dcell
                 # the ray passes through the opening
-                return None
+                return None, biased_pos
 
             elif biased_pos in self.map.pushwalls:
                 pushwall = self.map.get_pushwall(biased_pos)
@@ -242,27 +242,30 @@ class Raycaster:
                     cell, trace, pushwall, vert, *rayctx)
                 if pwhit:
                     return pdist, pvert, pcell
-                return None
+                return None, biased_pos
 
             # hit non special cell
             return self.get_perp_dist(trace), vert, cell
         # no hit on an occupied cell
-        # returns None
+        return None, biased_pos
 
     def raycast(self, ray_dir, camera_pos):
         hw = self.map.wall_width // 2
         rayctx = self.get_ray_context(ray_dir)
         trace = camera_pos.copy()
+        visited = []
         while True:
-            if (hitinfo := self.ray_step(trace, hw, rayctx)):
+            hitinfo = self.ray_step(trace, hw, rayctx)
+            if (hitinfo[0]):
                 dist, vert, cell = hitinfo
-                return (dist, trace, vert, cell)
-            # hitinfo is none
-            
-        
+                return (dist, trace, vert, cell, visited)
+            else:
+                # hitinfo doesnt contain ray hit info
+                # append cell to visited
+                visited.append(hitinfo[1])
 
     def get_corridor(self, rx, ry, start_pos):
-        visited = [start_pos,]
+        visited = [self.map.to_block_pos(*start_pos),]
         hw = self.map.wall_width // 2
         trace = start_pos.copy()
         rayctx = self.get_ray_context((rx, ry))
@@ -284,6 +287,10 @@ class Raycaster:
                         door_obj,
                         vert,
                         rayctx)
+                    visited.append(
+                        tuple(vec_add(door_obj.pos, BASIS[door_obj.horiz])))
+                    visited.append(tuple(vec_add(door_obj.pos, vec_mul(
+                        BASIS[door_obj.horiz], -1))))
                     if door_hit:
                         break
                 else:

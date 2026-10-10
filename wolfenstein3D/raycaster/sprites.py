@@ -5,7 +5,7 @@ from .aux_math import vec_add
 
 
 class Sprite(Texture):
-    def __init__(self, image: Image.Image, pos=None, blocking=None):
+    def __init__(self, image: Image.Image, pos=None, blocking=None, precache=True):
         super().__init__(image)
         self.pos = pos
         self.blocking = blocking
@@ -13,6 +13,15 @@ class Sprite(Texture):
         # sprites dont get shaded so it is easy to cache?
         self.column_cache = {}
         self.scale_cache = {}
+        if precache:
+            self.precache()
+        
+    def precache(self):
+        for i in range(self.width):
+            for h in range(50):
+                for r in range(1, 3):
+                    self.get_column(i, r, h, 640)
+            
 
     def to_observer_space(self, observer):
         self.obs_space = observer.to_this_space(self.pos)
@@ -34,15 +43,16 @@ class Sprite(Texture):
         self.pos = vec_add(self.pos, tvec)
 
     def get_column(self, i, repeat, height, screen_height):
-        if (i, repeat, height) in self.column_cache:
+        if (i, repeat, int(height)) in self.column_cache:
             # cache hit
-            return self.column_cache[(i, repeat, height)]
+            return self.column_cache[(i, repeat, int(height))]
+        
 
         # cache miss
         scaled = self.scale_column(
             self.columns[i], repeat, height, screen_height)
         # save to cache
-        self.column_cache[(i, repeat, height)] = scaled
+        self.column_cache[(i, repeat, int(height))] = scaled
         return scaled
 
     def get_scaled(self, width, height, screen_height):
@@ -57,7 +67,7 @@ class Sprite(Texture):
 
     def copy(self, pos):
         copied = self.__new__(self.__class__)
-        copied.__init__(self.image, pos=pos, blocking=self.blocking)
+        copied.__init__(self.image, pos=pos, blocking=self.blocking, precache=False)
         copied.column_cache = self.column_cache
         copied.scale_cache = self.scale_cache
         return copied

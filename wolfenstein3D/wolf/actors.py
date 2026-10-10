@@ -43,7 +43,7 @@ class GuardingState(ActorState):
     def think(self, game_ctx):
         if self.alerted:
             # already alerted nothing to think
-            return 
+            return
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         if self.actor.hears_player(game_ctx):
             self.actor.alert(game_ctx)
@@ -77,6 +77,9 @@ class DyingState(ActorState):
         self.heartbeats = 0
 
     def start(self, gamectx):
+        ablock = self.actor.get_current_block()
+        if ablock in self.actor.wolfmap.actor_lookup:
+            del self.actor.wolfmap.actor_lookup[ablock]
         if snds := self.actor.death_sounds:
             deathsnd: pygame.mixer.Sound = random.choice(snds)
             gamectx.schedule_sound_effect(deathsnd, self.actor.pos, 3)
@@ -98,7 +101,6 @@ class DyingState(ActorState):
 class HurtState(ActorState):
     def __init__(self, actor):
         super().__init__(actor, 2, nextstate=None, lifetime=20)
-        self.inflicted_damage = False
 
     def think(self, game_ctx):
         if type(self.next) is not ChaseState:
@@ -124,7 +126,7 @@ class AttackState(ActorState):
         self.lifetime = 15
         self.before_auto = self.next
         self.next = self
-        
+
     def quit_auto(self):
         self.auto = False
         self.next = self.before_auto
@@ -138,7 +140,7 @@ class AttackState(ActorState):
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
-        damage = game_ctx.calculate_damage(self.actor, reduction=0.4)
+        damage = game_ctx.calculate_damage(self.actor, reduction=0.2)
         game_ctx.dec_player_health(damage)
         if game_ctx.player.is_dead():
             # killed the player
@@ -146,7 +148,7 @@ class AttackState(ActorState):
 
     def try_attacking(self, game_ctx):
         if snd := self.actor.attack_sound:
-            game_ctx.schedule_sound_effect(snd, self.actor.pos, 1)
+            game_ctx.schedule_sound_effect(snd, self.actor.pos, 0)
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist //= game_ctx.map.wall_width
         hitprob = int(dist * self.actor.accuracy)
@@ -158,13 +160,12 @@ class AttackState(ActorState):
         if self.heartbeats + 2 == self.lifetime:
             self.try_attacking(game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
-        
+
     def think(self, game_ctx):
         if not self.auto:
             return
         if not self.actor.sees_player(game_ctx):
             self.quit_auto()
-            
 
     def endcallback(self, _):
         if self.actor._type == WolfActorType.SCHUTZSTAFFEL:
@@ -174,9 +175,6 @@ class AttackState(ActorState):
 
 
 class ChaseState(ActorState):
-    fallback_chains = [[(0, -1), (-1, -1), (-1, 0)],
-                       [(1, 0), (1, -1), (0, -1)]]
-
     def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 20)
         if type(actor) is Shepherd:
@@ -185,6 +183,9 @@ class ChaseState(ActorState):
         self.hb_perframe = self.lifetime // self.actor.move_frames
         self.move_off = walk_cycle
         self.heartbeats = 0
+        self.fallback_chains = [[[0, -1], [-1, -1], [-1, 0]],
+                                [[1, 0], [1, -1], [0, -1]]]
+
         self.decide_dir(game_ctx)
         self.committo_dest()
 
@@ -194,29 +195,29 @@ class ChaseState(ActorState):
         return vec_add(self.actor.get_current_block(), dir_)
 
     def dir_occupied(self, dir_):
-        occp = self.actor.wolfmap.cell_occupied
+        occp = self.actor.occupied_forthis
         vblock = tuple(self.virtual_block(dir_))
         if all(dir_):
             # diagonal direction
-            adj1 = tuple(self.virtual_block([-dir_[0], 0]))
-            adj2 = tuple(self.virtual_block([0, -dir_[1]]))
+            adj1 = tuple(self.virtual_block([dir_[0], 0]))
+            adj2 = tuple(self.virtual_block([0, dir_[1]]))
             return vblock, occp(vblock) or occp(adj1) or occp(adj2)
         return vblock, occp(vblock)
 
     def valid_dir(self, dir_):
         if not any(vec_add(self.prev_dir, dir_)):
-            # wolflogger.debug(f"direction {dir_} would reversse prev direction: "
-            #                  f"{self.prev_dir}, not allowed")
+            wolflogger.debug(f"direction {dir_} would reversse prev direction: "
+                             f"{self.prev_dir}, not allowed")
             # reverses previous direction
             return False
         else:
             pass
-            # wolflogger.debug(
-            #     f"direction {dir_} does not reverse direction: {self.prev_dir}")
+            wolflogger.debug(
+                f"direction {dir_} does not reverse direction: {self.prev_dir}")
         m = self.actor.wolfmap
         vblock, occupied = self.dir_occupied(dir_)
         if occupied:
-            # wolflogger.debug(f"direction {dir_} is occupied.")
+            wolflogger.debug(f"direction {dir_} is occupied.")
             if vblock in m.doors:
                 door = m.get_door(vblock)
                 if self.actor._type != WolfActorType.DOG:
@@ -227,9 +228,9 @@ class ChaseState(ActorState):
         return True
 
     def random_dir_fallback(self):
-        chain = random.choice(self.fallback_chains)
-        # wolflogger.debug(f"chain selected: {chain}")
-        for dir_ in chain:
+        # random.shuffle(self.fallback_chains)
+        # for chain in self.fallback_chains[1]:
+        for dir_ in self.fallback_chains[1]:
             if self.valid_dir(dir_):
                 self.actor.update_dir(list(dir_))
                 return True
@@ -248,32 +249,32 @@ class ChaseState(ActorState):
             self.actor.update_dir(first_try)
         else:
             # if the fallback delta is not zero
-            if second_try:
-                # wolflogger.debug(f"tried {first_try}, fallback: {second_try}")
+            if any(second_try):
+                wolflogger.debug(f"tried {first_try}, fallback: {second_try}")
                 if self.valid_dir(second_try):
                     self.actor.update_dir(second_try)
                 else:
                     pass
-                    # wolflogger.debug(
-                    #     f"third fallback, trying prev dir: {self.prev_dir}")
+                    wolflogger.debug(
+                        f"third fallback, trying prev dir: {self.prev_dir}")
                     # third fallback
                     if self.valid_dir(self.prev_dir):
                         self.actor.update_dir(self.prev_dir)
                     else:
-                        # wolflogger.debug(f"fourth fallback, random chains")
+                        wolflogger.debug(f"fourth fallback, random chains")
                         #  fourth fallback
                         if not self.random_dir_fallback():
-                            # wolflogger.debug(
-                            #     f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
+                            wolflogger.debug(
+                                f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
                             self.actor.reverse_dir()
 
-        # wolflogger.debug(
-        #     f"decided actor {self.actor._type} look dir: {self.actor.look_dir}")
+        wolflogger.debug(
+            f"actor {self.actor._type}  decided look dir: {self.actor.look_dir}, at pos: {self.actor.pos}")
 
     def open_door(self, door):
         self.waiting_door = door
         if not (door.is_opening or door.is_open()):
-            # wolflogger.debug(f"{self.actor}, openned door!")
+            wolflogger.debug(f"{self.actor}, openned door!")
             door.begin_opening()
 
     def committo_dest(self):
@@ -283,9 +284,9 @@ class ChaseState(ActorState):
         if all(ldir):
             # diagonal movement
             self.mov_budget *= math.sqrt(2)
-
+            
         self.dest_block = vec_add(
-            self.actor.pos, vec_mul(ldir, self.mov_budget))
+            self.actor.pos, vec_mul(vec_norm(ldir), self.mov_budget))
 
     def seek_dest(self, game_ctx):
         self.actor.move()
@@ -386,7 +387,7 @@ class Actor:
         state.next = old
         self.state = state
         self.state.start(game_ctx)
-        
+
     def alert(self, game_ctx):
         if type(self.state) is ChaseState:
             # already chasing
@@ -420,13 +421,24 @@ class Actor:
         self.look_dir = vec_mul(self.look_dir, -1)
         self.left = [-self.look_dir[1], self.look_dir[0]]
 
+    def occupied_forthis(self, block_pos):
+        m = self.wolfmap
+        if m.cell_occupied(block_pos):
+            return True
+        if block_pos in m.actor_lookup:
+            return m.actor_lookup[block_pos] != self
+
     def move(self):
         m = self.wolfmap
-        disp = vec_mul(self.look_dir, self.pace)
-        new_pos = vec_add(self.pos, vec_mul(disp, self.pace))
+        disp = vec_mul(vec_norm(self.look_dir), self.pace)
+        new_pos = vec_add(self.pos, disp)
         new_block = m.to_block_pos(*new_pos)
-        if m.cell_occupied(new_block):
-            return
+        old = self.get_current_block()
+        if old != new_block:
+            if old in self.wolfmap.actor_lookup:
+                del self.wolfmap.actor_lookup[old]
+            self.pos = vec_add(self.pos, disp)
+            self.wolfmap.actor_lookup[new_block] = self
         self.pos = vec_add(self.pos, disp)
 
     def orientation_idx(self, observer, sectors=8):
@@ -461,10 +473,6 @@ class Actor:
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
         return vec_add(ablock, offset)
-
-    def front_occupied(self):
-        fblock = self.get_front_block()
-        return self.wolfmap.cell_occupied(fblock)
 
     def sees_player(self, game_ctx):
         r = game_ctx.game_renderer.raycaster

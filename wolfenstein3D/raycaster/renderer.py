@@ -47,7 +47,7 @@ class RayRenderer:
         return (self.height / dist) * scaler
 
     def lamberts_cosine(self, coll, light: PointLight):
-        _, pos, vertical, _ = coll
+        _, pos, vertical, _, _ = coll
         n = BASIS[~vertical + 2]
         light_to_coll = vec_sub(pos, light.pos)
         light_to_coll = vec_norm(light_to_coll)
@@ -89,13 +89,13 @@ class RayRenderer:
         w_1 = self.width - 1
         if col_pos > w_1 or col_pos < 0:
             return False
-            
+
         return self.distbuff[int(col_pos // self.repeat)] > dist
 
     def draw_sprite(self, sprite: Sprite):
         o = self.raycaster.observer
         perp_dist = vec_dot(vec_sub(o.pos, sprite.pos), o.look_dir)
-        if perp_dist < 3:
+        if perp_dist < 6:
             return
         projected = sprite.project()
         if not self.sprite_is_visible(projected, sprite):
@@ -105,6 +105,8 @@ class RayRenderer:
         screen_pos = sprite.screen_pos(self, projected)
 
         height_to_draw = self.distance_to_height(perp_dist, sprite=True)
+        if height_to_draw > 1000:
+            return
         width_to_draw = height_to_draw * self.sprite_wh_ratio
 
         skip = sprite.width / width_to_draw
@@ -114,16 +116,6 @@ class RayRenderer:
 
         ystart = hh - visible_height // 2
         xstart = screen_pos - (width_to_draw // 2) * r
-        last = xstart + (int(width_to_draw)-1)*r
-        # if self.spcol_visible(perp_dist, xstart) \
-        #         and self.spcol_visible(perp_dist, last):
-        #     # both ends visible
-        #     # no need for column basis rendering
-        #     scaled = sprite.get_scaled(width_to_draw*r, height_to_draw, h)
-        #     self.pgsurface.blit(
-        #         scaled, (xstart, ystart))
-        #     pygame.display.flip()
-        #     return
 
         for i in range(int(width_to_draw)):
             col_pos = xstart + (i * r)
