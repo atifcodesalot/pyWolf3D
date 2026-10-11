@@ -132,9 +132,8 @@ class WolfMap:
     # however, the vertical and horizontal doors have the same texture,
     # so the indices for horizontal doors are shifted left by 1
     # WALL_TEXTURES list contains the same texture for each 0x22 and 0x22 << 1
-    DOOR_INDICES = [0x1f, 0x1f << 1, 0x20, 0x20 <<
-                    1, 0x21, 0x21 << 1, 0x22, 0x22 << 1]
-    HORIZ_DOOR_INDICES = [0x1f << 1, 0x20 << 1, 0x21 << 1, 0x22 << 1]
+    DOOR_INDICES = [56, 57, 60, 61, 62, 63]
+    HORIZ_DOOR_INDICES = [57, 61, 63]
 
     def __init__(self, difficulty: WolfDifficulty, nextmap, size=(64, 64), array=None,
                  wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], ):
@@ -170,7 +169,7 @@ class WolfMap:
         return cell in self.DOOR_INDICES
     
     def cell_is_elevator(self, cell):
-        return cell == 14
+        return cell == 40
 
     def snapshot(self):
         state = (deepcopy(self.raw),
@@ -277,10 +276,11 @@ class WolfMap:
             for i, entry in enumerate(row):
                 if self.cell_is_door(entry):
                     _type = WolfDoor
-                    if entry in [0x20, 0x20 << 1]:
+                    if entry in [62, 63]:
                         _type = WolfGoldDoor
-                    elif entry == [0x21, 0x21 << 1]:
+                    elif entry in [620, 630]:
                         _type = WolfSilverDoor
+                        self.raw[j][i] = entry // 10
                     self.add_door((i, j),
                                   horizontal=entry in self.HORIZ_DOOR_INDICES,
                                   _type=_type)

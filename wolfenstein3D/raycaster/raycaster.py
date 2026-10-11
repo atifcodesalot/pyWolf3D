@@ -3,6 +3,7 @@
 import math
 from .aux_math import *
 from wolf.maps import WolfMap, WolfDoor, WolfPushWall
+from wolf.assets import SIDEDOOR
 
 
 # observer class,
@@ -104,7 +105,7 @@ class Raycaster:
         nearside_hit = (half_horiz ^ door.horiz)
         if nearside_hit:
             # return door interior cell
-            return half_vert, 35, True
+            return half_vert, SIDEDOOR, True
 
         offset = trace[vert_intercept] % ww
         door_hit = (offset / ww) < door.opening
@@ -119,7 +120,7 @@ class Raycaster:
             farside_hit = (hh_horiz ^ door.horiz)
             hh_horiz = ~hh_vert + 2
             if farside_hit:
-                return hh_vert, 35, True
+                return hh_vert, SIDEDOOR, True
             # the ray passes through
             return vert_intercept, None, False
 

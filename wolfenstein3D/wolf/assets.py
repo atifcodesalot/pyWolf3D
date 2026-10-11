@@ -35,8 +35,6 @@ SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
 #     sheet.putdata(new)
 #     sheet.save(savename, "PNG")
 
-DOUBLE_ARTWORK = {12, 14, 16, 18}
-
 
 def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
                  texmap: Image.Image, init, lmarg=0, rmarg=0):
@@ -56,21 +54,13 @@ def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
 
 
 def init_wall_textures():
-    global WALL_TEXTURES
+    global WALL_TEXTURES, SIDEDOOR
+    SIDEDOOR = 58
     walls = Image.open(WALLS_PATH)
-    WALL_TEXTURES = texmap_parse(0, 0, 0, 0, 128, 128, walls, init=Texture)
-    for i in DOUBLE_ARTWORK:
-        WALL_TEXTURES[i] = [WALL_TEXTURES[i], WALL_TEXTURES[i+1]]
+    WALL_TEXTURES = texmap_parse(486, 16, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
 
-    # extend to 100 slot texture table
-    WALL_TEXTURES.extend([None]*100)
-
-    # init horizontal door slots
-    WALL_TEXTURES[0x1f << 1] = WALL_TEXTURES[0x1f]
-    WALL_TEXTURES[0x20 << 1] = WALL_TEXTURES[0x20]
-    WALL_TEXTURES[0x21 << 1] = WALL_TEXTURES[0x21]
-    WALL_TEXTURES[0x22 << 1] = WALL_TEXTURES[0x22]
-    #
+    # extend to 120 slot texture table
+    WALL_TEXTURES.extend([None]*120)
 
 
 def init_hud_textures():

@@ -25,7 +25,7 @@ class Texture:
         ]
 
         self.shade_cache = {}
-        
+
     def scale_column(self, column, repeat, height, screen_height):
         if height > screen_height:
             # clip before scaling
@@ -33,16 +33,14 @@ class Texture:
             column = column.subsurface(
                 (0, self.half_height - off, 1, off*2))
             height = screen_height
-
         height = max(height, 0)
         scaled = pygame.transform.scale(
             column, (repeat, height))
         return scaled
 
     def get_column(self, i, repeat, height, shade_factor, screen_height):
-        column = self.shade(shade_factor, i)
+        column = self.columns[i]
         scaled = self.scale_column(column, repeat, height, screen_height)
-        
         return scaled
 
     def shade(self, factor, i):
@@ -55,6 +53,3 @@ class Texture:
             special_flags=pygame.BLEND_RGB_MULT,
         )
         return shaded
-
-
-

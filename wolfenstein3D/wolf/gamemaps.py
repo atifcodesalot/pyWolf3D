@@ -7,71 +7,71 @@ from .game_objects import *
 from . import wolflogger
 from .actors import WolfActorType
 
-WALL_TEXTURE_MAPPING = {
-    # DOS GAMEMAPS ID : my atlas index
-    0x01: 0,  # grey stone
-    0x02: 0,  # grey stone
-    0x03: 2,  # grey stone + flag
-    0x04: 3,  # grey stone + Hitler portrait
-    0x05: 9,  # blue stone + cell door
-    0x06: 1,  # grey stone + eagle arch
-    0x07: 9,  # cell door + skeleton -> collapsed to cell texture
-    0x08: 8,  # blue stone
-    0x09: 8,  # blue stone
-    0x0A: 5,  # wood + eagle
-    0x0B: 6,  # wood + Hitler portrait
-    0x0C: 4,  # plain wood
-    0x0D: 34,  # elevator entrance / closest Jaguar equivalent
-    0x0E: 19,  # steel + Achtung/Verboten -> Jaguar decorated steel
-    0x0F: 18,  # plain steel
-    0x10: 16,  # landscape -- DAY
-    # atlas 17 is the NIGHT variant
-    0x11: 10,  # red brick
-    0x12: 13,  # wreath/emblem wall
-    # 0x13   # purple/green -- no direct Jaguar equivalent
-    0x14: 11,  # red brick + eagle tapestry
-    0x15: 14,  # elevator interior / rail
-    0x16: 15,  # elevator interior / control panel
-    0x17: 7,  # wood + iron cross
-    0x18: 20,  # moss/slime stone
-    # 0x19   # pink/green -- no direct Jaguar equivalent
-    0x1A: 21,  # second moss/slime stone
-    0x1B: 0,  # grey stone
-    0x1C: 19,  # grey stone + Achtung/Verboten -> closest equivalent
-    0x1D: 26,  # brown cave
-    0x1E: 27,  # brown cave + blood
-    0x1F: 27,  # brown cave + blood (collapsed)
-    0x20: 27,  # brown cave + blood (collapsed)
-    # 0x21   # Hitler stained glass -- no direct Jaguar equivalent
-    0x22: 23,  # blue brick + skulls
-    0x23: 30,  # grey brick
-    0x24: 23,  # blue brick + swastikas -- Jaguar combines the family
-    0x25: 30,  # grey brick + hole -> plain grey brick fallback
-    0x26: 12,  # red/grey/brown wall
-    0x27: 30,  # grey brick + crack -> plain grey brick fallback
-    0x28: 22,  # plain blue brick
-    0x29: 19,  # blue stone + Verboten -> closest decorated steel
-    0x2A: 29,  # brown tiles
-    0x2B: 30,  # grey brick + map -> plain grey brick fallback
-    0x2C: 28,  # orange stone
-    0x2D: 28,  # orange stone
-    0x2E: 29,  # brown tiles
-    0x2F: 29,  # brown tiles + banner -> brown tiles fallback
-    0x30: 4,  # orange panel on wood -> wood fallback
-    0x31: 3,  # grey brick + Hitler -> portrait fallback
-    # Doors
-    0x5A: 31,  # regular door, vertical
-    0x5B: 31 << 1,  # regular door, horizontal
-    0x5C: 32,  # gold door vertical
-    0x5D: 32 << 1,  # gold door horizontal
-    0x5E: 33,  # silver door vertical
-    0x5F: 33 << 1,  # horizontal
-    0x64: 34,  # elevator door vertical
-    0x65: 34 << 1,  # elevator door horizontal
-}
+ID_TO_ATLAS = {
+    1:  0,
+    2:  2,
+    3:  4,
+    4:  6,
+    5:  8,
+    6: 10,
+    7: 12,
+    8: 14,
+    9: 16,
+    10: 18,
+    11: 20,
+    12: 22,
+    13: 24,
+    14: 26,
+    15: 28,
+    16: 30,
+    17: 32,
+    18: 34,
+    19: 36,
+    20: 38,
+    21: 40,
+    22: 42,
+    23: 44,
+    24: 46,
+    25: 48,
+    26: 50,
+    27: 52,
+    28: 54,
+    29: 64,
+    30: 66,
+    31: 68,
+    32: 70,
+    33: 72,
+    34: 74,
+    35: 76,
+    36: 78,
+    37: 80,
+    38: 82,
+    39: 84,
+    40: 86,
+    41: 88,
+    42: 90,
+    43: 92,
+    44: 94,
+    45: 96,
+    46: 98,
+    47: 100,
+    48: 102,
+    49: 104,
 
-# add empty area tiles
-WALL_TEXTURE_MAPPING.update(dict((i, i) for i in range(0x6A, 0x8F + 1)))
+    # Vertical doors
+    90: 56,  # Regular
+    92: 62,  # Gold
+    94: 620,  # Silver
+    100: 60,  # Elevator
+
+    # Horizontal doors:
+    91: 57,
+    93: 63,
+    95: 630, # Silver
+    97: 63,
+    99: 63,
+    101: 61,
+}
 
 
 def init_actor_entries():
@@ -203,10 +203,10 @@ class GameMapsAdaptor:
         walls = self.planes[level_i][0]
         walls = [walls[i*64: (i+1)*64] for i in range(64)]
         for i, row in enumerate(walls):
-            walls[i] = [WALL_TEXTURE_MAPPING.get(wall, 0) for wall in row]
+            walls[i] = [ID_TO_ATLAS.get(wall, wall) for wall in row]
 
         wolfmap = WolfMap(array=walls, wall_width=8,
-                          difficulty=WolfDifficulty.DEATHINCARNATE, 
+                          difficulty=WolfDifficulty.DEATHINCARNATE,
                           nextmap=None)
         ww = wolfmap.wall_width
 
@@ -246,7 +246,6 @@ def get_shareware_maps():
         if i == len(SHAREWARE_MAPS)-1:
             break
         map_.nextmap = SHAREWARE_MAPS[i+1]
-    print(SHAREWARE_MAPS[0].nextmap is SHAREWARE_MAPS[1])
     maphead.close()
     maptemp.close()
 
