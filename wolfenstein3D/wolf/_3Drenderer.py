@@ -64,12 +64,13 @@ class Wolf3DRenderer(RayRenderer):
         self.pgsurface.blit(
             self.weapons[self.weap_sp].surface,
             (self.wpn_xoffset, self.wpn_yoffset))
-        
+
     def render_sprites(self):
         # also render actors
         actor_sprites = [act.current_sprite(
             self.player) for act in self.player.map.get_actors()]
-        all_sprites = self.sort_sprites(actor_sprites + self.player.map.sprites)
+        all_sprites = self.sort_sprites(
+            actor_sprites + self.player.map.sprites)
         for sprite in all_sprites:
             self.draw_sprite(sprite)
 
@@ -84,7 +85,9 @@ class Wolf3DRenderer(RayRenderer):
 
         addition = -8 if half_cycle else 8
         for i in self.glow:
-            self.rgb_offset[i] += addition
+            # cap between 255 and 0
+            self.rgb_offset[i] = max(
+                min(self.rgb_offset[i] + addition, 255), 0)
 
         del pixelref
 
