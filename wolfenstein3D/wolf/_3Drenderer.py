@@ -19,9 +19,7 @@ class Wolf3DRenderer(RayRenderer):
 
     def __init__(self, player: WolfPlayer, pgsurface: pygame.Surface):
         self.player = player
-        self.map = self.player.map
-        raycaster = Raycaster(player, player.map)
-        super().__init__(raycaster, pgsurface,
+        super().__init__(Raycaster(player), pgsurface,
                          topcolor="#6B6404",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
@@ -70,8 +68,8 @@ class Wolf3DRenderer(RayRenderer):
     def render_sprites(self):
         # also render actors
         actor_sprites = [act.current_sprite(
-            self.player) for act in self.map.get_actors()]
-        all_sprites = self.sort_sprites(actor_sprites + self.map.sprites)
+            self.player) for act in self.player.map.get_actors()]
+        all_sprites = self.sort_sprites(actor_sprites + self.player.map.sprites)
         for sprite in all_sprites:
             self.draw_sprite(sprite)
 

@@ -26,9 +26,10 @@ class RayRenderer:
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
-        self.column_width = self.width // self.raycaster.observer.ray_count
-        self.wall_width = raycaster.map.wall_width
-        self.repeat = self.width // self.raycaster.observer.ray_count
+        rayc = self.raycaster.observer.ray_count
+        self.column_width = self.width // rayc
+        self.wall_width = raycaster.observer.map.wall_width
+        self.repeat = self.width // rayc
         self.topcolor = topcolor
         self.bottomcolor = bottomcolor
         self.bottrect = pygame.Rect(
@@ -55,7 +56,7 @@ class RayRenderer:
 
     def get_wall_col(self, coll, height, factor):
         vertical = coll[2]
-        m = self.raycaster.map
+        m = self.raycaster.observer.map
         offset = coll[1][vertical] % self.wall_width
         # if it is a door, take the opening into account
         if coll[3] in m.DOOR_INDICES:
@@ -134,7 +135,8 @@ class RayRenderer:
         return sorted_sprites
 
     def render_sprites(self):
-        sorted_sprites = self.sort_sprites(self.raycaster.map.sprites)
+        m = self.raycaster.observer.map
+        sorted_sprites = self.sort_sprites(m.sprites)
         for sprite in sorted_sprites:
             self.draw_sprite(sprite)
 

@@ -56,16 +56,13 @@ class WolfGameTest(unittest.TestCase):
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[3]
-        player = WolfPlayer(mymap, ray_count=160,
-                            weapon=WolfWeapon.PISTOL, fov=54)
-        player.ammo = 10
+        mymap = SHAREWARE_MAPS[1]
         screen = pygame.display.set_mode((680, 600))
-        game = WolfGame(player, root_display=screen,
+        game = WolfGame(mymap, root_display=screen,
                         sound_off=False, noclip=False)
         raycaster = game.game_renderer.raycaster
-        self.assertEqual(raycaster.observer.pos, player.pos)
-        map_ = raycaster.map
+        self.assertEqual(raycaster.observer.pos, game.player.pos)
+        map_ = raycaster.observer.map
         self.assertEqual(map_.size, (64, 64))
         game.mainloop()
 

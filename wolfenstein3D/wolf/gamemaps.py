@@ -206,12 +206,14 @@ class GameMapsAdaptor:
             walls[i] = [WALL_TEXTURE_MAPPING.get(wall, 0) for wall in row]
 
         wolfmap = WolfMap(array=walls, wall_width=8,
-                          difficulty=WolfDifficulty.DEATHINCARNATE)
+                          difficulty=WolfDifficulty.DEATHINCARNATE, 
+                          nextmap=None)
         ww = wolfmap.wall_width
 
         # add sprites, items, pushwalls, doors
         sprite_plane = self.planes[level_i][1]
         for i, entry in enumerate(sprite_plane):
+
             if not entry:
                 continue
             pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
@@ -240,6 +242,11 @@ def get_shareware_maps():
     parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
     adaptor = GameMapsAdaptor(parser)
     SHAREWARE_MAPS = [adaptor.to_wolfmap(level_i) for level_i in range(10)]
+    for i, map_ in enumerate(SHAREWARE_MAPS):
+        if i == len(SHAREWARE_MAPS)-1:
+            break
+        map_.nextmap = SHAREWARE_MAPS[i+1]
+    print(SHAREWARE_MAPS[0].nextmap is SHAREWARE_MAPS[1])
     maphead.close()
     maptemp.close()
 

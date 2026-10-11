@@ -136,9 +136,10 @@ class WolfMap:
                     1, 0x21, 0x21 << 1, 0x22, 0x22 << 1]
     HORIZ_DOOR_INDICES = [0x1f << 1, 0x20 << 1, 0x21 << 1, 0x22 << 1]
 
-    def __init__(self, difficulty: WolfDifficulty, size=(64, 64), array=None,
+    def __init__(self, difficulty: WolfDifficulty, nextmap, size=(64, 64), array=None,
                  wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], ):
         self.difficulty = difficulty
+        self.nextmap = nextmap
         self.size = size
         self.wall_width = wall_width
         self.init_pos = list(init_pos)
@@ -167,6 +168,9 @@ class WolfMap:
 
     def cell_is_door(self, cell):
         return cell in self.DOOR_INDICES
+    
+    def cell_is_elevator(self, cell):
+        return cell == 14
 
     def snapshot(self):
         state = (deepcopy(self.raw),

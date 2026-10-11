@@ -13,10 +13,12 @@ from math import acos, degrees
 
 
 class WolfPlayer(Observer):
-    def __init__(self, map_: WolfMap, fov=60,
-                 ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=20):
-        super().__init__(map_.init_pos.copy(), map_.init_look.copy(), fov, ray_count)
-        self.map = map_
+    def __init__(self, game, fov=60,
+                 ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=10):
+        self.game = game
+        map_ = self.game.wolfmap
+        super().__init__(
+            map_.init_pos.copy(), map_, map_.init_look.copy(), fov, ray_count)
         self.weapon = weapon
         self.pace = 0.8
         self.rot_pace = 3
@@ -32,7 +34,8 @@ class WolfPlayer(Observer):
         self.shooting = False
         self.running = False
 
-        self.acquired_weapons = set([WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
+        self.acquired_weapons = set(
+            [WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
 
     def has_auto(self):
         return self.weapon.value > 1
@@ -109,7 +112,7 @@ class WolfPlayer(Observer):
         self.ammo = max(self.ammo - 1, 0)
 
     def acquire_weapon(self, weap: WolfWeapon):
-        self.ammo += 5 
+        self.ammo += 5
         self.acquired_weapons.add(weap)
         self.switch_weapon(max(self.acquired_weapons, key=lambda w: w.value))
 

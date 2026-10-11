@@ -8,8 +8,9 @@ from wolf.maps import WolfMap, WolfDoor, WolfPushWall
 # observer class,
 # contains the unit ray directions raycaster uses to cast.
 class Observer:
-    def __init__(self, pos, look_dir=[1, 0], fov=120, ray_count=200):
+    def __init__(self, pos, map_, look_dir=[1, 0], fov=120, ray_count=200):
         self.pos = list(pos)
+        self.map = map_
         self.look_dir = vec_norm(look_dir)
         self.left = vec_get_perp(self.look_dir)
         self.fov = math.radians(fov)
@@ -46,12 +47,11 @@ class Observer:
 class Raycaster:
     atol = 1e-10
 
-    def __init__(self, observer: Observer, map: WolfMap):
+    def __init__(self, observer: Observer):
         self.observer = observer
-        self.map = map
 
     def mags_for_step(self, trace, rx, ry, xnn, ynn):
-        w = self.map.wall_width
+        w = self.observer.map.wall_width
         dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
         dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
 
@@ -61,7 +61,7 @@ class Raycaster:
         return mags
 
     def mags_for_half_step(self, trace, rx, ry, xnn, ynn, xhalf, yhalf):
-        w = self.map.wall_width
+        w = self.observer.map.wall_width
         dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
         if xhalf:
             dx = w / 2 if xnn else -w / 2
@@ -76,7 +76,7 @@ class Raycaster:
         return mags
 
     def mags_offset(self, trace, rx, ry, xnn, ynn, xoff, yoff):
-        w = self.map.wall_width
+        w = self.observer.map.wall_width
         if xoff:
             dx = xoff * w if xnn else -xoff * w
         else:
@@ -95,7 +95,7 @@ class Raycaster:
         if not (vert_intercept ^ door.horiz):
             return vert_intercept, cell, True
         #
-        ww = self.map.wall_width
+        ww = self.observer.map.wall_width
         half_vert = self.march_ray_half(
             trace, *ray_context, vert_intercept, not vert_intercept)
         half_horiz = ~half_vert + 2
@@ -126,7 +126,7 @@ class Raycaster:
     def handle_pushwall(self, cell, trace, pushwall: WolfPushWall,
                         vert_intercept: int, *rayctx):
         perpd = self.get_perp_dist
-        w = self.map.wall_width
+        w = self.observer.map.wall_width
         absoff = pushwall.offset % 1
         if absoff == 0:
             return self.get_perp_dist(trace), vert_intercept, cell, True
@@ -219,12 +219,12 @@ class Raycaster:
         vert = self.march_ray(trace, rx, ry, xnn, ynn)
         xb = hw if not xnn and vert else 0
         yb = hw if not ynn and not vert else 0
-        biased_pos = self.map.to_block_pos(
+        biased_pos = self.observer.map.to_block_pos(
             trace[0] - xb, trace[1] - yb)
-        cell = self.map.raw[biased_pos[1]][biased_pos[0]]
+        cell = self.observer.map.raw[biased_pos[1]][biased_pos[0]]
         if cell < 106:
-            if cell in self.map.DOOR_INDICES:
-                door_obj = self.map.get_door(biased_pos)
+            if cell in self.observer.map.DOOR_INDICES:
+                door_obj = self.observer.map.get_door(biased_pos)
                 dvert, dcell, door_hit = self.handle_door(
                     cell,
                     trace,
@@ -236,8 +236,8 @@ class Raycaster:
                 # the ray passes through the opening
                 return None, biased_pos
 
-            elif biased_pos in self.map.pushwalls:
-                pushwall = self.map.get_pushwall(biased_pos)
+            elif biased_pos in self.observer.map.pushwalls:
+                pushwall = self.observer.map.get_pushwall(biased_pos)
                 pdist, pvert, pcell, pwhit = self.handle_pushwall(
                     cell, trace, pushwall, vert, *rayctx)
                 if pwhit:
@@ -250,7 +250,7 @@ class Raycaster:
         return None, biased_pos
 
     def raycast(self, ray_dir, camera_pos):
-        hw = self.map.wall_width // 2
+        hw = self.observer.map.wall_width // 2
         rayctx = self.get_ray_context(ray_dir)
         trace = camera_pos.copy()
         visited = []
@@ -265,8 +265,8 @@ class Raycaster:
                 visited.append(hitinfo[1])
 
     def get_corridor(self, rx, ry, start_pos):
-        visited = [self.map.to_block_pos(*start_pos),]
-        hw = self.map.wall_width // 2
+        visited = [self.observer.map.to_block_pos(*start_pos),]
+        hw = self.observer.map.wall_width // 2
         trace = start_pos.copy()
         rayctx = self.get_ray_context((rx, ry))
         rx, ry, xnn, ynn = rayctx
@@ -274,13 +274,13 @@ class Raycaster:
             vert = self.march_ray(trace, rx, ry, xnn, ynn)
             xb = hw if not xnn and vert else 0
             yb = hw if not ynn and not vert else 0
-            biased_pos = self.map.to_block_pos(
+            biased_pos = self.observer.map.to_block_pos(
                 trace[0] - xb, trace[1] - yb)
             visited.append(biased_pos)
-            cell = self.map.raw[biased_pos[1]][biased_pos[0]]
+            cell = self.observer.map.raw[biased_pos[1]][biased_pos[0]]
             if cell < 106:
-                if cell in self.map.DOOR_INDICES:
-                    door_obj = self.map.get_door(biased_pos)
+                if cell in self.observer.map.DOOR_INDICES:
+                    door_obj = self.observer.map.get_door(biased_pos)
                     _, _, door_hit = self.handle_door(
                         cell,
                         trace,
@@ -299,13 +299,13 @@ class Raycaster:
         return visited
 
     def render_bird_view(self, colls, pygame, pgsurface):
-        m = self.map
+        m = self.observer.map
         ww = m.wall_width
         for x in range(m.size[0]):
             for y in range(m.size[1]):
                 if (cell := m.raw[y][x]):
                     color = (255, 0, 0)
-                    if cell in self.map.DOOR_INDICES:
+                    if cell in m.DOOR_INDICES:
                         color = (0, 255, 0)
                     elif (x, y) in m.pushwalls:
                         color = (23, 42, 255)

@@ -47,22 +47,19 @@ class WolfGame:
         None,
     ]
 
-    def __init__(self, player: WolfPlayer, root_display, framerate=60, sound_off=False, noclip=False):
-        self.player = player
-        self.root_display = root_display
-        self.wolfmap = self.player.map
-        self.game_res = (640, 420)
-        self.game_surf = pygame.Surface(self.game_res)
-        self.game_renderer = Wolf3DRenderer(self.player, self.game_surf)
-        self.renderer = Wolf2DRenderer(root_display.get_size(), self.game_res)
-        self.map = self.player.map
-        self.actors = self.map.get_actors()
+    def __init__(self, map_: WolfMap, root_display, framerate=60,
+                 sound_off=False, noclip=False):
+        self.wolfmap = map_
+        self.player = WolfPlayer(self, ray_count=128, fov=54)
+        self.init_map()
+        self.init_renderers(root_display)
+  
         self.framerate = framerate
         self.heartbeats = 0
 
         self.init_keymappings()
+        self.init_mouse()
 
-        self.clock = pygame.time.Clock()
         # game events to schedule: (ticks-> func)
         self.game_events = {}
         self.animations: list[Animation] = []
@@ -73,12 +70,28 @@ class WolfGame:
         self.areabyplayer = [[0,]*37]*37
 
         self.sound_manager = WolfSoundManager(master=1)
-
         if sound_off:
             self.sound_manager.set_master(0)
+
         self.noclip = noclip
-        pygame.mouse.set_visible(False)
-        pygame.event.set_grab(True)
+        
+        self.clock = pygame.time.Clock()
+        
+        
+        self.floor_fin = False
+
+    def init_renderers(self, root):
+        self.game_res = (640, 420)
+        self.game_surf = pygame.Surface(self.game_res)
+        self.root_display = root
+        self.game_renderer = Wolf3DRenderer(self.player, self.game_surf)
+        self.renderer = Wolf2DRenderer(root.get_size(), self.game_res)
+
+    def init_map(self):
+        self.player.map = self.wolfmap
+        self.player.pos = self.wolfmap.init_pos.copy()
+        self.player.update_look_dir(self.wolfmap.init_look.copy())
+        self.actors = self.wolfmap.get_actors()
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -90,22 +103,26 @@ class WolfGame:
             pygame.K_LSHIFT: lambda: setattr(self.player, "running", True)
         }
 
+    def init_mouse(self):
+        pygame.mouse.set_visible(False)
+        pygame.event.set_grab(True)
+
     def handle_item_pickup(self, player_block):
-        item = self.map.item_lookup[player_block]
+        item = self.wolfmap.item_lookup[player_block]
         if not item.is_health_item:
-            self.map.pop_item(player_block)
+            self.wolfmap.pop_item(player_block)
             item.affect(self.player)
             self.game_renderer.glow = (0, 1)
         else:
             if self.player.health != 100:
-                self.map.pop_item(player_block)
+                self.wolfmap.pop_item(player_block)
                 item.affect(self.player)
                 self.game_renderer.glow = (0, 1)
 
     def move_player(self, sign_=1):
         pace = self.player.pace*2 if self.player.running else self.player.pace
         disp = vec_mul(self.player.look_dir, pace * sign_)
-        m = self.map
+        m = self.wolfmap
         pos = self.player.pos
         xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
         ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
@@ -123,13 +140,13 @@ class WolfGame:
         if player_area > 37 or 0 > player_area:
             wolflogger.warning("player area out of bounds!")
             return
-        self.areabyplayer = self.map.area_matrix[player_area]
+        self.areabyplayer = self.wolfmap.area_matrix[player_area]
         self.areabyplayer[player_area] = 1
 
     def handle_interaction(self):
         fblock, fcell = self.player.get_front_cell()
-        if self.map.cell_is_door(fcell):
-            door = self.map.get_door(fblock)
+        if self.wolfmap.cell_is_door(fcell):
+            door = self.wolfmap.get_door(fblock)
             if not door.is_opening:
                 if type(door) is WolfDoor:
                     self.open_door(door)
@@ -138,8 +155,8 @@ class WolfGame:
                 if getattr(self.player, door.key, None):
                     self.open_door(door)
 
-        elif fblock in self.map.pushwalls:
-            pushwall = self.map.get_pushwall(fblock)
+        elif fblock in self.wolfmap.pushwalls:
+            pushwall = self.wolfmap.get_pushwall(fblock)
             if not pushwall.sliding:
                 sliding_dir = [0, 0]
                 ldir = self.player.look_dir
@@ -153,6 +170,9 @@ class WolfGame:
                 pushwall.begin_sliding(sliding_dir)
                 slidesnd = SOUNDS["doors"]["PUSHWALLSND.WAV"]
                 self.schedule_sound_effect(slidesnd, None, 5)
+                
+        elif self.wolfmap.cell_is_elevator(fcell):
+            self.floor_fin = True
 
     def handle_player_requests(self):
         # placeholder
@@ -160,7 +180,7 @@ class WolfGame:
             self.game_renderer.sp_per_weap
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
-        if pblock in self.map.item_lookup:
+        if pblock in self.wolfmap.item_lookup:
             self.handle_item_pickup(pblock)
             # set glow false after 40 frames
             self.schedule_game_event(
@@ -203,7 +223,7 @@ class WolfGame:
                 continue
             if self.player.hits_actor(self.game_renderer.raycaster, act):
                 if self.player.has_knife():
-                    ablock = self.map.to_block_pos(*act.pos)
+                    ablock = self.wolfmap.to_block_pos(*act.pos)
                     pblock = self.player.get_current_block()
                     if euclidean_distance(ablock, pblock) < 2:
                         act.get_shot(damage=75, game_ctx=self)
@@ -259,7 +279,7 @@ class WolfGame:
         self.handle_hitscan()
 
     def handle_doors(self):
-        for door in self.map.doors.values():
+        for door in self.wolfmap.doors.values():
             if door.is_opening:
                 self.slide_door_open(door)
             elif door.is_closing:
@@ -296,7 +316,7 @@ class WolfGame:
 
     def handle_secrets(self):
         revealed = list(filter(lambda p: p.sliding,
-                        self.map.pushwalls.values()))
+                        self.wolfmap.pushwalls.values()))
         for pushwall in revealed:
             if pushwall.sliding:
                 pushwall.slide_open(self.wolfmap)
@@ -401,14 +421,18 @@ class WolfGame:
         self.ongoing = True
         while self.ongoing:
             self.heartbeat()
-            # self.root_display.fill("#ffffff")
             self.root_display.blit(self.renderer.pgsurf, (0, 0))
             pygame.display.flip()
             if self.player.is_dead():
                 self.life_end()
+            elif self.floor_fin:
+                self.floor_end()
 
     def floor_end(self):
-        pass
+        # add floor end menu later
+        self.wolfmap = self.wolfmap.nextmap
+        self.init_map()
+        self.floor_fin = False
 
     def life_end(self):
         self.player.lives -= 1
@@ -425,7 +449,7 @@ class WolfGame:
         self.game_renderer.fizzle_fade(
             self.root_display, update_dest=self.renderer.game_off)
         self.player.reset()
-        self.map.reset()
+        self.wolfmap.reset()
         self.game_renderer.glow = False
         time.sleep(0.6)
         if self.player.lives == 0:
