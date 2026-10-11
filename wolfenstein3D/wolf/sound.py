@@ -40,7 +40,7 @@ class WolfSoundManager:
         if origin is None:
             return self.master
         pblock = game_ctx.player.get_current_block()
-        oblock = game_ctx.map.to_block_pos(*origin)
+        oblock = game_ctx.wolfmap.to_block_pos(*origin)
         dist = euclidean_distance(pblock, oblock)
         level = self.cap_volume(self.attenuate_func(dist))
         return level
