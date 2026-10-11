@@ -557,8 +557,8 @@ class Guard(Actor):
                          health=100,
                          drop=WolfItem.AMMUNITION,
                          death_sounds=list(SOUNDS["death"].values()),
-                         attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"],
-                         alert_sound=SOUNDS["common"]["HALTSND.WAV"])
+                         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
+                         alert_sound=SOUNDS["alert"]["HALTSND.WAV"])
         self.pace = 0.15
 
 
@@ -574,7 +574,9 @@ class Shepherd(Actor):
                          hurt_offset=0,
                          health=60,
                          _range=(wolfmap.wall_width)*2,
-                         attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"])
+                         death_sounds=[SOUNDS["dogs"]["DOGDEATHSND.WAV"],],
+                         attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
+                         alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"])
         self.pace = 0.5
 
 
@@ -590,7 +592,10 @@ class SS(Actor):
                          hurt_offset=0,
                          health=120,
                          drop=WolfItem.MACHINEGUN,
-                         death_sounds=list(SOUNDS["death"].values()))
+                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
+                                       SOUNDS["common"]["LEBENSND.WAV"]],
+                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
+                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"])
 
 
 TYPE_ACTOR_OBJ = {

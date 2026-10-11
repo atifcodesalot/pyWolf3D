@@ -22,7 +22,7 @@ class DirectionLight:
 class RayRenderer:
     def __init__(self, raycaster: Raycaster,
                  pgsurface: pygame.Surface,
-                 topcolor, bottomcolor, wall_textures, scaler=10):
+                 topcolor, bottomcolor, wall_textures, scaler=12):
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()

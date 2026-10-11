@@ -56,7 +56,7 @@ class WolfGameTest(unittest.TestCase):
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[1]
+        mymap = SHAREWARE_MAPS[9]
         screen = pygame.display.set_mode((680, 600))
         game = WolfGame(mymap, root_display=screen,
                         sound_off=False, noclip=False)
