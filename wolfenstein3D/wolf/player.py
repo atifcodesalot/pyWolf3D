@@ -82,7 +82,7 @@ class WolfPlayer(Observer):
         return tuple(front_block), front
 
     def hits_actor(self, raycaster, actor: Actor):
-        corridor = raycaster.get_corridor(*self.look_dir, self.pos)
+        corridor = raycaster.get_corridor(self.look_dir, self.pos)
         actor_block = actor.get_current_block()
         return actor_block in corridor
 

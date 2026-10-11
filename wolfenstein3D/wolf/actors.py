@@ -522,7 +522,7 @@ class Actor:
         # if vec_dot(self.look_dir, to_player) < 0:
         #     # player is behind the actor
         #     return False
-        return p.get_current_block() in r.get_corridor(*to_player, self.pos)
+        return p.get_current_block() in r.get_corridor(to_player, self.pos)
 
     def hears_player(self, game_ctx):
         actor_area = self.get_current_area()

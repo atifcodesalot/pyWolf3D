@@ -260,16 +260,16 @@ class Raycaster:
             if (hitinfo[0]):
                 dist, vert, cell = hitinfo
                 return (dist, trace, vert, cell, visited)
-            else:
+            # else:
                 # hitinfo doesnt contain ray hit info
                 # append cell to visited
-                visited.append(hitinfo[1])
+                # visited.append(hitinfo[1])
 
-    def get_corridor(self, rx, ry, start_pos):
+    def get_corridor(self, ray, start_pos):
         visited = [self.observer.map.to_block_pos(*start_pos),]
         hw = self.observer.map.wall_width // 2
         trace = start_pos.copy()
-        rayctx = self.get_ray_context((rx, ry))
+        rayctx = self.get_ray_context(ray)
         rx, ry, xnn, ynn = rayctx
         while True:
             vert = self.march_ray(trace, rx, ry, xnn, ynn)
@@ -288,12 +288,10 @@ class Raycaster:
                         door_obj,
                         vert,
                         rayctx)
-                    visited.append(
-                        tuple(vec_add(door_obj.pos, BASIS[door_obj.horiz])))
-                    visited.append(tuple(vec_add(door_obj.pos, vec_mul(
-                        BASIS[door_obj.horiz], -1))))
                     if door_hit:
                         break
+                    visited.append(tuple(vec_add(door_obj.pos, vec_mul(
+                        BASIS[door_obj.horiz], sign(ray[door_obj.horiz])))))
                 else:
                     break
 

@@ -20,7 +20,7 @@ class Wolf3DRenderer(RayRenderer):
     def __init__(self, player: WolfPlayer, pgsurface: pygame.Surface):
         self.player = player
         super().__init__(Raycaster(player), pgsurface,
-                         topcolor="#6B6404",
+                         topcolor="#5C5602",
                          bottomcolor="#707070",
                          wall_textures=WALL_TEXTURES)
         self.light = LIGHT_OPTIONS[0]

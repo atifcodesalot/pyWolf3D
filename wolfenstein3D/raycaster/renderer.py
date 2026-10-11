@@ -54,7 +54,7 @@ class RayRenderer:
         light_to_coll = vec_norm(light_to_coll)
         return abs(vec_dot(n, light_to_coll))
 
-    def get_wall_col(self, coll, height, factor):
+    def get_wall_col(self, coll, height):
         vertical = coll[2]
         m = self.raycaster.observer.map
         offset = coll[1][vertical] % self.wall_width
@@ -70,7 +70,7 @@ class RayRenderer:
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (tex_src.width - 1)
         return tex_src.get_column(round(ci),
-                              self.repeat, int(height), factor, self.height)
+                              self.repeat, int(height), self.height)
 
     def sprite_is_visible(self, projected, sprite) -> bool:
         o = self.raycaster.observer
@@ -148,8 +148,7 @@ class RayRenderer:
             self.distbuff.append(coll[0])
             start = self.repeat * cast
             chh = self.distance_to_height(coll[0]) // 2
-            cosine = self.lamberts_cosine(coll, light)
-            column = self.get_wall_col(coll, chh*2, cosine)
+            column = self.get_wall_col(coll, chh*2)
             chh = min(chh, hh)
             self.pgsurface.blit(column, (start, hh - chh))
             cast += 1

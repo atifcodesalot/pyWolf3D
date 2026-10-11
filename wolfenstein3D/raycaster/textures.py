@@ -38,7 +38,7 @@ class Texture:
             column, (repeat, height))
         return scaled
 
-    def get_column(self, i, repeat, height, shade_factor, screen_height):
+    def get_column(self, i, repeat, height, screen_height):
         column = self.columns[i]
         scaled = self.scale_column(column, repeat, height, screen_height)
         return scaled
