@@ -96,7 +96,7 @@ class DyingState(ActorState):
     def endcallback(self, game_ctx):
         if self.actor.drop is None:
             return
-        game_ctx.map.add_item(self.actor.drop,
+        game_ctx.wolfmap.add_item(self.actor.drop,
                               vec_add(self.actor.pos, (2, 0)))
 
 
@@ -152,7 +152,7 @@ class AttackState(ActorState):
         if snd := self.actor.attack_sound:
             game_ctx.schedule_sound_effect(snd, self.actor.pos, 0)
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
-        dist //= game_ctx.map.wall_width
+        dist //= game_ctx.wolfmap.wall_width
         hitprob = int(dist * self.actor.accuracy)
         hitprob = 1 if hitprob == 0 else hitprob
         if random.randint(1, hitprob) in range(1, 3):
