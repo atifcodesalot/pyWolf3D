@@ -126,11 +126,6 @@ class WolfGame:
         self.areabyplayer = self.map.area_matrix[player_area]
         self.areabyplayer[player_area] = 1
 
-    def door_alert(self, door: WolfDoor):
-        actors = self.wolfmap.actorsby_areas(door.area0, door.area1)
-        for act in actors:
-            act.alert(self)
-
     def handle_interaction(self):
         fblock, fcell = self.player.get_front_cell()
         if self.map.cell_is_door(fcell):
@@ -274,7 +269,6 @@ class WolfGame:
     #
     def open_door(self, door):
         door.begin_opening()
-        self.door_alert(door)
         snd = SOUNDS["doors"]["OPENDOORSND.WAV"]
         self.schedule_sound_effect(snd, origin=door.globpos, _time=1)
 

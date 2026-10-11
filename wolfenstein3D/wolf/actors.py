@@ -48,10 +48,12 @@ class GuardingState(ActorState):
         if self.actor.hears_player(game_ctx):
             self.actor.alert(game_ctx)
             self.alerted = True
+        elif self.actor.sees_player(game_ctx):
+            self.actor.alert(game_ctx)
+            self.alerted = True
         elif dist < self.actor.proximity_radius:
-            if self.actor.sees_player(game_ctx):
-                self.actor.alert(game_ctx)
-                self.alerted = True
+            self.actor.alert(game_ctx)
+            self.alerted = True
         # continue to guard
 
     def shapenum(self, observer):
@@ -228,48 +230,87 @@ class ChaseState(ActorState):
         return True
 
     def random_dir_fallback(self):
-        # random.shuffle(self.fallback_chains)
-        # for chain in self.fallback_chains[1]:
-        for dir_ in self.fallback_chains[1]:
-            if self.valid_dir(dir_):
-                self.actor.update_dir(list(dir_))
-                return True
+        random.shuffle(self.fallback_chains)
+        for chain in self.fallback_chains:
+            for dir_ in chain:
+                if self.valid_dir(dir_):
+                    self.actor.update_dir(list(dir_))
+                    return True
         return False
 
-    def decide_dir(self, game_ctx):
-        self.prev_dir = self.actor.look_dir.copy()
+    def find_cardinals(self, game_ctx):
         delta = vec_sub(self.actor.pos, game_ctx.player.pos)
         maxd = max(delta, key=abs)
         vertical = delta.index(maxd)
         mind = delta[~vertical + 2]
         dirs = [[1, 0], [0, 1]]
-        first_try = vec_mul(dirs[vertical], sign(maxd))
-        second_try = vec_mul(dirs[~vertical + 2], sign(mind))
+        return vec_mul(dirs[vertical], sign(maxd)), \
+            vec_mul(dirs[~vertical + 2], sign(mind))
+
+    def decide_chase_dir(self, game_ctx):
+        wolflogger.debug("decide chase dir called")
+        self.prev_dir = self.actor.look_dir.copy()
+        first_try, second_try = self.find_cardinals(game_ctx)
         if self.valid_dir(first_try):
-            self.actor.update_dir(first_try)
-        else:
-            # if the fallback delta is not zero
-            if any(second_try):
-                wolflogger.debug(f"tried {first_try}, fallback: {second_try}")
-                if self.valid_dir(second_try):
-                    self.actor.update_dir(second_try)
-                else:
-                    pass
-                    wolflogger.debug(
-                        f"third fallback, trying prev dir: {self.prev_dir}")
-                    # third fallback
-                    if self.valid_dir(self.prev_dir):
-                        self.actor.update_dir(self.prev_dir)
-                    else:
-                        wolflogger.debug(f"fourth fallback, random chains")
-                        #  fourth fallback
-                        if not self.random_dir_fallback():
-                            wolflogger.debug(
-                                f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
-                            self.actor.reverse_dir()
+            return self.actor.update_dir(first_try)
+        # if the fallback delta is not zero
+        if any(second_try):
+            wolflogger.debug(
+                f"tried {first_try}, first fallback: {second_try}")
+            if self.valid_dir(second_try):
+                return self.actor.update_dir(second_try)
+
+        wolflogger.debug(
+            f"third fallback, trying prev dir: {self.prev_dir}")
+        # third fallback
+        if self.valid_dir(self.prev_dir):
+            return self.actor.update_dir(self.prev_dir)
+
+        wolflogger.debug(f"fourth fallback, random chains")
+        #  fourth fallback
+        if not self.random_dir_fallback():
+            wolflogger.debug(
+                f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
+            self.actor.reverse_dir()
 
         wolflogger.debug(
             f"actor {self.actor._type}  decided look dir: {self.actor.look_dir}, at pos: {self.actor.pos}")
+
+    def decide_dodge_dir(self, game_ctx):
+        wolflogger.debug("decide dodge dir called")
+        self.prev_dir = self.actor.look_dir.copy()
+        delx, dely = vec_sub(self.actor.pos, game_ctx.player.pos)
+        # if the deltas are 0, prefer NE
+        # like the original
+        delx = -1 if delx == 0 else delx
+        dely = -1 if dely == 0 else dely
+        #
+        first_try = [int(delx // abs(delx)), int(dely // abs(dely))]
+        if self.valid_dir(first_try):
+            return self.actor.update_dir(first_try)
+        # first fallback
+        first_fb = [[first_try[0], 0], [0, first_try[1]]]
+        random.shuffle(first_fb)
+        for dir_ in first_fb:
+            if self.valid_dir(dir_):
+                return self.actor.update_dir(dir_)
+        # second fallback
+        second_fb = [vec_mul(first_fb[0], -1),
+                     vec_mul(first_fb[1], -1)]
+        for dir_ in second_fb:
+            if self.valid_dir(dir_):
+                return self.actor.update_dir(dir_)
+        # final fallback
+        self.actor.reverse_dir()
+        wolflogger.debug(
+            f"actor {self.actor._type}  \
+                decided dodge direction: {self.actor.look_dir}, at pos: {self.actor.pos}")
+
+    def decide_dir(self, game_ctx):
+        if self.actor.sees_player(game_ctx):
+            self.decide_dodge_dir(game_ctx)
+        else:
+            self.decide_chase_dir(game_ctx)
 
     def open_door(self, door):
         self.waiting_door = door
@@ -284,7 +325,7 @@ class ChaseState(ActorState):
         if all(ldir):
             # diagonal movement
             self.mov_budget *= math.sqrt(2)
-            
+
         self.dest_block = vec_add(
             self.actor.pos, vec_mul(vec_norm(ldir), self.mov_budget))
 
@@ -356,7 +397,7 @@ class Actor:
 
         self.ticks_since_trans = 0
         self.pace = 0.25
-        self.proximity_radius = self.wolfmap.wall_width * 6
+        self.proximity_radius = self.wolfmap.wall_width 
         self.interrupted = False
 
         self.death_sounds = death_sounds
@@ -478,9 +519,9 @@ class Actor:
         r = game_ctx.game_renderer.raycaster
         p = game_ctx.player
         to_player = vec_norm(vec_sub(self.pos, p.pos))
-        if vec_dot(self.look_dir, to_player) < 0:
-            # player is behind the actor
-            return False
+        # if vec_dot(self.look_dir, to_player) < 0:
+        #     # player is behind the actor
+        #     return False
         return p.get_current_block() in r.get_corridor(*to_player, self.pos)
 
     def hears_player(self, game_ctx):
@@ -518,7 +559,7 @@ class Guard(Actor):
                          death_sounds=list(SOUNDS["death"].values()),
                          attack_sound=SOUNDS["common"]["NAZIFIRESND.WAV"],
                          alert_sound=SOUNDS["common"]["HALTSND.WAV"])
-        self.pace = 0.25
+        self.pace = 0.15
 
 
 class Shepherd(Actor):

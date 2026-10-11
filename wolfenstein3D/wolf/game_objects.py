@@ -2,19 +2,21 @@
 from enum import Enum
 from .assets import SPRITES
 
+
 class WolfWeapon(Enum):
     KNIFE = 0
     PISTOL = 1
     MP4 = 2
     MINIGUN = 3
-    
-    
+
+
 WEAPON_SOUND = {
     WolfWeapon.KNIFE: None,
     WolfWeapon.PISTOL: "ATKPISTOLSND.WAV",
     WolfWeapon.MP4: "ATKMACHINEGUNSND.WAV",
     WolfWeapon.MINIGUN: "ATKGATLINGSND.WAV"
 }
+
 
 class WolfDecoration(Enum):
     WATERPUDDLE = 23
@@ -50,6 +52,7 @@ class WolfDecoration(Enum):
     SPEARRACK = 69
     VINES = 70
 
+
 class WolfItem(Enum):
     DOGFOOD = 29
     GOLDKEY = 43
@@ -66,6 +69,7 @@ class WolfItem(Enum):
     EXTRALIFE = 56
     BLOODYREMAINS = 57
     BLOODPOOL = 61
+
 
 ITEM_SPRITES_MAPPING = {
     WolfItem.DOGFOOD:  6,  # Dog food
@@ -86,11 +90,11 @@ ITEM_SPRITES_MAPPING = {
 }
 
 ITEM_AFFECT = {
-    WolfItem.DOGFOOD: lambda p: p.regain_health(20),
-    WolfItem.FOOD: lambda p: p.regain_health(50),
-    WolfItem.FIRSTAIDKIT: lambda p: p.regain_health(75),
-    WolfItem.CHAINGUN: lambda p: p.switch_weapon(WolfWeapon.MINIGUN),
-    WolfItem.MACHINEGUN: lambda p: p.switch_weapon(WolfWeapon.MP4),
+    WolfItem.DOGFOOD: lambda p: p.regain_health(10),
+    WolfItem.FOOD: lambda p: p.regain_health(30),
+    WolfItem.FIRSTAIDKIT: lambda p: p.regain_health(50),
+    WolfItem.CHAINGUN: lambda p: p.acquire_weapon(WolfWeapon.MINIGUN),
+    WolfItem.MACHINEGUN: lambda p: p.acquire_weapon(WolfWeapon.MP4),
     WolfItem.AMMUNITION: lambda p: p.get_ammo(),
     WolfItem.GOLDKEY: lambda p: setattr(p, "has_gold_key", True),
     WolfItem.SILVERKEY: lambda p: setattr(p, "has_silver_key", True),
@@ -98,8 +102,8 @@ ITEM_AFFECT = {
     WolfItem.CHALICE: lambda p: p.get_money(),
     WolfItem.TREASURECHEST: lambda p: p.get_money(),
     WolfItem.CROWN: lambda p: p.get_money(),
-    WolfItem.EXTRALIFE: lambda p: p._1up()
-    
+    WolfItem.EXTRALIFE: lambda p: p._1up(),
+    WolfItem.BLOODPOOL: lambda p: p.regain_health(5) if p.health < 20 else None
 }
 
 TREASURE_ITEMS = [
@@ -121,32 +125,33 @@ WEAPON_ITEMS = [50, 51]
 DECORATION_SPRITES_MAPPING = dict((i, i.value - 23) for i in WolfDecoration)
 
 BLOCKING_SPRITES = [
-    WolfDecoration.GREENBARREL,   
-    WolfDecoration.TABLEWITHCHAIRS,   
-    WolfDecoration.FLOORLAMP,  
-    WolfDecoration.HANGINGSKELETON,   
-    WolfDecoration.PILLAR,  
+    WolfDecoration.GREENBARREL,
+    WolfDecoration.TABLEWITHCHAIRS,
+    WolfDecoration.FLOORLAMP,
+    WolfDecoration.HANGINGSKELETON,
+    WolfDecoration.PILLAR,
     WolfDecoration.POTTEDTREE,
-    WolfDecoration.SINK,  
-    WolfDecoration.POTTEDPLANT,  
-    WolfDecoration.URN,  
-    WolfDecoration.EMPTYTABLE,  
-    WolfDecoration.ARMOUR,  
-    WolfDecoration.EMPTYHANGINGCAGE,  
-    WolfDecoration.HANGINGCAGEWITHSKELETON,  
-    WolfDecoration.BED,  
-    WolfDecoration.WOODENBARREL,  
-    WolfDecoration.WELLWITHWATER,  
-    WolfDecoration.EMPTYWELL,  
-    WolfDecoration.FLAG, 
+    WolfDecoration.SINK,
+    WolfDecoration.POTTEDPLANT,
+    WolfDecoration.URN,
+    WolfDecoration.EMPTYTABLE,
+    WolfDecoration.ARMOUR,
+    WolfDecoration.EMPTYHANGINGCAGE,
+    WolfDecoration.HANGINGCAGEWITHSKELETON,
+    WolfDecoration.BED,
+    WolfDecoration.WOODENBARREL,
+    WolfDecoration.WELLWITHWATER,
+    WolfDecoration.EMPTYWELL,
+    WolfDecoration.FLAG,
     WolfDecoration.CALLAPOGEE,
-    WolfDecoration.STOVE, 
-    WolfDecoration.SPEARRACK,  
+    WolfDecoration.STOVE,
+    WolfDecoration.SPEARRACK,
 ]
 
 OBJECT_SPRITES = set(list(ITEM_SPRITES_MAPPING.values()) +
                      list(DECORATION_SPRITES_MAPPING.values()))
-    
+
+
 class WolfItemObj:
     def __init__(self, map_, item: WolfItem, pos, pickcallback):
         self.map = map_
@@ -155,13 +160,14 @@ class WolfItemObj:
         self.sprite.blocking = item in BLOCKING_SPRITES
         self.pos = self.map.to_block_pos(*pos)
         self.pickcallback = pickcallback
-        
+
         self.is_health_item = item in HEALTH_ITEMS
 
     def affect(self, player):
         if callable(self.pickcallback):
             self.pickcallback(player)
-            
+
+
 class WolfActorType(Enum):
     GUARD = 108
     SCHUTZSTAFFEL = 126
