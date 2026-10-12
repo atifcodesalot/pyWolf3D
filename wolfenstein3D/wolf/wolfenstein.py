@@ -50,7 +50,7 @@ class WolfGame:
     def __init__(self, map_: WolfMap, root_display, framerate=60,
                  sound_off=False, noclip=False):
         self.wolfmap = map_
-        self.player = WolfPlayer(self, ray_count=128, fov=54)
+        self.player = WolfPlayer(self, ray_count=160, fov=54)
         self.init_map()
         self.init_renderers(root_display)
   
@@ -122,18 +122,24 @@ class WolfGame:
     def move_player(self, sign_=1):
         pace = self.player.pace*2 if self.player.running else self.player.pace
         disp = vec_mul(self.player.look_dir, pace * sign_)
+        if self.noclip:
+            return self.player.translate(disp)
         m = self.wolfmap
         pos = self.player.pos
         xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
         ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
-        if self.noclip:
-            return self.player.translate(vec_add(xdisp, ydisp))
+        
         xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 5)))
-        if not self.player.occupied_forthis(xtry):
-            self.player.pos = vec_add(pos, xdisp)
+        if self.player.occupied_forthis(xtry):
+            disp = vec_sub(xdisp, disp)
         ytry = m.to_block_pos(*vec_add(pos, vec_mul(ydisp, 5)))
-        if not self.player.occupied_forthis(ytry):
-            self.player.pos = vec_add(self.player.pos, ydisp)
+        if self.player.occupied_forthis(ytry):
+            disp = vec_sub(ydisp, disp)
+        xytry = m.to_block_pos(*vec_add(pos, vec_mul(disp, 5)))
+        if self.player.occupied_forthis(xytry):
+            disp = [0, 0]
+        self.player.pos = vec_add(self.player.pos, disp)
+        
 
     def handle_areas(self):
         player_area = self.player.get_current_area()

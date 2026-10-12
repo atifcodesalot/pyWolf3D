@@ -125,12 +125,12 @@ class Raycaster:
             return vert_intercept, None, False
 
     def handle_pushwall(self, cell, trace, pushwall: WolfPushWall,
-                        vert_intercept: int, *rayctx):
+                        vert_intercept: int, *rayctx, cpos):
         perpd = self.get_perp_dist
         w = self.observer.map.wall_width
         absoff = pushwall.offset % 1
         if absoff == 0:
-            return self.get_perp_dist(trace), vert_intercept, cell, True
+            return perpd(trace, cpos), vert_intercept, cell, True
         # the wall has offset
         rx, ry, *_ = rayctx
         slv = pushwall.sliding_vert
@@ -139,7 +139,7 @@ class Raycaster:
             if vec_dot((rx, ry), pushwall.sliding_dir) < 0:
                 # the wall is sliding in the opposite direction
                 # relative to the ray
-                return perpd(trace), vert_intercept, cell, True
+                return perpd(trace, cpos), vert_intercept, cell, True
             # the ray hits on the sliding face
             ttrace, offvert = self.test_march_ray_offset(
                 trace, *rayctx, absoff * (~slv+2),
@@ -149,10 +149,10 @@ class Raycaster:
                 # update trace
                 trace[0] = ttrace[0]
                 trace[1] = ttrace[1]
-                return perpd(trace), offvert, cell, True
+                return perpd(trace, cpos), offvert, cell, True
             else:
                 # the ray passes through the slide gap
-                return perpd(trace), offvert, None, False
+                return perpd(trace, cpos), offvert, None, False
 
         # the ray hits perp to the sliding orientation
         offset = trace[vert_intercept] % w
@@ -164,8 +164,8 @@ class Raycaster:
         else:
             return perpd(trace), vert_intercept, cell, True
 
-    def get_perp_dist(self, trace):
-        to_trace = vec_sub(self.observer.pos, trace)
+    def get_perp_dist(self, trace, camera_pos):
+        to_trace = vec_sub(camera_pos, trace)
         return vec_dot(to_trace, self.observer.look_dir)
 
     @staticmethod
@@ -215,7 +215,7 @@ class Raycaster:
         ttrace[1] += ry * mag
         return ttrace, vert_hit
 
-    def ray_step(self, trace, hw, rayctx) -> tuple:
+    def ray_step(self, trace, hw, rayctx, cpos) -> tuple:
         rx, ry, xnn, ynn = rayctx
         vert = self.march_ray(trace, rx, ry, xnn, ynn)
         xb = hw if not xnn and vert else 0
@@ -233,20 +233,20 @@ class Raycaster:
                     vert,
                     rayctx)
                 if door_hit:
-                    return self.get_perp_dist(trace), dvert, dcell
+                    return self.get_perp_dist(trace, cpos), dvert, dcell
                 # the ray passes through the opening
                 return None, biased_pos
 
             elif biased_pos in self.observer.map.pushwalls:
                 pushwall = self.observer.map.get_pushwall(biased_pos)
                 pdist, pvert, pcell, pwhit = self.handle_pushwall(
-                    cell, trace, pushwall, vert, *rayctx)
+                    cell, trace, pushwall, vert, *rayctx, cpos=cpos)
                 if pwhit:
                     return pdist, pvert, pcell
                 return None, biased_pos
 
             # hit non special cell
-            return self.get_perp_dist(trace), vert, cell
+            return self.get_perp_dist(trace, cpos), vert, cell
         # no hit on an occupied cell
         return None, biased_pos
 
@@ -256,7 +256,7 @@ class Raycaster:
         trace = camera_pos.copy()
         visited = []
         while True:
-            hitinfo = self.ray_step(trace, hw, rayctx)
+            hitinfo = self.ray_step(trace, hw, rayctx, camera_pos)
             if (hitinfo[0]):
                 dist, vert, cell = hitinfo
                 return (dist, trace, vert, cell, visited)
