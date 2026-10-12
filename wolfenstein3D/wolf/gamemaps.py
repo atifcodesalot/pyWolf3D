@@ -207,7 +207,7 @@ class GameMapsAdaptor:
 
         wolfmap = WolfMap(array=walls, wall_width=8,
                           difficulty=WolfDifficulty.DEATHINCARNATE,
-                          nextmap=None)
+                          nextmap=None, map_id=level_i)
         ww = wolfmap.wall_width
 
         # add sprites, items, pushwalls, doors

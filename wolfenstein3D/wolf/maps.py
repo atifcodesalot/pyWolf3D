@@ -136,13 +136,14 @@ class WolfMap:
     HORIZ_DOOR_INDICES = [57, 61, 63]
 
     def __init__(self, difficulty: WolfDifficulty, nextmap, size=(64, 64), array=None,
-                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], ):
+                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], map_id=None):
         self.difficulty = difficulty
         self.nextmap = nextmap
         self.size = size
         self.wall_width = wall_width
         self.init_pos = list(init_pos)
         self.init_look = list(init_look_dir)
+        self.map_id = map_id
 
         self.sprites: list[Sprite] = []
         self.sprite_lookup = {}

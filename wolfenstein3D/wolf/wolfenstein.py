@@ -41,17 +41,23 @@ class Animation:
 
 
 class WolfGame:
-    jukebox = [
-        "level1_5.ogg",
-        None,
-        None,
-    ]
+    jukebox = {
+        0: "level1_5.ogg",
+        1: "level2_6.ogg",
+        2: "level3_7.ogg",
+        3: "level4_8.ogg",
+        4: "level1_5.ogg",
+        5: "level2_6.ogg",
+        6: "level3_7.ogg",
+        7: "level4_8.ogg",
+        8: None,
+        9: "secret.ogg"
+    }
 
     def __init__(self, map_: WolfMap, root_display, framerate=60,
                  sound_off=False, noclip=False):
         self.wolfmap = map_
         self.player = WolfPlayer(self, ray_count=160, fov=54)
-        self.init_map()
         self.init_renderers(root_display)
   
         self.framerate = framerate
@@ -69,14 +75,13 @@ class WolfGame:
 
         self.areabyplayer = [[0,]*37]*37
 
-        self.sound_manager = WolfSoundManager(master=1)
         if sound_off:
             self.sound_manager.set_master(0)
 
         self.noclip = noclip
         
         self.clock = pygame.time.Clock()
-        
+        self.sound_manager = WolfSoundManager(master=1)
         
         self.floor_fin = False
 
@@ -92,6 +97,9 @@ class WolfGame:
         self.player.pos = self.wolfmap.init_pos.copy()
         self.player.update_look_dir(self.wolfmap.init_look.copy())
         self.actors = self.wolfmap.get_actors()
+        
+        music = self.get_music()
+        self.sound_manager.play_music(music)
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -419,12 +427,17 @@ class WolfGame:
         # render everything
         self.render()
         #
+        
+    def get_music(self):
+        mapid = self.wolfmap.map_id
+        music = self.jukebox.get(mapid, None)
+        if music is not None:
+            return music
+        return self.jukebox[0]
 
-    def mainloop(self, music=None):
-        if music is None:
-            music = self.jukebox[0]
-        self.sound_manager.play_music(music)
+    def mainloop(self, ):
         self.ongoing = True
+        self.init_map()
         while self.ongoing:
             self.heartbeat()
             self.root_display.blit(self.renderer.pgsurf, (0, 0))
