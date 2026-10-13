@@ -20,10 +20,10 @@ class WolfDifficulty(Enum):
 class WolfDoor:
     SLIDE = 0.02
 
-    def __init__(self, _map, pos, opening: float, horizontal=True):
+    def __init__(self, _map, block_pos, opening: float, horizontal=True):
         self.map = _map
-        self.pos = pos
-        self.globpos = vec_mul(pos, self.map.wall_width)
+        self.block_pos = block_pos
+        self.globpos = vec_mul(block_pos, self.map.wall_width)
         self.opening = opening
         self.horiz = horizontal
         self.is_opening = False
@@ -32,8 +32,8 @@ class WolfDoor:
 
     def init_areas(self):
         dir_ = BASIS[self.horiz.real]
-        area0pos = vec_add(self.pos, dir_)
-        area1pos = vec_sub(dir_, self.pos)
+        area0pos = vec_add(self.block_pos, dir_)
+        area1pos = vec_sub(dir_, self.block_pos)
         self.area0 = self.map.raw[area0pos[1]][area0pos[0]] - 107
         self.area1 = self.map.raw[area1pos[1]][area1pos[0]] - 107
 

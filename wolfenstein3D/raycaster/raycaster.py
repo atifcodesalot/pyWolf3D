@@ -288,7 +288,7 @@ class Raycaster:
                         rayctx)
                     if door_hit:
                         break
-                    visited.append(tuple(vec_add(door_obj.pos, vec_mul(
+                    visited.append(tuple(vec_add(door_obj.block_pos, vec_mul(
                         BASIS[door_obj.horiz], sign(ray[door_obj.horiz])))))
                 else:
                     break

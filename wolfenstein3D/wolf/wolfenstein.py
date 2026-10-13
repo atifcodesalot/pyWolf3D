@@ -314,7 +314,18 @@ class WolfGame:
         else:
             # door has finished opening
             door.is_opening = False
-            self.schedule_game_event(200, lambda _: door.begin_closing())
+            self.schedule_game_event(
+                200, lambda _: self.try_closing_door(door))
+
+    def try_closing_door(self, door: WolfDoor):
+        pblock = self.player.get_current_block()
+        if door.block_pos in self.wolfmap.actor_lookup\
+            or pblock == door.block_pos:
+            # retry 200 heartbeats later
+            self.schedule_game_event(
+                200, lambda _: self.try_closing_door(door))
+        else:
+            door.begin_closing()
 
     def slide_door_close(self, door: WolfDoor):
         if door.opening < 1:
