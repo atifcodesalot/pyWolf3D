@@ -665,7 +665,7 @@ class SS(Actor):
                          attack_frames=3,
                          dead_offset=5,
                          hurt_offset=0,
-                         health=300,
+                         health=200,
                          drop=WolfItem.MACHINEGUN,
                          death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
                                        SOUNDS["common"]["LEBENSND.WAV"]],
