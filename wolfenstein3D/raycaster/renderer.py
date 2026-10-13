@@ -94,7 +94,7 @@ class RayRenderer:
     def draw_sprite(self, sprite: Sprite):
         o = self.raycaster.observer
         perp_dist = vec_dot(vec_sub(o.pos, sprite.pos), o.look_dir)
-        if perp_dist < 6:
+        if perp_dist < 4:
             return
         projected = sprite.project()
         if not self.sprite_is_visible(projected, sprite):
