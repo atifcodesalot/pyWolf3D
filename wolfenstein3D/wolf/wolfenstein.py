@@ -407,6 +407,12 @@ class WolfGame:
     def handle_actors(self):
         for actor in self.actors:
             actor.tick(self, 1)
+        # bandaid for the actor lookup bug
+        # todo: fix it and remove this
+        mirror = self.wolfmap.actor_lookup.copy()
+        for pos in mirror:
+            if mirror[pos].is_dead():
+                del self.wolfmap.actor_lookup[pos]
 
     def render_game(self):
         if type(self.game_renderer.light) is PointLight:
@@ -443,7 +449,7 @@ class WolfGame:
             return music
         return self.jukebox[0]
 
-    def mainloop(self, ):
+    def mainloop(self):
         self.ongoing = True
         self.init_map()
         while self.ongoing:
@@ -454,6 +460,9 @@ class WolfGame:
                 self.life_end()
             elif self.floor_fin:
                 self.floor_end()
+            
+                    
+        
 
     def floor_end(self):
         # add floor end menu later

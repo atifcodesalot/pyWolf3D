@@ -191,7 +191,7 @@ class WolfMap:
         self.actor_lookup.clear()
         for snap, act in zip(actsnaps, self.get_actors()):
             act.reload_snapshot(snap)
-            self.actor_lookup[tuple(act.pos)] = act
+            self.actor_lookup[self.to_block_pos(*act.pos)] = act
         self.item_lookup = itemsnap.copy()
         self.sprite_lookup = spdsnap.copy()
         self.sprites = spsnap.copy()
