@@ -53,6 +53,8 @@ class Raycaster:
 
     def mags_for_step(self, trace, rx, ry, xnn, ynn):
         w = self.observer.map.wall_width
+        # xnn = 2
+        # ynn = 0
         dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
         dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
 
@@ -186,16 +188,12 @@ class Raycaster:
     def march_ray(self, trace, rx, ry, xnn, ynn) -> int:
         mags = self.mags_for_step(trace, rx, ry, xnn, ynn)
         mag = min(mags, key=abs)
-
-        vert_hit = ~mags.index(mag) + 2
+        vertical_hit = ~mags.index(mag) + 2
         trace[0] += rx * mag
         trace[1] += ry * mag
-        return vert_hit
+        return vertical_hit
 
     def march_ray_half(self, trace, rx, ry, xnn, ynn, xhalf, yhalf) -> int:
-        # if xhalf and yhalf:
-        #     raise RuntimeError(
-        #         "march_ray: cannot march half step in both directions")
         mags = self.mags_for_half_step(trace, rx, ry, xnn, ynn, xhalf, yhalf)
         mag = min(mags, key=abs)
         vert_hit = ~mags.index(mag) + 2
@@ -204,9 +202,6 @@ class Raycaster:
         return vert_hit
 
     def test_march_ray_offset(self, trace, rx, ry, xnn, ynn, xoff, yoff) -> int:
-        # if xoffset and yoffset:
-        #     raise RuntimeError(
-        #         "march_ray: cannot march step in both offseted directions")
         ttrace = trace.copy()
         mags = self.mags_offset(ttrace, rx, ry, xnn, ynn, xoff, yoff)
         mag = min(mags, key=abs)
@@ -216,12 +211,13 @@ class Raycaster:
         return ttrace, vert_hit
 
     def ray_step(self, trace, hw, rayctx, cpos) -> tuple:
+        w = self.observer.map.wall_width
         rx, ry, xnn, ynn = rayctx
         vert = self.march_ray(trace, rx, ry, xnn, ynn)
-        xb = hw if not xnn and vert else 0
-        yb = hw if not ynn and not vert else 0
+        xb = -hw if not xnn and (trace[0] % w == 0) else 0
+        yb = -hw if not ynn and not (trace[0] % w == 0) else 0
         biased_pos = self.observer.map.to_block_pos(
-            trace[0] - xb, trace[1] - yb)
+            trace[0] + xb, trace[1] + yb)
         cell = self.observer.map.raw[biased_pos[1]][biased_pos[0]]
         if cell < 106:
             if cell in self.observer.map.DOOR_INDICES:
@@ -267,18 +263,20 @@ class Raycaster:
 
     def get_corridor(self, ray, start_pos):
         visited = [self.observer.map.to_block_pos(*start_pos),]
-        hw = self.observer.map.wall_width // 2
+        w = self.observer.map.wall_width
+        hw = w // 2
         trace = start_pos.copy()
         rayctx = self.get_ray_context(ray)
         rx, ry, xnn, ynn = rayctx
         while True:
             vert = self.march_ray(trace, rx, ry, xnn, ynn)
-            xb = hw if not xnn and vert else 0
-            yb = hw if not ynn and not vert else 0
+            xb = -hw if not xnn and (trace[0] % w == 0) else 0
+            yb = -hw if not ynn and (trace[1] % w == 0) else 0
             biased_pos = self.observer.map.to_block_pos(
-                trace[0] - xb, trace[1] - yb)
+                trace[0] + xb, trace[1] + yb)
             visited.append(biased_pos)
             cell = self.observer.map.raw[biased_pos[1]][biased_pos[0]]
+                
             if cell < 106:
                 if cell in self.observer.map.DOOR_INDICES:
                     door_obj = self.observer.map.get_door(biased_pos)

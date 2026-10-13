@@ -59,7 +59,7 @@ class WolfGame:
         self.wolfmap = map_
         self.player = WolfPlayer(self, ray_count=160, fov=54)
         self.init_renderers(root_display)
-  
+
         self.framerate = framerate
         self.heartbeats = 0
 
@@ -74,15 +74,13 @@ class WolfGame:
         self.interact = False
 
         self.areabyplayer = [[0,]*37]*37
+        self.noclip = noclip
 
+        self.clock = pygame.time.Clock()
+        self.sound_manager = WolfSoundManager(master=1)
         if sound_off:
             self.sound_manager.set_master(0)
 
-        self.noclip = noclip
-        
-        self.clock = pygame.time.Clock()
-        self.sound_manager = WolfSoundManager(master=1)
-        
         self.floor_fin = False
 
     def init_renderers(self, root):
@@ -97,7 +95,7 @@ class WolfGame:
         self.player.pos = self.wolfmap.init_pos.copy()
         self.player.update_look_dir(self.wolfmap.init_look.copy())
         self.actors = self.wolfmap.get_actors()
-        
+
         music = self.get_music()
         self.sound_manager.play_music(music)
 
@@ -136,7 +134,7 @@ class WolfGame:
         pos = self.player.pos
         xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
         ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
-        
+
         xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 5)))
         if self.player.occupied_forthis(xtry):
             disp = vec_sub(xdisp, disp)
@@ -147,7 +145,6 @@ class WolfGame:
         if self.player.occupied_forthis(xytry):
             disp = [0, 0]
         self.player.pos = vec_add(self.player.pos, disp)
-        
 
     def handle_areas(self):
         player_area = self.player.get_current_area()
@@ -184,7 +181,7 @@ class WolfGame:
                 pushwall.begin_sliding(sliding_dir)
                 slidesnd = SOUNDS["doors"]["PUSHWALLSND.WAV"]
                 self.schedule_sound_effect(slidesnd, None, 5)
-                
+
         elif self.wolfmap.cell_is_elevator(fcell):
             self.floor_fin = True
 
@@ -427,7 +424,7 @@ class WolfGame:
         # render everything
         self.render()
         #
-        
+
     def get_music(self):
         mapid = self.wolfmap.map_id
         music = self.jukebox.get(mapid, None)

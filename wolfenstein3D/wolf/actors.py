@@ -97,7 +97,7 @@ class DyingState(ActorState):
         if self.actor.drop is None:
             return
         game_ctx.wolfmap.add_item(self.actor.drop,
-                              vec_add(self.actor.pos, (2, 0)))
+                                  vec_add(self.actor.pos, (2, 0)))
 
 
 class HurtState(ActorState):
@@ -142,7 +142,8 @@ class AttackState(ActorState):
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
-        damage = game_ctx.calculate_damage(self.actor, reduction=0.2)
+        reduction = 0.5 if self.actor._type == WolfActorType.SCHUTZSTAFFEL else 0.2
+        damage = game_ctx.calculate_damage(self.actor, reduction=reduction)
         game_ctx.dec_player_health(damage)
         if game_ctx.player.is_dead():
             # killed the player
@@ -182,7 +183,9 @@ class ChaseState(ActorState):
         if type(actor) is Shepherd:
             # dogs dont have standing sprites
             self.spcolumn = 0
+
         self.hb_perframe = self.lifetime // self.actor.move_frames
+
         self.move_off = walk_cycle
         self.heartbeats = 0
         self.fallback_chains = [[[0, -1], [-1, -1], [-1, 0]],
@@ -369,18 +372,78 @@ class ChaseState(ActorState):
             self.seek_dest(game_ctx)
 
 
+class PatrolState(ChaseState):
+    PATROL_DIR = {
+        90: [1,  0],
+        91: [1, -1],
+        92: [0, -1],
+        93: [-1, -1],
+        94: [-1,  0],
+        95: [-1,  1],
+        96: [0,  1],
+        97: [1,  1],
+    }
+
+    def __init__(self, actor, map_ctx):
+        super().__init__(actor, 0, map_ctx)
+        self.alerted = False
+
+    def decide_dir(self, map_ctx):
+        ablock = self.actor.get_current_block()
+        if ablock not in map_ctx.patrol_lookup:
+            return
+        patrol = map_ctx.patrol_lookup[ablock]
+        self.actor.update_dir(self.PATROL_DIR[patrol].copy())
+        wolflogger.debug(
+            f"actor {self.actor._type}\
+                decided patrol direction: {self.actor.look_dir}, at pos: {ablock}")
+
+    def think(self, game_ctx):
+        if self.alerted:
+            # already alerted nothing to think
+            return
+        if self.actor.hears_player(game_ctx):
+            self.actor.alert(game_ctx)
+            self.alerted = True
+        elif self.actor.sees_player(game_ctx):
+            self.actor.alert(game_ctx)
+            self.alerted = True
+        # continue to patrol
+
+    def seek_dest(self, map_ctx):
+        self.actor.move()
+        self.mov_budget = max(self.mov_budget - self.actor.pace, 0)
+        if self.mov_budget == 0:
+            # clamp to center
+            self.actor.pos = self.dest_block
+            #
+            fblock = self.actor.get_front_block()
+            if fblock in map_ctx.doors:
+                door = map_ctx.doors[fblock]
+                self.open_door(door)
+            self.decide_dir(map_ctx)
+            self.committo_dest()
+
+    def act(self, game_ctx):
+        self.heartbeats = (self.heartbeats + 1) % self.lifetime
+        self.move_off = self.heartbeats // self.hb_perframe
+        if not self.waiting_door:
+            self.seek_dest(game_ctx.wolfmap)
+
+
 class Actor:
     def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir,
                  sprites: list[Sprite], sprite_layout,
                  death_frames, move_frames, attack_frames, dead_offset, hurt_offset,
                  health=100, drop=None, _range=100, accuracy=1,
-                 death_sounds=[], attack_sound=None, alert_sound=None):
+                 death_sounds=[], attack_sound=None, alert_sound=None,
+                 patrol=False):
+
         self.wolfmap = wolfmap
         self._type = _type
         self.pos = list(pos)
         self.look_dir = look_dir
         self.left = [-self.look_dir[1], self.look_dir[0]]
-        self.state = GuardingState(self)
         self.health = health
         self.drop = drop
         self.range = _range
@@ -397,12 +460,16 @@ class Actor:
 
         self.ticks_since_trans = 0
         self.pace = 0.25
-        self.proximity_radius = self.wolfmap.wall_width 
+        self.proximity_radius = self.wolfmap.wall_width
         self.interrupted = False
 
         self.death_sounds = death_sounds
         self.attack_sound = attack_sound
         self.alert_sound = alert_sound
+
+        self.patrol = patrol
+        self.state = GuardingState(
+            self) if not patrol else PatrolState(self, self.wolfmap)
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
@@ -513,7 +580,7 @@ class Actor:
         mag = max(self.look_dir, key=abs)
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
-        return vec_add(ablock, offset)
+        return tuple(vec_add(ablock, offset))
 
     def sees_player(self, game_ctx):
         r = game_ctx.game_renderer.raycaster
@@ -522,6 +589,9 @@ class Actor:
         # if vec_dot(self.look_dir, to_player) < 0:
         #     # player is behind the actor
         #     return False
+        if p.get_current_block() in r.get_corridor(to_player, self.pos):
+            print(to_player, self.get_current_block(), p.get_current_block())
+            print(r.get_corridor(to_player, self.pos))
         return p.get_current_block() in r.get_corridor(to_player, self.pos)
 
     def hears_player(self, game_ctx):
@@ -529,7 +599,10 @@ class Actor:
         if actor_area == 106:
             # in ambush tile
             return False
-        can_hear = game_ctx.areabyplayer[actor_area]
+        try:
+            can_hear = game_ctx.areabyplayer[actor_area]
+        except IndexError:
+            return False
         return game_ctx.player.shooting and can_hear
 
     def snapshot(self):
@@ -545,7 +618,7 @@ class Actor:
 
 
 class Guard(Actor):
-    def __init__(self, wolfmap, pos, look_dir):
+    def __init__(self, wolfmap, pos, look_dir, patrol):
         super().__init__(wolfmap, WolfActorType.GUARD, pos, look_dir,
                          sprites=SPRITES["characters"]["guard"],
                          sprite_layout=(8, 7),
@@ -558,12 +631,13 @@ class Guard(Actor):
                          drop=WolfItem.AMMUNITION,
                          death_sounds=list(SOUNDS["death"].values()),
                          attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["HALTSND.WAV"])
+                         alert_sound=SOUNDS["alert"]["HALTSND.WAV"],
+                         patrol=patrol)
         self.pace = 0.15
 
 
 class Shepherd(Actor):
-    def __init__(self, wolfmap, pos, look_dir):
+    def __init__(self, wolfmap, pos, look_dir, patrol):
         super().__init__(wolfmap, WolfActorType.DOG, pos, look_dir,
                          sprites=SPRITES["characters"]["shepherd"],
                          sprite_layout=(8, 6),
@@ -576,12 +650,13 @@ class Shepherd(Actor):
                          _range=(wolfmap.wall_width)*2,
                          death_sounds=[SOUNDS["dogs"]["DOGDEATHSND.WAV"],],
                          attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
-                         alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"])
+                         alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"],
+                         patrol=patrol)
         self.pace = 0.5
 
 
 class SS(Actor):
-    def __init__(self, wolfmap, pos, look_dir):
+    def __init__(self, wolfmap, pos, look_dir, patrol):
         super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir,
                          sprites=SPRITES["characters"]["SS"],
                          sprite_layout=(8, 7),
@@ -590,12 +665,13 @@ class SS(Actor):
                          attack_frames=3,
                          dead_offset=5,
                          hurt_offset=0,
-                         health=120,
+                         health=300,
                          drop=WolfItem.MACHINEGUN,
                          death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
                                        SOUNDS["common"]["LEBENSND.WAV"]],
                          attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"])
+                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         patrol=patrol)
 
 
 TYPE_ACTOR_OBJ = {

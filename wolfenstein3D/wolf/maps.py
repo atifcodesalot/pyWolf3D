@@ -150,7 +150,7 @@ class WolfMap:
 
         self.actors: dict[WolfDifficulty: list] = {}
         self.actor_lookup = {}
-        
+
         for diff in WolfDifficulty:
             self.actors[diff] = []
 
@@ -166,9 +166,12 @@ class WolfMap:
             row[i] = 1
             self.area_matrix.append(row)
 
+        # since patrol values are sparse, hashmaps are better
+        self.patrol_lookup = {}
+
     def cell_is_door(self, cell):
         return cell in self.DOOR_INDICES
-    
+
     def cell_is_elevator(self, cell):
         return cell == 40
 
@@ -225,11 +228,11 @@ class WolfMap:
         self.delete_sprite(item.pos)
         return item
 
-    def add_actor(self, actor_type: WolfActorType, pos, look_dir, difficulty):
+    def add_actor(self, actor_type: WolfActorType, pos, look_dir, difficulty, patrol=False):
         if actor_type not in WolfActorType:
             raise TypeError("can't add non actor type")
-        actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir)
-        ablock = self.to_block_pos(*actor_obj.pos)
+        actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir, patrol=patrol)
+        ablock = self.to_block_pos(*pos)
         self.actor_lookup[ablock] = actor_obj
         if difficulty is WolfDifficulty.BABY:
             for k in self.actors:
@@ -239,7 +242,7 @@ class WolfMap:
             self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
         else:
             self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
-        
+
     def get_actors(self):
         return self.actors[self.difficulty]
 
@@ -257,6 +260,9 @@ class WolfMap:
     def add_pushwall(self, block_pos):
         cell = self.raw[block_pos[1]][block_pos[0]]
         self.pushwalls[block_pos] = WolfPushWall(cell, block_pos)
+
+    def add_patrol(self, block_pos, patrolval):
+        self.patrol_lookup[block_pos] = patrolval
 
     def to_block_pos(self, x, y):
         return int(x // self.wall_width), int(y // self.wall_width)

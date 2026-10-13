@@ -67,7 +67,7 @@ ID_TO_ATLAS = {
     # Horizontal doors:
     91: 57,
     93: 63,
-    95: 630, # Silver
+    95: 630,  # Silver
     97: 63,
     99: 63,
     101: 61,
@@ -79,32 +79,34 @@ def init_actor_entries():
     global ACTOR_ENTRIES
     ACTOR_ENTRIES = {}
     starts = {108: WolfActorType.GUARD,
-              126: WolfActorType.SCHUTZSTAFFEL, 138: WolfActorType.DOG}
+              126: WolfActorType.SCHUTZSTAFFEL, 134: WolfActorType.DOG}
 
     for start in starts:
         for i in range(3):
             for j in range(8):
+                entry = start + i * 36 + j
                 patrolling = j >= 4
                 ACTOR_ENTRIES[start + i * 36 + j] = \
                     (starts[start],
                      WolfDifficulty(i),
-                     patrolling)
+                     patrolling, 
+                     (entry-start) % 4)
     # mutants use 18 offset per difficulty level
     mutant_start = 216
     for i in range(3):
         for j in range(8):
+            entry = start + i * 18 + j
             patrolling = j >= 4
             ACTOR_ENTRIES[mutant_start + i * 18 + j] = \
                 (WolfActorType.MUTANT,
                  WolfDifficulty(i),
-                 patrolling)
+                 patrolling,
+                 (entry - mutant_start) % 4)
 
 
 init_actor_entries()
 
 # return n bytes little endian from data
-
-
 def get_n_bytes_LI(start, n, data: bytearray):
     result = 0
     for i in range(n):
@@ -163,6 +165,7 @@ class GameMapsAdaptor:
     entry_lookdir = {19: [0, -1], 20: [1, 0], 21: [0, 1], 22: [-1, 0]}
     actor_orientation = [[1, 0], [0, -1], [-1, 0], [0, 1]]
     PUSHWALL = 0x62
+    PATROL = range(90, 98)
 
     def __init__(self, parser):
         self.parser = parser
@@ -171,11 +174,11 @@ class GameMapsAdaptor:
     def add_actor(self, wolfmap, obj, pos):
         if obj not in ACTOR_ENTRIES:
             return
-        _type, diff, patrol = ACTOR_ENTRIES[obj]
-        # discard patrol for now
+        _type, diff, patrol, look_i = ACTOR_ENTRIES[obj]
+
         wolfmap.add_actor(_type, pos,
-                          self.actor_orientation[obj % 4],
-                          difficulty=diff)
+                          self.actor_orientation[look_i],
+                          difficulty=diff, patrol=patrol)
 
     def add_player(self, wolfmap, obj, pos):
         wolfmap.init_pos = list(pos)
@@ -213,23 +216,27 @@ class GameMapsAdaptor:
         # add sprites, items, pushwalls, doors
         sprite_plane = self.planes[level_i][1]
         for i, entry in enumerate(sprite_plane):
-
             if not entry:
                 continue
             pos = (i % 64)*ww + ww // 2, (i // 64)*ww + ww // 2
             block_pos = (i % 64), (i // 64)
             if entry in self.entry_lookdir:
                 self.add_player(wolfmap, entry, pos)
-            if entry in WolfItem:
+            elif entry in WolfItem:
                 self.add_item(wolfmap, entry, pos)
             elif entry in WolfDecoration:
                 self.add_decoration(wolfmap, entry, pos)
             else:
                 if entry == self.PUSHWALL:
                     wolfmap.add_pushwall(block_pos)
-                    continue
-                self.add_actor(wolfmap, entry, pos)
-                continue
+                elif entry in self.PATROL:
+                    wolfmap.add_patrol(block_pos, entry)
+                else:
+                    if entry != 124:
+                        self.add_actor(wolfmap, entry, pos)
+                    else:
+                        # add dead guard
+                        wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
 
         wolfmap.init_snap = wolfmap.snapshot()
         return wolfmap
