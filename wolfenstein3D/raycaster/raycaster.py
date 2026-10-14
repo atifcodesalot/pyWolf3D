@@ -262,6 +262,7 @@ class Raycaster:
                 # visited.append(hitinfo[1])
 
     def get_corridor(self, ray, start_pos):
+        # todo: refactor to use ray step here
         visited = [self.observer.map.to_block_pos(*start_pos),]
         w = self.observer.map.wall_width
         hw = w // 2

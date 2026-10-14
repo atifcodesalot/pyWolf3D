@@ -24,8 +24,8 @@ class ActorState:
 
     def colnum(self):
         spps = self.actor.sprite_per_state
-        off = 0 if self.spcolumn < 2 else self.actor.move_frames-1
-        col = (spps * (self.spcolumn + off))
+        col_off = 0 if self.spcolumn < 2 else self.actor.move_frames - 1
+        col = (spps * (self.spcolumn + col_off))
         return col
 
     def start(self, game_ctx):
@@ -68,7 +68,7 @@ class DeadState(ActorState):
         super().__init__(actor, 2, nextstate=self, lifetime=5000)
 
     def shapenum(self, _):
-        col = self.colnum()
+        col = self.colnum() if self.actor.type is not WolfActorType.HANS else 4 * self.actor.sprite_per_state
         return col + self.actor.dead_offset
 
 
@@ -81,6 +81,8 @@ class DyingState(ActorState):
         super().__init__(actor, 2, nextstate=DeadState(actor), lifetime=lifetime)
         self.hb_perframe = self.lifetime // actor.death_frames
         self.heartbeats = 0
+        if self.actor.type is WolfActorType.HANS:
+            self.spcolumn -= 1
 
     def start(self, gamectx):
         if snds := self.actor.death_sounds:
@@ -91,7 +93,9 @@ class DyingState(ActorState):
         self.heartbeats += 1
 
     def shapenum(self, _):
-        col = self.colnum()
+        col = self.colnum() 
+        if self.actor.type is WolfActorType.HANS:
+            col =  4 * self.actor.sprite_per_state
         return col + self.heartbeats // self.hb_perframe
 
     def endcallback(self, game_ctx):
@@ -118,6 +122,8 @@ class AttackState(ActorState):
     def __init__(self, actor, frame_lifetime=12):
         lifetime = frame_lifetime * actor.attack_frames
         super().__init__(actor, 3, nextstate=None, lifetime=lifetime)
+        if actor.type is WolfActorType.HANS:
+            self.spcolumn = 2
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.auto = False
@@ -144,7 +150,11 @@ class AttackState(ActorState):
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
-        reduction = 0.5 if self.actor.type == WolfActorType.SCHUTZSTAFFEL else 0.2
+        reduction = 0.2
+        if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
+            reduction = 0.5
+        elif self.actor.type == WolfActorType.HANS:
+            reduction = 0.7
         damage = game_ctx.calculate_damage(self.actor, reduction=reduction)
         game_ctx.dec_player_health(damage)
         if game_ctx.player.is_dead():
@@ -173,7 +183,7 @@ class AttackState(ActorState):
             self.quit_auto()
 
     def endcallback(self, _):
-        if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
+        if self.actor.type in [WolfActorType.SCHUTZSTAFFEL, WolfActorType.HANS]:
             diceroll = random.randint(1, 3) in [1, 2]
             if diceroll and not self.exit_auto:
                 self.go_auto()
@@ -182,8 +192,8 @@ class AttackState(ActorState):
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 40)
-        if type(actor) is Shepherd:
-            # dogs dont have standing sprites
+        if self.actor.type in [WolfActorType.DOG, WolfActorType.HANS]:
+            # dogs and hans dont have standing sprites
             self.spcolumn = 0
 
         self.hb_perframe = self.lifetime // self.actor.move_frames
@@ -475,7 +485,13 @@ class Actor:
         self.range = _range
         self.accuracy = accuracy
 
-        self.sprites = [sprite.copy(self.pos) for sprite in sprites.values()]
+        self.sprites = []
+        for i in range(sprite_layout[0]*sprite_layout[1]):
+            sp = sprites.get(i, None)
+            if sp is not None:
+                self.sprites.append(sp.copy(self.pos))
+            else:
+                self.sprites.append(sp)
         self.sprite_layout = sprite_layout
         self.sprite_per_state = self.sprite_layout[0]
         self.death_frames = death_frames
@@ -735,10 +751,10 @@ class SS(Actor):
         super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir,
                          sprites=SPRITES["characters"]["SS"],
                          sprite_layout=(8, 7),
-                         death_frames=5,
+                         death_frames=4,
                          move_frames=4,
                          attack_frames=3,
-                         dead_offset=5,
+                         dead_offset=4,
                          hurt_offset=0,
                          health=200,
                          drop=WolfItem.MACHINEGUN,
@@ -750,8 +766,33 @@ class SS(Actor):
         self.pace = 0.15
 
 
+class HansGrosse(Actor):
+    def __init__(self, wolfmap, pos, *_, **__):
+        super().__init__(wolfmap, WolfActorType.HANS, pos, [0, 1],
+                         sprites=SPRITES["characters"]["boss"]["hans"],
+                         sprite_layout=(4, 6),
+                         death_frames=4,
+                         move_frames=4,
+                         attack_frames=3,
+                         dead_offset=3,
+                         hurt_offset=0,
+                         health=1000,
+                         drop=WolfItem.GOLDKEY,
+                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
+                                       SOUNDS["common"]["LEBENSND.WAV"]],
+                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
+                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         patrol=False)
+        self.pace = 0.15
+        
+    def orientation_idx(self, _, **__):
+        # hans has not orientation sprites :()
+        return 0
+
+
 TYPE_ACTOR_OBJ = {
     WolfActorType.GUARD: Guard,
     WolfActorType.DOG: Shepherd,
     WolfActorType.SCHUTZSTAFFEL: SS,
+    WolfActorType.HANS: HansGrosse,
 }

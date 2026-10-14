@@ -89,7 +89,7 @@ def init_actor_entries():
                 ACTOR_ENTRIES[start + i * 36 + j] = \
                     (starts[start],
                      WolfDifficulty(i),
-                     patrolling, 
+                     patrolling,
                      (entry-start) % 4)
     # mutants use 18 offset per difficulty level
     mutant_start = 216
@@ -107,6 +107,8 @@ def init_actor_entries():
 init_actor_entries()
 
 # return n bytes little endian from data
+
+
 def get_n_bytes_LI(start, n, data: bytearray):
     result = 0
     for i in range(n):
@@ -173,6 +175,10 @@ class GameMapsAdaptor:
 
     def add_actor(self, wolfmap, obj, pos):
         if obj not in ACTOR_ENTRIES:
+            if obj == 0x00D6:
+                # hans grösse boss
+                wolfmap.add_actor(WolfActorType.HANS, pos, None,
+                                  WolfDifficulty.BABY, None)
             return
         _type, diff, patrol, look_i = ACTOR_ENTRIES[obj]
 
@@ -236,7 +242,8 @@ class GameMapsAdaptor:
                         self.add_actor(wolfmap, entry, pos)
                     else:
                         # add dead guard
-                        wolfmap.add_sprite(SPRITES["characters"]["guard"][44], pos)
+                        wolfmap.add_sprite(
+                            SPRITES["characters"]["guard"][44], pos)
 
         wolfmap.init_snap = wolfmap.snapshot()
         return wolfmap

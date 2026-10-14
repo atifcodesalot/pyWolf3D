@@ -115,6 +115,24 @@ def init_character_sprites():
     SS_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'SS.png'))
     SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite, 1, 1)
     SPRITES["characters"]["SS"] = dict(enumerate(SS_sprites))
+    
+    # init bosses here
+    SPRITES["characters"]["boss"] = {}
+    # init hans grösse
+    hans_sheet =  Image.open(os.path.join(SPRITE_PATH, 'characters', 'boss', 'hansgrösse.png'))
+    hans_sprites = texmap_parse(1, 1, 1, 1, 64, 64, hans_sheet, Sprite, 1, 1)
+    ogsrc = dict(enumerate(hans_sprites))
+    hans_sprites = {}
+    for i in range(4):
+        hans_sprites[i*4] = ogsrc[i]
+    death_off = 16
+    for i in range(4):
+        hans_sprites[death_off + i] = ogsrc[8 + i]
+    attack_off = 20
+    for i in range(3):
+        hans_sprites[attack_off + i] = ogsrc[4 + i]
+    SPRITES["characters"]["boss"]["hans"] = hans_sprites
+    
 
 
 def init_sprites():

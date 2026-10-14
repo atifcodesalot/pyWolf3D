@@ -214,6 +214,7 @@ class WolfActorType(Enum):
     GUARD = 108
     SCHUTZSTAFFEL = 126
     DOG = 134
+    HANS = 214
     MUTANT = 216
 
 
