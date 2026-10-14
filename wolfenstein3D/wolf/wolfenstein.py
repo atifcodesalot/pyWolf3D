@@ -82,6 +82,7 @@ class WolfGame:
             self.sound_manager.set_master(0)
 
         self.floor_fin = False
+        self.music_paused = False
 
     def init_renderers(self, root):
         self.game_res = (640, 420)
@@ -115,15 +116,9 @@ class WolfGame:
 
     def handle_item_pickup(self, player_block):
         item = self.wolfmap.item_lookup[player_block]
-        if not item.is_health_item:
-            self.wolfmap.pop_item(player_block)
-            item.affect(self.player)
-            self.game_renderer.glow = (0, 1)
-        else:
-            if self.player.health != 100:
-                self.wolfmap.pop_item(player_block)
-                item.affect(self.player)
-                self.game_renderer.glow = (0, 1)
+        if item.pickup_condition(self.player):
+            item = self.wolfmap.pop_item(player_block)
+            item.pickup(self)
 
     def move_player(self, sign_=1):
         pace = self.player.pace*2 if self.player.running else self.player.pace
@@ -158,13 +153,16 @@ class WolfGame:
         fblock, fcell = self.player.get_front_cell()
         if self.wolfmap.cell_is_door(fcell):
             door = self.wolfmap.get_door(fblock)
-            if not door.is_opening:
+            if not door.is_opening and door.opening == 1:
                 if type(door) is WolfDoor:
                     self.open_door(door)
                     return
                 # door is locked
                 if getattr(self.player, door.key, None):
                     self.open_door(door)
+                else:
+                    self.schedule_sound_effect(
+                        SOUNDS["adlib_effects"]["ALNOWAY.wav"], None, 1)
 
         elif fblock in self.wolfmap.pushwalls:
             pushwall = self.wolfmap.get_pushwall(fblock)
@@ -185,7 +183,24 @@ class WolfGame:
         elif self.wolfmap.cell_is_elevator(fcell):
             self.floor_fin = True
 
+        else:
+            self.schedule_sound_effect(
+                SOUNDS["adlib_effects"]["ALNOTHIN.wav"], None, 1)
+
+    def calm_player_down(self):
+        self.player.excited_to_kill_nazis = False
+        self.music_paused = False
+        self.sound_manager.continue_music()
+
     def handle_player_requests(self):
+        if self.player.excited_to_kill_nazis:
+            if not self.music_paused:
+                self.schedule_sound_effect(
+                    SOUNDS["pickup"]["ALCGUNUP.wav"], None, 1)
+                self.sound_manager.pause_music()
+                self.schedule_game_event(
+                    150, lambda _: self.calm_player_down())
+                self.music_paused = True
         # placeholder
         self.game_renderer.weap_sp = self.player.weapon.value * \
             self.game_renderer.sp_per_weap
@@ -468,6 +483,8 @@ class WolfGame:
         self.floor_fin = False
 
     def life_end(self):
+        self.player.excited_to_kill_nazis = False
+        self.sound_manager.stop_music()
         self.player.lives -= 1
         self.renderer.update_hud(self.player)
         self.render()
@@ -489,6 +506,8 @@ class WolfGame:
             return self.game_end()
         self.game_renderer.unfizzle(
             self.root_display, update_dest=self.renderer.game_off)
+        music = self.get_music()
+        self.sound_manager.play_music(music)
 
     def game_end(self):
         exit("game over!")

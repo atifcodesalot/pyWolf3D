@@ -18,7 +18,7 @@ class WolfDifficulty(Enum):
 # connects areas upon opening
 
 class WolfDoor:
-    SLIDE = 0.013
+    SLIDE = 0.015
 
     def __init__(self, _map, block_pos, opening: float, horizontal=True):
         self.map = _map
@@ -275,7 +275,7 @@ class WolfMap:
 
     def add_door(self, block_pos, horizontal, _type=WolfDoor):
         self.doors[block_pos] = _type(self,
-                                      block_pos, 1, horizontal=horizontal)
+                                      block_pos, opening=1, horizontal=horizontal)
 
     def init_doors(self):
         self.doors.clear()

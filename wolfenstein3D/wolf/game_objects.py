@@ -1,6 +1,6 @@
 
 from enum import Enum
-from .assets import SPRITES
+from .assets import SPRITES, SOUNDS
 
 
 class WolfWeapon(Enum):
@@ -58,7 +58,7 @@ class WolfItem(Enum):
     GOLDKEY = 43
     SILVERKEY = 44
     FOOD = 47
-    FIRSTAIDKIT = 48
+    MEDKIT = 48
     AMMUNITION = 49
     MACHINEGUN = 50
     CHAINGUN = 51
@@ -76,7 +76,7 @@ ITEM_SPRITES_MAPPING = {
     WolfItem.GOLDKEY: 20,  # Gold key
     WolfItem.SILVERKEY: 21,  # Silver key
     WolfItem.FOOD: 24,  # Food
-    WolfItem.FIRSTAIDKIT: 25,  # First-aid kit
+    WolfItem.MEDKIT: 25,  # First-aid kit
     WolfItem.AMMUNITION: 26,  # Ammunition
     WolfItem.MACHINEGUN: 27,  # Machine gun
     WolfItem.CHAINGUN: 28,  # Chaingun
@@ -92,7 +92,7 @@ ITEM_SPRITES_MAPPING = {
 ITEM_AFFECT = {
     WolfItem.DOGFOOD: lambda p: p.regain_health(10),
     WolfItem.FOOD: lambda p: p.regain_health(30),
-    WolfItem.FIRSTAIDKIT: lambda p: p.regain_health(50),
+    WolfItem.MEDKIT: lambda p: p.regain_health(50),
     WolfItem.CHAINGUN: lambda p: p.acquire_weapon(WolfWeapon.MINIGUN),
     WolfItem.MACHINEGUN: lambda p: p.acquire_weapon(WolfWeapon.MP4),
     WolfItem.AMMUNITION: lambda p: p.get_ammo(),
@@ -103,7 +103,25 @@ ITEM_AFFECT = {
     WolfItem.TREASURECHEST: lambda p: p.get_money(),
     WolfItem.CROWN: lambda p: p.get_money(),
     WolfItem.EXTRALIFE: lambda p: p._1up(),
-    WolfItem.BLOODPOOL: lambda p: p.regain_health(5) if p.health < 20 else None
+    WolfItem.BLOODPOOL: lambda p: p.regain_health(5)
+}
+
+ITEM_SOUND = {
+    WolfItem.DOGFOOD: SOUNDS["pickup"]["ALFOODUP.wav"],
+    WolfItem.GOLDKEY: SOUNDS["pickup"]["ALGETKEY.wav"],
+    WolfItem.SILVERKEY: SOUNDS["pickup"]["ALGETKEY.wav"],
+    WolfItem.FOOD: SOUNDS["pickup"]["ALFOODUP.wav"],
+    WolfItem.MEDKIT: SOUNDS["pickup"]["ALMEDIUP.wav"],
+    WolfItem.AMMUNITION: SOUNDS["pickup"]["ALAMMOUP.wav"],
+    WolfItem.MACHINEGUN: None,
+    WolfItem.CHAINGUN: None,
+    WolfItem.CROSS: SOUNDS["pickup"]["ALBONUS1.wav"],
+    WolfItem.CHALICE: SOUNDS["pickup"]["ALBONUS2.wav"],
+    WolfItem.TREASURECHEST: SOUNDS["pickup"]["ALBONUS3.wav"],
+    WolfItem.CROWN: SOUNDS["pickup"]["ALBONUS4.wav"],
+    WolfItem.EXTRALIFE: SOUNDS["pickup"]["ALBNS1UP.wav"],
+    WolfItem.BLOODYREMAINS: None,
+    WolfItem.BLOODPOOL: None
 }
 
 TREASURE_ITEMS = [
@@ -114,13 +132,17 @@ TREASURE_ITEMS = [
 ]
 
 HEALTH_ITEMS = [
-    WolfItem.FIRSTAIDKIT,
+    WolfItem.MEDKIT,
     WolfItem.FOOD,
     WolfItem.BLOODYREMAINS,
     WolfItem.BLOODPOOL
 ]
 
-WEAPON_ITEMS = [50, 51]
+WEAPON_ITEMS = [
+    WolfItem.MACHINEGUN,
+    WolfItem.CHAINGUN
+]
+
 
 DECORATION_SPRITES_MAPPING = dict((i, i.value - 23) for i in WolfDecoration)
 
@@ -153,19 +175,39 @@ OBJECT_SPRITES = set(list(ITEM_SPRITES_MAPPING.values()) +
 
 
 class WolfItemObj:
-    def __init__(self, map_, item: WolfItem, pos, pickcallback):
+    def __init__(self, map_, item: WolfItem, pos, pickup_callback):
         self.map = map_
+        self.item = item
         self.pyindex = ITEM_SPRITES_MAPPING[item]
         self.sprite = SPRITES["objects"][self.pyindex].copy(pos)
         self.sprite.blocking = item in BLOCKING_SPRITES
         self.pos = self.map.to_block_pos(*pos)
-        self.pickcallback = pickcallback
+        self.pickup_callback = pickup_callback
 
         self.is_health_item = item in HEALTH_ITEMS
+        self.is_weap_item = item in WEAPON_ITEMS
 
-    def affect(self, player):
-        if callable(self.pickcallback):
-            self.pickcallback(player)
+        self.pickupsnd = ITEM_SOUND[item]
+
+    def pickup_condition(self, player):
+        if self.is_health_item:
+            if self.item is WolfItem.BLOODPOOL:
+                return player.health < 20
+            return player.health < 100
+        elif self.item is WolfItem.AMMUNITION:
+            return player.ammo < 100
+        return True
+
+    def affect(self, game_ctx):
+        if callable(self.pickup_callback):
+            self.pickup_callback(game_ctx.player)
+
+    def pickup(self, game_ctx):
+        if self.pickupsnd is not None:
+            game_ctx.schedule_sound_effect(self.pickupsnd, None, 1)
+        self.affect(game_ctx)
+        glow = (0, 1, 2) if self.is_health_item or self.is_weap_item else (0, 1)
+        game_ctx.game_renderer.glow = glow
 
 
 class WolfActorType(Enum):
@@ -175,4 +217,4 @@ class WolfActorType(Enum):
     MUTANT = 216
 
 
-WEAPON_MULTIPLIER = 1.2
+WEAPON_MULTIPLIER = 1.1

@@ -37,6 +37,9 @@ class WolfPlayer(Observer):
         self.acquired_weapons = set(
             [WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
 
+        # for now
+        self.excited_to_kill_nazis = False
+
     def has_auto(self):
         return self.weapon.value > 1
 
@@ -101,20 +104,26 @@ class WolfPlayer(Observer):
 
     def get_ammo(self):
         if self.out_of_ammo():
-            if not self.acquired_weapons:
-                self.switch_weapon(WolfWeapon.PISTOL)
-            else:
-                self.switch_weapon(
-                    max(self.acquired_weapons, key=lambda w: w.value))
+            self.switch_weapon(self.best_weapon())
         self.ammo += 5
 
     def dec_ammo(self):
         self.ammo = max(self.ammo - 1, 0)
+        
+    def best_weapon(self):
+        return max(self.acquired_weapons, key=lambda w: w.value)
+
+    def is_new_weapon(self, weap: WolfWeapon):
+        better = weap.value > self.best_weapon().value
+        return better
 
     def acquire_weapon(self, weap: WolfWeapon):
         self.ammo += 5
+        if self.is_new_weapon(weap):
+            self.excited_to_kill_nazis = True
+            self.switch_weapon(weap)
         self.acquired_weapons.add(weap)
-        self.switch_weapon(max(self.acquired_weapons, key=lambda w: w.value))
+        return self.excited_to_kill_nazis
 
     def switch_weapon(self, new: WolfWeapon):
         self.weapon = new
@@ -133,7 +142,8 @@ class WolfPlayer(Observer):
         self.weapon = WolfWeapon.PISTOL
         self.ammo = 10
         self.shooting = False
-        self.acquired_weapons.clear()
+        self.acquired_weapons = set(
+            [WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
 
     def _1up(self):
         self.lives = (self.lives + 1) % 10

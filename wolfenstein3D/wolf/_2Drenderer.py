@@ -54,10 +54,13 @@ class Wolf2DRenderer:
 
         self.look_around = False
 
-    def get_face(self, health) -> pygame.Surface:
-        if health == 0:
+    def get_face(self, player) -> pygame.Surface:
+        if player.excited_to_kill_nazis:
+            return self.hud_faces[-3]
+        
+        if player.health == 0:
             return self.hud_faces[22]
-        face_idx = ((100 - health) // 15) * 3
+        face_idx = ((100 - player.health) // 15) * 3
         return self.hud_faces[face_idx + (self.face_off) % 3]
 
     def draw_number(self, decimal, offset, max_digits):
@@ -81,7 +84,7 @@ class Wolf2DRenderer:
 
     def update_hud(self, player_ctx):
         self.hudsurf.blit(self.hud, (0, 0))
-        face = self.get_face(player_ctx.health)
+        face = self.get_face(player_ctx)
         self.hudsurf.blit(face, self.hud_faces_off)
         weap = self.hud_weapons[player_ctx.weapon.value]
         self.hudsurf.blit(weap, self.hud_weapon_off)

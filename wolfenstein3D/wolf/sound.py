@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 
 # get 32 channels
-pygame.mixer.set_num_channels(32)
+pygame.mixer.set_num_channels(16)
 
 
 @dataclass
@@ -19,7 +19,7 @@ class WolfSoundEffect:
 
 
 class WolfSoundManager:
-    def __init__(self, master, music_vol=0.8):
+    def __init__(self, master, music_vol=0.6):
         self.master = master
         self.music_vol = self.cap_volume(music_vol)
         self.sndeff_queue = {}
@@ -84,6 +84,15 @@ class WolfSoundManager:
         pygame.mixer.music.load(SOUNDS["music"][piece])
         pygame.mixer.music.set_volume(self.music_vol)
         pygame.mixer.music.play(loops=-1)
+        
+    def stop_music(self):
+        pygame.mixer.music.stop()
+        
+    def pause_music(self):
+        pygame.mixer.music.pause()
+        
+    def continue_music(self):
+        pygame.mixer.music.unpause()
 
     def set_master(self, new):
         if new > 1:
