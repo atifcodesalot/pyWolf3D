@@ -17,7 +17,7 @@ WALLS_PATH = os.path.join(TEXTURE_PATH, 'wallmap.png')
 HUD_PATH = os.path.join(TEXTURE_PATH, 'hud.png')
 
 SPRITE_OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
-SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons_trans.png')
+SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons.png')
 
 
 # code used for creating transparency
