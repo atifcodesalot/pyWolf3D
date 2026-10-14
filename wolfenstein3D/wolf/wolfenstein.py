@@ -277,12 +277,12 @@ class WolfGame:
         if rapid:
             if self.player.weapon.value == 2:
                 # machine gun
-                rate = 10
+                rate = 15
             else:
                 # chain gun
-                rate = 5
+                rate = 10
         else:
-            rate = 25
+            rate = 30
         self.add_animation(Animation(
             None, None, rate, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
@@ -320,7 +320,7 @@ class WolfGame:
     def try_closing_door(self, door: WolfDoor):
         pblock = self.player.get_current_block()
         if door.block_pos in self.wolfmap.actor_lookup\
-            or pblock == door.block_pos:
+                or pblock == door.block_pos:
             # retry 200 heartbeats later
             self.schedule_game_event(
                 200, lambda _: self.try_closing_door(door))
@@ -460,9 +460,6 @@ class WolfGame:
                 self.life_end()
             elif self.floor_fin:
                 self.floor_end()
-            
-                    
-        
 
     def floor_end(self):
         # add floor end menu later

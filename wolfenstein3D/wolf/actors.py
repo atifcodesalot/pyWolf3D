@@ -65,7 +65,7 @@ class GuardingState(ActorState):
 
 class DeadState(ActorState):
     def __init__(self, actor):
-        super().__init__(actor, 2, nextstate=self, lifetime=1000)
+        super().__init__(actor, 2, nextstate=self, lifetime=5000)
 
     def shapenum(self, _):
         col = self.colnum()
@@ -73,8 +73,12 @@ class DeadState(ActorState):
 
 
 class DyingState(ActorState):
-    def __init__(self, actor):
-        super().__init__(actor, 2, nextstate=DeadState(actor), lifetime=40)
+    def __init__(self, actor, frame_lifetime=12):
+        if actor.type == WolfActorType.DOG:
+            frame_lifetime += 3
+        lifetime = frame_lifetime * actor.death_frames
+
+        super().__init__(actor, 2, nextstate=DeadState(actor), lifetime=lifetime)
         self.hb_perframe = self.lifetime // actor.death_frames
         self.heartbeats = 0
 
@@ -111,8 +115,9 @@ class HurtState(ActorState):
 
 
 class AttackState(ActorState):
-    def __init__(self, actor):
-        super().__init__(actor, 3, nextstate=None, lifetime=30)
+    def __init__(self, actor, frame_lifetime=12):
+        lifetime = frame_lifetime * actor.attack_frames
+        super().__init__(actor, 3, nextstate=None, lifetime=lifetime)
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.auto = False
@@ -122,7 +127,7 @@ class AttackState(ActorState):
         if self.auto:
             return
         self.auto = True
-        self.lifetime = 15
+        self.lifetime = 20
         self.before_auto = self.next
         self.next = self
 
@@ -139,7 +144,7 @@ class AttackState(ActorState):
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
-        reduction = 0.5 if self.actor._type == WolfActorType.SCHUTZSTAFFEL else 0.2
+        reduction = 0.5 if self.actor.type == WolfActorType.SCHUTZSTAFFEL else 0.2
         damage = game_ctx.calculate_damage(self.actor, reduction=reduction)
         game_ctx.dec_player_health(damage)
         if game_ctx.player.is_dead():
@@ -168,7 +173,7 @@ class AttackState(ActorState):
             self.quit_auto()
 
     def endcallback(self, _):
-        if self.actor._type == WolfActorType.SCHUTZSTAFFEL:
+        if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
             diceroll = random.randint(1, 3) in [1, 2]
             if diceroll and not self.exit_auto:
                 self.go_auto()
@@ -176,7 +181,7 @@ class AttackState(ActorState):
 
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
-        super().__init__(actor, 1, self, 20)
+        super().__init__(actor, 1, self, 40)
         if type(actor) is Shepherd:
             # dogs dont have standing sprites
             self.spcolumn = 0
@@ -211,7 +216,7 @@ class ChaseState(ActorState):
             wolflogger.debug(f"direction {dir_} is occupied.")
             if vblock in m.doors:
                 door = m.get_door(vblock)
-                if self.actor._type != WolfActorType.DOG:
+                if self.actor.type != WolfActorType.DOG:
                     self.open_door(door)
                     return True
                 return False
@@ -265,7 +270,7 @@ class ChaseState(ActorState):
                 self.stuck = True
 
         wolflogger.debug(
-            f"actor {self.actor._type}  decided look dir: {self.actor.look_dir}, at pos: {self.actor.pos}")
+            f"actor {self.actor.type}  decided look dir: {self.actor.look_dir}, at pos: {self.actor.pos}")
 
     def decide_dodge_dir(self, game_ctx):
         wolflogger.debug("decide dodge dir called")
@@ -296,7 +301,7 @@ class ChaseState(ActorState):
         if not self.valid_dir(self.actor.look_dir):
             self.stuck = True
         wolflogger.debug(
-            f"actor {self.actor._type}  \
+            f"actor {self.actor.type}  \
                 decided dodge direction: {self.actor.look_dir}, at pos: {self.actor.pos}")
 
     def decide_dir(self, game_ctx):
@@ -398,7 +403,7 @@ class PatrolState(ChaseState):
         patrol = map_ctx.patrol_lookup[ablock]
         self.actor.update_dir(self.PATROL_DIR[patrol].copy())
         wolflogger.debug(
-            f"actor {self.actor._type}\
+            f"actor {self.actor.type}\
                 decided patrol direction: {self.actor.look_dir}, at pos: {ablock}")
 
     def committo_dest(self):
@@ -460,7 +465,7 @@ class Actor:
                  patrol=False):
 
         self.wolfmap = wolfmap
-        self._type = _type
+        self.type = _type
         self.pos = list(pos)
         self.occupancy = set()
         self.look_dir = look_dir
@@ -722,7 +727,7 @@ class Shepherd(Actor):
                          attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
                          alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"],
                          patrol=patrol)
-        self.pace = 0.5
+        self.pace = 0.4
 
 
 class SS(Actor):
@@ -742,6 +747,7 @@ class SS(Actor):
                          attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
                          alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
                          patrol=patrol)
+        self.pace = 0.15
 
 
 TYPE_ACTOR_OBJ = {
