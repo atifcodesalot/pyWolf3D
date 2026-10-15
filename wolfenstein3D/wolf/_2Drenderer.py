@@ -1,7 +1,7 @@
 
 
-from . import pygame
-from .assets import STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS
+from wolfenstein3D.wolf import pygame
+from wolfenstein3D.wolf.assets import STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS
 
 
 class Wolf2DRenderer:

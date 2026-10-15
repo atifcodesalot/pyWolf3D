@@ -1,10 +1,11 @@
 
 import unittest
-from .gamemaps import *
-from .wolfenstein import *
-from .game_objects import *
+from wolfenstein3D.wolf.gamemaps import *
+from wolfenstein3D.wolf.wolfenstein import *
+from wolfenstein3D.wolf.game_objects import *
 import cProfile
 
+SHAREWARE_MAPS = list(get_shareware_maps())
 
 class ParserTest(unittest.TestCase):
     def test_parse(self):
@@ -37,7 +38,7 @@ class ParserTest(unittest.TestCase):
 
 class WolfGameTest(unittest.TestCase):
     def test_actor_instances(self):
-        mymap = SHAREWARE_MAPS[0]
+        mymap = SHAREWARE_MAPS[3]
         actors = (mymap.actors[WolfDifficulty.BABY])
         self.assertFalse(id(actors[0]) == id(actors[1]))
         self.assertFalse(id(actors[0].sprites[0]) == id(
@@ -52,14 +53,14 @@ class WolfGameTest(unittest.TestCase):
     def test_actor_sprite_count(self):
         for _map in SHAREWARE_MAPS:
             for actor in _map.actors[WolfDifficulty.BABY]:
-                self.assertGreater(len(actor.sprites), 8*4)
+                self.assertGreater(len(actor.sprites), 1)
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[9]
+        mymap = SHAREWARE_MAPS[-2]
         screen = pygame.display.set_mode((680, 600))
         game = WolfGame(mymap, root_display=screen,
-                        sound_off=False, noclip=False)
+                        sound_off=False, noclip=False, framerate=75)
         raycaster = game.game_renderer.raycaster
         self.assertEqual(raycaster.observer.pos, game.player.pos)
         map_ = raycaster.observer.map

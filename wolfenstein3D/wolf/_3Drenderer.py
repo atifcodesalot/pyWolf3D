@@ -1,11 +1,11 @@
 
-from raycaster.raycaster import Raycaster
-from raycaster.aux_math import vec_mul
-from raycaster.renderer import RayRenderer, PointLight
-from . import pygame
-from .player import WolfPlayer
-from .assets import SPRITES, WALL_TEXTURES, FONT
-from raycaster.sprites import *
+from wolfenstein3D.raycaster.raycaster import Raycaster
+from wolfenstein3D.raycaster.aux_math import vec_mul
+from wolfenstein3D.raycaster.renderer import RayRenderer, PointLight
+from wolfenstein3D.wolf import pygame
+from wolfenstein3D.wolf.player import WolfPlayer
+from wolfenstein3D.wolf.assets import SPRITES, WALL_TEXTURES, FONT
+from wolfenstein3D.raycaster.sprites import *
 import random
 import numpy as np
 

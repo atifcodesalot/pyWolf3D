@@ -1,11 +1,10 @@
 
-from .maps import WolfMap, WolfDifficulty
-from .actors import *
-from .assets import SPRITES, ASSETS_PATH
+from wolfenstein3D.wolf.maps import WolfMap, WolfDifficulty
+from wolfenstein3D.wolf.actors import *
+from wolfenstein3D.wolf.assets import SPRITES, ASSETS_PATH
+from wolfenstein3D.wolf.game_objects import *
+from wolfenstein3D.wolf import wolflogger
 from os import path
-from .game_objects import *
-from . import wolflogger
-from .actors import WolfActorType
 
 ID_TO_ATLAS = {
     1:  0,
@@ -248,20 +247,19 @@ class GameMapsAdaptor:
         wolfmap.init_snap = wolfmap.snapshot()
         return wolfmap
 
-
+SHAREWARE_PATH = path.join(ASSETS_PATH, "maps")
+MAPHEAD_PATH = path.join(SHAREWARE_PATH, "MAPHEAD.WL1")
+MAPTEMP_PATH = path.join(SHAREWARE_PATH, "MAPTEMP.WL1")
 def get_shareware_maps():
-    global SHAREWARE_MAPS
-    maphead = open(path.join(ASSETS_PATH, "maps", "MAPHEAD.WL1"), "rb")
-    maptemp = open(path.join(ASSETS_PATH, "maps", "MAPTEMP.WL1"), "rb")
+    
+    maphead = open(MAPHEAD_PATH, "rb")
+    maptemp = open(MAPTEMP_PATH, "rb")
     parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
     adaptor = GameMapsAdaptor(parser)
-    SHAREWARE_MAPS = [adaptor.to_wolfmap(level_i) for level_i in range(10)]
-    for i, map_ in enumerate(SHAREWARE_MAPS):
-        if i == len(SHAREWARE_MAPS)-1:
-            break
-        map_.nextmap = SHAREWARE_MAPS[i+1]
+    
+    for level_i in range(10):
+        map_ = adaptor.to_wolfmap(level_i)
+        yield map_
+        
     maphead.close()
     maptemp.close()
-
-
-get_shareware_maps()

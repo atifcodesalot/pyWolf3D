@@ -2,8 +2,6 @@
 
 from PIL import Image
 import pygame
-import numpy as np
-import os
 
 
 class Texture:

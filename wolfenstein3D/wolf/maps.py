@@ -1,9 +1,9 @@
 
-from raycaster.sprites import Sprite
-from raycaster.aux_math import *
-from .game_objects import *
-from .assets import SPRITES
-from .actors import TYPE_ACTOR_OBJ
+from wolfenstein3D.raycaster.sprites import Sprite
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.wolf.game_objects import *
+from wolfenstein3D.wolf.assets import SPRITES
+from wolfenstein3D.wolf.actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
 from enum import Enum
 

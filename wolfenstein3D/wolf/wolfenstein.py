@@ -1,14 +1,14 @@
 
-from raycaster.aux_math import *
-from .maps import *
-from .player import *
-from .actors import *
-from .sound import WolfSoundManager
-from ._3Drenderer import Wolf3DRenderer, PointLight
-from ._2Drenderer import Wolf2DRenderer
-from . import wolflogger, pygame
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.wolf.maps import *
+from wolfenstein3D.wolf.player import *
+from wolfenstein3D.wolf.actors import *
+from wolfenstein3D.wolf.sound import WolfSoundManager
+from wolfenstein3D.wolf._3Drenderer import Wolf3DRenderer, PointLight
+from wolfenstein3D.wolf._2Drenderer import Wolf2DRenderer
+from wolfenstein3D.wolf import wolflogger, pygame
+from wolfenstein3D.wolf.game_objects import WEAPON_SOUND
 import time
-from .game_objects import WEAPON_SOUND
 
 
 class Animation:

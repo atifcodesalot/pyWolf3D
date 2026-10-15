@@ -1,7 +1,7 @@
 
 
-from .textures import Texture, pygame, Image
-from .aux_math import vec_add
+from wolfenstein3D.raycaster.textures import Texture, pygame, Image
+from wolfenstein3D.raycaster.aux_math import vec_add
 
 
 class Sprite(Texture):

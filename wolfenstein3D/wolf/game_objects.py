@@ -1,6 +1,6 @@
 
+from wolfenstein3D.wolf.assets import SPRITES, SOUNDS
 from enum import Enum
-from .assets import SPRITES, SOUNDS
 
 
 class WolfWeapon(Enum):

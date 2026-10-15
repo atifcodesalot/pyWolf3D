@@ -1,10 +1,10 @@
 
 
-import math
-from .aux_math import *
-from wolf.maps import WolfMap, WolfDoor, WolfPushWall
-from wolf.assets import SIDEDOOR
 
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.wolf.maps import WolfDoor, WolfPushWall
+from wolfenstein3D.wolf.assets import SIDEDOOR
+import math
 
 # observer class,
 # contains the unit ray directions raycaster uses to cast.

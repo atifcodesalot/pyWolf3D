@@ -1,12 +1,12 @@
 
 
-from .assets import *
-from raycaster.aux_math import *
-from math import pi, atan2
-from .game_objects import WolfItem, WolfActorType
-import random
-from . import wolflogger
+from wolfenstein3D.wolf.assets import *
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.wolf.game_objects import WolfItem, WolfActorType
+from wolfenstein3D.wolf import wolflogger
 import copy
+import random
+from math import pi, atan2
 
 
 class ActorState:
@@ -754,7 +754,7 @@ class SS(Actor):
                          death_frames=4,
                          move_frames=4,
                          attack_frames=3,
-                         dead_offset=4,
+                         dead_offset=5,
                          hurt_offset=0,
                          health=200,
                          drop=WolfItem.MACHINEGUN,

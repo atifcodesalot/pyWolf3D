@@ -1,12 +1,12 @@
 
-from raycaster.sprites import Sprite
-from raycaster.textures import Texture
-from . import SPRITES, WALL_TEXTURES, pygame
+from wolfenstein3D.raycaster.sprites import Sprite
+from wolfenstein3D.raycaster.textures import Texture
+from wolfenstein3D.wolf import SPRITES, WALL_TEXTURES, pygame
 from PIL import Image
 import os
 
 
-ASSETS_PATH = os.path.join('.', 'assets')
+ASSETS_PATH = os.path.join('.', __package__.split('.')[0], 'assets')
 
 FONT_PATH = os.path.join(ASSETS_PATH, 'fonts')
 SPRITE_PATH = os.path.join(ASSETS_PATH, 'sprites')
@@ -57,7 +57,8 @@ def init_wall_textures():
     global WALL_TEXTURES, SIDEDOOR
     SIDEDOOR = 58
     walls = Image.open(WALLS_PATH)
-    WALL_TEXTURES = texmap_parse(486, 16, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
+    WALL_TEXTURES = texmap_parse(
+        486, 16, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
 
     # extend to 120 slot texture table
     WALL_TEXTURES.extend([None]*120)
@@ -115,11 +116,12 @@ def init_character_sprites():
     SS_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'SS.png'))
     SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite, 1, 1)
     SPRITES["characters"]["SS"] = dict(enumerate(SS_sprites))
-    
+
     # init bosses here
     SPRITES["characters"]["boss"] = {}
     # init hans grösse
-    hans_sheet =  Image.open(os.path.join(SPRITE_PATH, 'characters', 'boss', 'hansgrösse.png'))
+    hans_sheet = Image.open(os.path.join(
+        SPRITE_PATH, 'characters', 'boss', 'hansgrösse.png'))
     hans_sprites = texmap_parse(1, 1, 1, 1, 64, 64, hans_sheet, Sprite, 1, 1)
     ogsrc = dict(enumerate(hans_sprites))
     hans_sprites = {}
@@ -132,7 +134,6 @@ def init_character_sprites():
     for i in range(3):
         hans_sprites[attack_off + i] = ogsrc[4 + i]
     SPRITES["characters"]["boss"]["hans"] = hans_sprites
-    
 
 
 def init_sprites():
@@ -173,9 +174,14 @@ def init_sounds(root=SOUND_PATH, depth=0):
                 SOUNDS[base][entry.name] = entry.path
             else:
                 SOUNDS[base][entry.name] = pygame.mixer.Sound(entry.path)
+                
 
+LOADERS = frozenset([
+    init_textures,
+    init_sprites,
+    init_sounds,
+    init_font
+])
 
-init_textures()
-init_sprites()
-init_font()
-init_sounds()
+for ld in LOADERS:
+    ld()

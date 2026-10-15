@@ -1,7 +1,7 @@
 
-from raycaster.aux_math import *
-from . import pygame
-from .assets import SOUNDS
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.wolf import pygame
+from wolfenstein3D.wolf.assets import SOUNDS
 from math import pow
 from dataclasses import dataclass
 

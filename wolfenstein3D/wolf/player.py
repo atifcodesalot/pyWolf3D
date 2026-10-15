@@ -1,11 +1,10 @@
 
 
-from raycaster.raycaster import Observer
-from .game_objects import WolfWeapon
-from .maps import WolfMap
-from raycaster.aux_math import *
-from .actors import Actor
-import copy
+from wolfenstein3D.raycaster.raycaster import Observer
+from wolfenstein3D.wolf.game_objects import WolfWeapon
+from wolfenstein3D.wolf.maps import WolfMap
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.wolf.actors import Actor
 import pygame
 
 

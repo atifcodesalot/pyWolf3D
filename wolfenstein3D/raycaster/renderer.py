@@ -1,8 +1,8 @@
 
-from .raycaster import Raycaster
-from .aux_math import *
+from wolfenstein3D.raycaster.raycaster import Raycaster
+from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.raycaster.sprites import Sprite
 import pygame
-from .sprites import Sprite
 
 
 RED = (255, 0, 0)
