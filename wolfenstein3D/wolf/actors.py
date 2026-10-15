@@ -750,7 +750,7 @@ class SS(Actor):
         super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir,
                          sprites=SPRITES["characters"]["SS"],
                          sprite_layout=(8, 7),
-                         death_frames=4,
+                         death_frames=5,
                          move_frames=4,
                          attack_frames=3,
                          dead_offset=5,

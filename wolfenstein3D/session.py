@@ -107,7 +107,6 @@ class WolfMenuRenderer:
                     self.player_selection = min(
                         self.current_menu.sel_count-1, self.player_selection + 1)
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    print("cus")
                     return self.player_selection
 
     def run(self):
@@ -121,7 +120,7 @@ class WolfMenuRenderer:
             pygame.display.flip()
         game = WolfGame(
             SHAREWAREMAPS[0], WolfDifficulty(choice), 
-            self.screen, sound_off=True, framerate=75)
+            self.screen, sound_off=False, framerate=75)
         game.mainloop()
 
 
