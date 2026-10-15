@@ -10,8 +10,9 @@ from enum import Enum
 
 class WolfDifficulty(Enum):
     BABY = 0
-    TOUGH = 1
-    DEATHINCARNATE = 2
+    DONTHURTME = 1
+    BRINGEM = 2
+    DEATHINCARNATE = 3
 
 
 # wolf door object
@@ -190,7 +191,7 @@ class WolfMap:
         self.raw = deepcopy(raw)
         self.actor_lookup.clear()
         for snap, act in zip(actsnaps, self.get_actors()):
-            act.reload_snapshot(snap)
+            act.reload_snapshot(snap, self)
             self.actor_lookup[self.to_block_pos(*act.pos)] = act
         self.item_lookup = itemsnap.copy()
         self.sprite_lookup = spdsnap.copy()
@@ -228,20 +229,23 @@ class WolfMap:
         self.delete_sprite(item.pos)
         return item
 
-    def add_actor(self, actor_type: WolfActorType, pos, look_dir, difficulty, patrol=False):
+    def add_actor(self, actor_type: WolfActorType, pos, look_dir, act_diff, patrol=False):
         if actor_type not in WolfActorType:
             raise TypeError("can't add non actor type")
-        actor_obj = TYPE_ACTOR_OBJ[actor_type](self, pos, look_dir, patrol=patrol)
-        ablock = self.to_block_pos(*pos)
-        self.actor_lookup[ablock] = actor_obj
-        if difficulty is WolfDifficulty.BABY:
+        actor_obj = TYPE_ACTOR_OBJ[actor_type](
+            self, pos, look_dir, patrol=patrol)
+        if act_diff is WolfDifficulty.DONTHURTME:
             for k in self.actors:
                 self.actors[k].append(actor_obj)
-        elif difficulty is WolfDifficulty.TOUGH:
-            self.actors[WolfDifficulty.TOUGH].append(actor_obj)
+        elif act_diff is WolfDifficulty.BRINGEM:
+            self.actors[WolfDifficulty.BRINGEM].append(actor_obj)
             self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
         else:
             self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
+            
+    def init_actor_lookup(self):
+        for act in self.get_actors():
+            self.actor_lookup[tuple(act.pos)] = act
 
     def get_actors(self):
         return self.actors[self.difficulty]
@@ -315,3 +319,6 @@ class WolfMap:
     def in_boundary(self, block_pos):
         return 0 <= block_pos[0] < self.size[0] and\
             0 <= block_pos[1] < self.size[1]
+
+    def set_difficulty(self, new: WolfDifficulty):
+        self.difficulty = new

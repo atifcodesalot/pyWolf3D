@@ -54,9 +54,10 @@ class WolfGame:
         9: "secret.ogg"
     }
 
-    def __init__(self, map_: WolfMap, root_display, framerate=60,
-                 sound_off=False, noclip=False):
+    def __init__(self, map_: WolfMap, difficulty: WolfDifficulty, root_display, framerate=60,
+                 sound_off=False, noclip=False, ):
         self.wolfmap = map_
+        self.difficulty = difficulty
         self.player = WolfPlayer(self, ray_count=160, fov=54)
         self.init_renderers(root_display)
 
@@ -92,6 +93,9 @@ class WolfGame:
         self.renderer = Wolf2DRenderer(root.get_size(), self.game_res)
 
     def init_map(self):
+        self.wolfmap.set_difficulty(self.difficulty)
+        self.wolfmap.init_snap = self.wolfmap.snapshot()
+        self.wolfmap.init_actor_lookup()
         self.player.map = self.wolfmap
         self.player.pos = self.wolfmap.init_pos.copy()
         self.player.update_look_dir(self.wolfmap.init_look.copy())

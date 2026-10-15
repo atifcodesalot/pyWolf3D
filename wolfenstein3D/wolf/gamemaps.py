@@ -87,7 +87,7 @@ def init_actor_entries():
                 patrolling = j >= 4
                 ACTOR_ENTRIES[start + i * 36 + j] = \
                     (starts[start],
-                     WolfDifficulty(i),
+                     WolfDifficulty(i+1),
                      patrolling,
                      (entry-start) % 4)
     # mutants use 18 offset per difficulty level
@@ -98,7 +98,7 @@ def init_actor_entries():
             patrolling = j >= 4
             ACTOR_ENTRIES[mutant_start + i * 18 + j] = \
                 (WolfActorType.MUTANT,
-                 WolfDifficulty(i),
+                 WolfDifficulty(i+1),
                  patrolling,
                  (entry - mutant_start) % 4)
 
@@ -183,7 +183,7 @@ class GameMapsAdaptor:
 
         wolfmap.add_actor(_type, pos,
                           self.actor_orientation[look_i],
-                          difficulty=diff, patrol=patrol)
+                          act_diff=diff, patrol=patrol)
 
     def add_player(self, wolfmap, obj, pos):
         wolfmap.init_pos = list(pos)
@@ -244,14 +244,13 @@ class GameMapsAdaptor:
                         wolfmap.add_sprite(
                             SPRITES["characters"]["guard"][44], pos)
 
-        wolfmap.init_snap = wolfmap.snapshot()
         return wolfmap
 
 SHAREWARE_PATH = path.join(ASSETS_PATH, "maps")
 MAPHEAD_PATH = path.join(SHAREWARE_PATH, "MAPHEAD.WL1")
 MAPTEMP_PATH = path.join(SHAREWARE_PATH, "MAPTEMP.WL1")
+
 def get_shareware_maps():
-    
     maphead = open(MAPHEAD_PATH, "rb")
     maptemp = open(MAPTEMP_PATH, "rb")
     parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)

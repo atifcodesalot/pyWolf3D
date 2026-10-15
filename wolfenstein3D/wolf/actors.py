@@ -513,7 +513,6 @@ class Actor:
         self.state = None
         self.state = GuardingState(
             self) if not patrol else PatrolState(self, self.wolfmap)
-        self.occupy_block(self.get_current_block())
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
@@ -700,11 +699,11 @@ class Actor:
         state = self.pos, self.look_dir, self.health
         return tuple([copy.deepcopy(att) for att in state])
 
-    def reload_snapshot(self, snapshot):
+    def reload_snapshot(self, snapshot, map_ctx):
         self.pos = snapshot[0]
         self.look_dir = snapshot[1]
         self.health = snapshot[2]
-        self.state = GuardingState(self)
+        self.state = GuardingState(self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
 
 
