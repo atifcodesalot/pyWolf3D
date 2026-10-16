@@ -91,6 +91,7 @@ class Wolf2DRenderer:
         self.hudsurf.blit(face, self.hud_faces_off)
         weap = self.hud_weapons[player_ctx.weapon.value]
         self.hudsurf.blit(weap, self.hud_weapon_off)
+        self.draw_number(player_ctx.map.map_id + 1, self.hud_floor_off, 2)
         self.draw_number(player_ctx.score, self.hud_score_off, 5)
         self.draw_number(player_ctx.health, self.hud_health_off, 3)
         self.draw_number(player_ctx.ammo, self.hud_ammo_off, 2)
