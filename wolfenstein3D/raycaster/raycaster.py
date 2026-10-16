@@ -250,16 +250,26 @@ class Raycaster:
         hw = self.observer.map.wall_width // 2
         rayctx = self.get_ray_context(ray_dir)
         trace = camera_pos.copy()
-        visited = []
+        # for door checking
+        first_check = False
+        #
+        m = self.observer.map
+        cblock = m.to_block_pos(*camera_pos)
+        if cblock in m.doors:
+            door_inside: WolfDoor = m.doors[cblock]
+            first_check = True
         while True:
             hitinfo = self.ray_step(trace, hw, rayctx, camera_pos)
-            if (hitinfo[0]):
+            if hitinfo[0]:
                 dist, vert, cell = hitinfo
-                return (dist, trace, vert, cell, visited)
-            # else:
-                # hitinfo doesnt contain ray hit info
-                # append cell to visited
-                # visited.append(hitinfo[1])
+                if first_check:
+                    if (not door_inside.horiz) ^ vert:
+                        cell = SIDEDOOR
+                    first_check = False
+                return (dist, trace, vert, cell)
+            else:
+                if first_check:
+                    first_check = False
 
     def get_corridor(self, ray, start_pos):
         # todo: refactor to use ray step here
