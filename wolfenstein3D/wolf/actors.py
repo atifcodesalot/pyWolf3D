@@ -68,7 +68,8 @@ class DeadState(ActorState):
         super().__init__(actor, 2, nextstate=self, lifetime=5000)
 
     def shapenum(self, _):
-        col = self.colnum() if self.actor.type is not WolfActorType.HANS else 4 * self.actor.sprite_per_state
+        col = self.colnum() if self.actor.type is not WolfActorType.HANS else 4 * \
+            self.actor.sprite_per_state
         return col + self.actor.dead_offset
 
 
@@ -93,9 +94,9 @@ class DyingState(ActorState):
         self.heartbeats += 1
 
     def shapenum(self, _):
-        col = self.colnum() 
+        col = self.colnum()
         if self.actor.type is WolfActorType.HANS:
-            col =  4 * self.actor.sprite_per_state
+            col = 4 * self.actor.sprite_per_state
         return col + self.heartbeats // self.hb_perframe
 
     def endcallback(self, game_ctx):
@@ -150,12 +151,7 @@ class AttackState(ActorState):
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
-        reduction = 0.2
-        if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
-            reduction = 0.5
-        elif self.actor.type == WolfActorType.HANS:
-            reduction = 0.7
-        damage = game_ctx.calculate_damage(self.actor, reduction=reduction)
+        damage = game_ctx.calc_actor_dmg(self.actor)
         game_ctx.dec_player_health(damage)
         if game_ctx.player.is_dead():
             # killed the player
@@ -210,7 +206,7 @@ class ChaseState(ActorState):
         self.waiting_door = False
         self.stuck = False
 
-    def valid_dir(self, dir_):
+    def valid_dir(self, dir_, game_ctx):
         if not any(vec_add(self.prev_dir, dir_)):
             wolflogger.debug(f"direction {dir_} would reversse prev direction: "
                              f"{self.prev_dir}, not allowed")
@@ -221,7 +217,7 @@ class ChaseState(ActorState):
             wolflogger.debug(
                 f"direction {dir_} does not reverse direction: {self.prev_dir}")
         m = self.actor.wolfmap
-        vblock, occupied = self.actor.dir_occupied(dir_)
+        vblock, occupied = self.actor.dir_occupied(dir_, game_ctx)
         if occupied:
             wolflogger.debug(f"direction {dir_} is occupied.")
             if vblock in m.doors:
@@ -233,11 +229,11 @@ class ChaseState(ActorState):
             return False
         return True
 
-    def random_dir_fallback(self):
+    def random_dir_fallback(self, game_ctx):
         random.shuffle(self.fallback_chains)
         for chain in self.fallback_chains:
             for dir_ in chain:
-                if self.valid_dir(dir_):
+                if self.valid_dir(dir_, game_ctx):
                     self.actor.update_dir(list(dir_))
                     return True
         return False
@@ -255,28 +251,28 @@ class ChaseState(ActorState):
         wolflogger.debug("decide chase dir called")
         self.prev_dir = self.actor.look_dir.copy()
         first_try, second_try = self.find_cardinals(game_ctx)
-        if self.valid_dir(first_try):
+        if self.valid_dir(first_try, game_ctx):
             return self.actor.update_dir(first_try)
         # if the fallback delta is not zero
         if any(second_try):
             wolflogger.debug(
                 f"tried {first_try}, first fallback: {second_try}")
-            if self.valid_dir(second_try):
+            if self.valid_dir(second_try, game_ctx):
                 return self.actor.update_dir(second_try)
 
         wolflogger.debug(
             f"third fallback, trying prev dir: {self.prev_dir}")
         # third fallback
-        if self.valid_dir(self.prev_dir):
+        if self.valid_dir(self.prev_dir, game_ctx):
             return self.actor.update_dir(self.prev_dir)
 
         wolflogger.debug(f"fourth fallback, random chains")
         #  fourth fallback
-        if not self.random_dir_fallback():
+        if not self.random_dir_fallback(game_ctx):
             wolflogger.debug(
                 f"all failed; final fallback, reversing dir: {self.actor.look_dir}")
             self.actor.reverse_dir()
-            if not self.valid_dir(self.actor.look_dir):
+            if not self.valid_dir(self.actor.look_dir, game_ctx):
                 self.stuck = True
 
         wolflogger.debug(
@@ -292,23 +288,23 @@ class ChaseState(ActorState):
         dely = -1 if dely == 0 else dely
         #
         first_try = [int(delx // abs(delx)), int(dely // abs(dely))]
-        if self.valid_dir(first_try):
+        if self.valid_dir(first_try, game_ctx):
             return self.actor.update_dir(first_try)
         # first fallback
         first_fb = [[first_try[0], 0], [0, first_try[1]]]
         random.shuffle(first_fb)
         for dir_ in first_fb:
-            if self.valid_dir(dir_):
+            if self.valid_dir(dir_, game_ctx):
                 return self.actor.update_dir(dir_)
         # second fallback
         second_fb = [vec_mul(first_fb[0], -1),
                      vec_mul(first_fb[1], -1)]
         for dir_ in second_fb:
-            if self.valid_dir(dir_):
+            if self.valid_dir(dir_, game_ctx):
                 return self.actor.update_dir(dir_)
         # final fallback
         self.actor.reverse_dir()
-        if not self.valid_dir(self.actor.look_dir):
+        if not self.valid_dir(self.actor.look_dir, game_ctx):
             self.stuck = True
         wolflogger.debug(
             f"actor {self.actor.type}  \
@@ -514,6 +510,8 @@ class Actor:
         self.state = GuardingState(
             self) if not patrol else PatrolState(self, self.wolfmap)
 
+        self.drawn_sprite = None
+
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
         if self.ticks_since_trans >= self.state.lifetime:
@@ -581,11 +579,12 @@ class Actor:
             return m.actor_lookup[block_pos] != self
         return False
 
-    def occupied_forthis(self, block_pos):
+    def occupied_forthis(self, block_pos, game_ctx):
         m = self.wolfmap
         if m.cell_occupied(block_pos):
             return True
-        return self.occupied_by_other(block_pos)
+        return self.occupied_by_other(block_pos) \
+            or block_pos == game_ctx.player.get_current_block()
 
     def occupy_block(self, block_pos):
         bpos = tuple(block_pos)
@@ -631,9 +630,12 @@ class Actor:
 
     def current_sprite(self, observer):
         self.shapenum = self.state.shapenum(observer)
-        sprite = self.sprites[self.shapenum]
-        sprite.pos = self.pos
-        return sprite
+        self.current_sp = self.sprites[self.shapenum]
+        self.current_sp.pos = self.pos
+        return self.current_sp
+
+    def hitpos(self, sw):
+        return self.current_sp.screen_pos - sw // 2
 
     def dec_health(self, damage):
         self.health = max(0, self.health - damage)
@@ -660,20 +662,15 @@ class Actor:
     def virtual_block(self, dir_):
         return vec_add(self.get_current_block(), dir_)
 
-    def dir_occupied(self, dir_):
+    def dir_occupied(self, dir_, game_ctx):
         occp = self.occupied_forthis
         vblock = tuple(self.virtual_block(dir_))
         if all(dir_):
             # diagonal direction
             adj1 = tuple(self.virtual_block([dir_[0], 0]))
             adj2 = tuple(self.virtual_block([0, dir_[1]]))
-            return vblock, occp(vblock) or occp(adj1) or occp(adj2)
-        return vblock, occp(vblock)
-
-    def dir_occupied_by_other(self, dir_):
-        occp = self.occupied_by_other
-        vblock = tuple(self.virtual_block(dir_))
-        return vblock, occp(vblock)
+            return vblock, occp(vblock, game_ctx) or occp(adj1, game_ctx) or occp(adj2, game_ctx)
+        return vblock, occp(vblock, game_ctx)
 
     def sees_player(self, game_ctx):
         r = game_ctx.game_renderer.raycaster
@@ -703,7 +700,8 @@ class Actor:
         self.pos = snapshot[0]
         self.look_dir = snapshot[1]
         self.health = snapshot[2]
-        self.state = GuardingState(self) if not self.patrol else PatrolState(self, map_ctx)
+        self.state = GuardingState(
+            self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
 
 
@@ -717,7 +715,7 @@ class Guard(Actor):
                          attack_frames=3,
                          dead_offset=4,
                          hurt_offset=7,
-                         health=100,
+                         health=25,
                          drop=WolfItem.AMMUNITION,
                          death_sounds=list(SOUNDS["death"].values()),
                          attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
@@ -736,7 +734,7 @@ class Shepherd(Actor):
                          attack_frames=3,
                          dead_offset=3,
                          hurt_offset=0,
-                         health=60,
+                         health=1,
                          _range=(wolfmap.wall_width)*2,
                          death_sounds=[SOUNDS["dogs"]["DOGDEATHSND.WAV"],],
                          attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
@@ -755,7 +753,7 @@ class SS(Actor):
                          attack_frames=3,
                          dead_offset=5,
                          hurt_offset=0,
-                         health=200,
+                         health=100,
                          drop=WolfItem.MACHINEGUN,
                          death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
                                        SOUNDS["common"]["LEBENSND.WAV"]],
@@ -783,7 +781,7 @@ class HansGrosse(Actor):
                          alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
                          patrol=False)
         self.pace = 0.15
-        
+
     def orientation_idx(self, _, **__):
         # hans has not orientation sprites :()
         return 0
