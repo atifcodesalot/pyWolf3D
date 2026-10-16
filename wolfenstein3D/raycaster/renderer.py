@@ -72,15 +72,19 @@ class RayRenderer:
         return tex_src.get_column(round(ci),
                               self.repeat, int(height), self.height)
 
-    def sprite_is_visible(self, projected, sprite) -> bool:
+    def sprite_is_visible(self, sprite) -> bool:
         o = self.raycaster.observer
+        sprite.get_perp_dist(o)
+        if sprite.perp_dist < 4:
+            return
+        
         to_sprite = vec_sub(o.pos, sprite.pos)
         if vec_mag(to_sprite) > self.maxd:
             # too far away to be visible
             return False
         shw = sprite.width // 2
         vpl = o.vp_length
-        on_vp = vpl + shw > projected[0] > -vpl - shw
+        on_vp = vpl + shw > sprite.projected[0] > -vpl - shw
         in_front = vec_dot(o.look_dir, vec_sub(o.pos, sprite.pos)) > 0
         return on_vp and in_front
 
@@ -92,21 +96,15 @@ class RayRenderer:
         return self.distbuff[int(col_pos // self.repeat)] > dist
 
     def draw_sprite(self, sprite: Sprite):
-        o = self.raycaster.observer
-        perp_dist = vec_dot(vec_sub(o.pos, sprite.pos), o.look_dir)
-        if perp_dist < 4:
-            return
-        projected = sprite.project()
-        if not self.sprite_is_visible(projected, sprite):
-            return
         h = self.height
         hh = h // 2
-        screen_pos = sprite.screen_pos(self, projected)
+        sprite.to_screen_pos(self)
 
-        height_to_draw = self.distance_to_height(perp_dist, sprite=True)
-        if height_to_draw > 1000:
+        height_to_draw = self.distance_to_height(sprite.perp_dist, sprite=True)
+        if height_to_draw > 800:
             return
         width_to_draw = height_to_draw * self.sprite_wh_ratio
+        sprite.screen_width = width_to_draw
 
         skip = sprite.width / width_to_draw
         visible_height = min(self.height, height_to_draw)
@@ -114,11 +112,11 @@ class RayRenderer:
         r = self.repeat
 
         ystart = hh - visible_height // 2
-        xstart = screen_pos - (width_to_draw // 2) * r
+        xstart = sprite.screen_pos - (width_to_draw // 2) * r
 
         for i in range(int(width_to_draw)):
             col_pos = xstart + (i * r)
-            if not self.spcol_visible(perp_dist, col_pos):
+            if not self.spcol_visible(sprite.perp_dist, col_pos):
                 continue
             column = sprite.get_column(
                 int(i*skip), r, height_to_draw, h)
@@ -126,16 +124,16 @@ class RayRenderer:
                 column, (col_pos, ystart))
 
     def sort_sprites(self, sprites: list[Sprite]):
-        sorted_sprites = sorted(
+        self.sorted_sprites = sorted(
             sprites,
             key=lambda s: s.to_observer_space(self.raycaster.observer),
             reverse=True)
-        return sorted_sprites
 
     def render_sprites(self):
         m = self.raycaster.observer.map
-        sorted_sprites = self.sort_sprites(m.sprites)
-        for sprite in sorted_sprites:
+        self.sort_sprites(m.sprites)
+        for sprite in self.sorted_sprites:
+            sprite.project()
             self.draw_sprite(sprite)
 
     def render_walls(self, camera_pos, light):

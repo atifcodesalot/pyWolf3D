@@ -220,6 +220,8 @@ class WolfGame:
             self.handle_interaction()
 
     def dec_player_health(self, dmg):
+        if dmg == 0:
+            return
         self.game_renderer.glow = (0,)
         self.player.dec_health(dmg)
         self.schedule_game_event(
@@ -248,27 +250,62 @@ class WolfGame:
             self.player.switch_weapon(WolfWeapon.KNIFE)
 
     def handle_hitscan(self):
-        for act in self.actors:
+        # by now, because of the order of operations in a heartbeat,
+        # visible sprites are already determined
+        # use them for hitscan
+        for act in self.wolfmap.get_actors():
             if act.is_dead():
                 continue
-            if self.player.hits_actor(self.game_renderer.raycaster, act):
+            if self.player.hits_actor(act, self.game_renderer.width):
                 if self.player.has_knife():
                     ablock = self.wolfmap.to_block_pos(*act.pos)
                     pblock = self.player.get_current_block()
                     if euclidean_distance(ablock, pblock) < 2:
                         act.get_shot(damage=75, game_ctx=self)
                 else:
-                    damage = self.calculate_damage(act)
+                    damage = self.calc_player_dmg(act)
                     act.get_shot(damage, self)
 
-    def calculate_damage(self, actor: Actor, reduction=1):
+    def calc_player_dmg(self, actor: Actor):
         pblock = self.player.get_current_block()
         ablock = self.wolfmap.to_block_pos(*actor.pos)
         d = euclidean_distance(pblock, ablock)
-        d = 1 if d == 0 else d
-        inflicted = (1 / d) * 175
-        # cap to 100
-        return min(int(inflicted * reduction), 100)
+        diceroll = random.randint(0, 255)
+        divider = 6
+        missed = None
+        if d >= 2:
+            divider = 4
+        if d >= 4:
+            missed = (diceroll // 12) < d
+
+        if missed is not None:
+            if missed:
+                inflicted = 0
+            else:
+                diceroll2 = random.randint(0, 255)
+                inflicted = diceroll2 // divider
+        else:
+            inflicted = diceroll // divider if not missed else 0
+
+        return inflicted
+
+    def calc_actor_dmg(self, actor: Actor):
+        pblock = self.player.get_current_block()
+        ablock = self.wolfmap.to_block_pos(*actor.pos)
+        d = euclidean_distance(pblock, ablock)
+        if actor.type in [WolfActorType.HANS, WolfActorType.SCHUTZSTAFFEL]:
+            d *= 2/3
+        chance = 0x100 - (0x10 // (1 + self.player.running.real)) * d
+        diceroll = random.randint(0, 256)
+        if chance < diceroll:
+            return 0
+        divider = 4
+        if d >= 2:
+            divider = 8
+        if d >= 4:
+            divider = 16
+        inflicted = diceroll / divider
+        return int(inflicted)
 
     def handle_shooting(self, ongoing=False):
         wolflogger.debug("called handle_shooting")
@@ -302,11 +339,15 @@ class WolfGame:
                 rate = 10
         else:
             rate = 30
+
         self.add_animation(Animation(
             None, None, rate, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
             self.game_renderer, "weap_sp")
         self.handle_hitscan()
+
+    # door related methods start here
+    #
 
     def handle_doors(self):
         for door in self.wolfmap.doors.values():
@@ -315,8 +356,6 @@ class WolfGame:
             elif door.is_closing:
                 self.slide_door_close(door)
 
-    # door related methods start here
-    #
     def open_door(self, door):
         door.begin_opening()
         snd = SOUNDS["doors"]["OPENDOORSND.WAV"]
@@ -447,6 +486,9 @@ class WolfGame:
     def heartbeat(self):
         self.heartbeats += 1
         self.clock.tick(self.framerate)
+        # render everything
+        self.render()
+        #
         pgevents = pygame.event.get()
         self.handle_actors()
         self.handle_player_requests()
@@ -457,9 +499,6 @@ class WolfGame:
         self.handle_animations()
         self.handle_areas()
         self.sound_manager.handle_sound(self)
-        # render everything
-        self.render()
-        #
 
     def get_music(self):
         mapid = self.wolfmap.map_id

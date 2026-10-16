@@ -65,13 +65,17 @@ class Wolf3DRenderer(RayRenderer):
             self.weapons[self.weap_sp].surface,
             (self.wpn_xoffset, self.wpn_yoffset))
 
+
     def render_sprites(self):
         # also render actors
-        actor_sprites = [act.current_sprite(
-            self.player) for act in self.player.map.get_actors()]
-        all_sprites = self.sort_sprites(
+        actor_sprites = [act.current_sprite(self.raycaster.observer)
+                         for act in self.player.map.get_actors()]
+        self.sort_sprites(
             actor_sprites + self.player.map.sprites)
-        for sprite in all_sprites:
+        for sprite in self.sorted_sprites:
+            sprite.project()
+            if not self.sprite_is_visible(sprite):
+                continue
             self.draw_sprite(sprite)
 
     def handle_glow(self):

@@ -83,10 +83,11 @@ class WolfPlayer(Observer):
         front = self.map.raw[front_block[1]][front_block[0]]
         return tuple(front_block), front
 
-    def hits_actor(self, raycaster, actor: Actor):
-        corridor = raycaster.get_corridor(self.look_dir, self.pos)
-        actor_block = actor.get_current_block()
-        return actor_block in corridor
+    def hits_actor(self, actor: Actor, sw):
+        if (sp_sw := getattr(actor.current_sp, "screen_width", None)) is None:
+            return False
+        htol = sp_sw+5
+        return htol > actor.hitpos(sw) > -htol
 
     def occupied_forthis(self, block_pos):
         return self.map.cell_occupied(block_pos) or \
