@@ -1,7 +1,8 @@
 
 
 from wolfenstein3D.wolf import pygame
-from wolfenstein3D.wolf.assets import STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS
+from wolfenstein3D.wolf.assets import (
+    STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS)
 
 
 class Wolf2DRenderer:
@@ -36,7 +37,8 @@ class Wolf2DRenderer:
         self.hud_rect = pygame.Rect(self.hud_off, self.hud_size)
         self.hud_faces = [scale(face) for face in HUD_FACES]
         self.hud_nums = [scale(num) for num in HUD_NUMBERS]
-        self.hud_weapons = [scale(wep) for wep in HUD_WEAPONS]
+        self.hud_weapons = [scale(weap) for weap in HUD_WEAPONS]
+        self.hud_keys = [scale(key) for key in HUD_KEYS]
 
         swap = self.hud_weapons[1].copy()
         self.hud_weapons[1] = self.hud_weapons[2]
@@ -49,15 +51,16 @@ class Wolf2DRenderer:
         self.hud_weapon_off = (256 * self.hudscale, 8 * self.hudscale)
         self.hud_ammo_off = (216 * self.hudscale, 16 * self.hudscale)
         self.hud_lives_off = (112 * self.hudscale, 16 * self.hudscale)
+        self.hud_skey_off = (240 * self.hudscale, 20 * self.hudscale)
+        self.hud_gkey_off = (240 * self.hudscale, 4 * self.hudscale)
 
         self.face_off = 0
-
         self.look_around = False
 
     def get_face(self, player) -> pygame.Surface:
         if player.excited_to_kill_nazis:
             return self.hud_faces[-3]
-        
+
         if player.health == 0:
             return self.hud_faces[22]
         face_idx = ((100 - player.health) // 15) * 3
@@ -92,6 +95,10 @@ class Wolf2DRenderer:
         self.draw_number(player_ctx.health, self.hud_health_off, 3)
         self.draw_number(player_ctx.ammo, self.hud_ammo_off, 2)
         self.draw_number(player_ctx.lives, self.hud_lives_off, 1)
+        if player_ctx.has_silver_key:
+            self.hudsurf.blit(self.hud_keys[2], self.hud_skey_off)
+        if player_ctx.has_gold_key:
+            self.hudsurf.blit(self.hud_keys[1], self.hud_gkey_off)
         self.pgsurf.blit(self.hudsurf, self.hud_off)
 
     def draw_game_screen(self, game_screen: pygame.Surface):
@@ -100,8 +107,8 @@ class Wolf2DRenderer:
 
     def draw_everything(self, game_screen: pygame.Surface, player_ctx):
         self.clear_game_screen()
-        # update the hud per 15 heartbeats
-        if not self.heartbeats % 15:
+        # update the hud per 5 heartbeats
+        if not self.heartbeats % 5:
             self.update_hud(player_ctx)
         self.draw_game_screen(game_screen)
         # draw what else??

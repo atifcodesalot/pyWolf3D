@@ -71,7 +71,7 @@ def init_hud_textures():
             im.size,
             "RGBA",
         )
-    global HUD_FACES, STATUSBAR, HUD_NUMBERS, HUD_WEAPONS
+    global HUD_FACES, STATUSBAR, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS
     hudim = Image.open(HUD_PATH)
     HUD_FACES = texmap_parse(
         52, 42, 1, 1, 24, 32, hudim, init=to_surf, lmarg=1, rmarg=91)
@@ -81,6 +81,8 @@ def init_hud_textures():
         68, 75, 0, 1, 8, 16, hudim, init=to_surf, lmarg=301, rmarg=1)
     HUD_WEAPONS = texmap_parse(
         1, 109, 1, 1, 48, 24, hudim, init=to_surf, lmarg=226, rmarg=68)
+    HUD_KEYS = texmap_parse(
+            51, 92, 0, 1, 8, 16, hudim, init=to_surf, lmarg=301, rmarg=55)
 
 
 def init_textures():
