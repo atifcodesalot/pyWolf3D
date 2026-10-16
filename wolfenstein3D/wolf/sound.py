@@ -34,7 +34,7 @@ class WolfSoundManager:
     @staticmethod
     def attenuate_func(x):
         x = 1 if x == 0 else x
-        return 15/pow(x, 2)
+        return 20/pow(x, 2)
 
     def attenuate(self, origin, game_ctx):
         if origin is None:
