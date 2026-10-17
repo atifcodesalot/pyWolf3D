@@ -206,8 +206,8 @@ class WolfGame:
                     150, lambda _: self.calm_player_down())
                 self.music_paused = True
         # placeholder
-        self.game_renderer.weap_sp = self.player.weapon.value * \
-            self.game_renderer.sp_per_weap
+        self.game_renderer.wpn_sp = self.player.weapon.value * \
+            self.game_renderer.sp_per_wpn
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
         if pblock in self.wolfmap.item_lookup:
@@ -236,7 +236,7 @@ class WolfGame:
 
     def shooting_animation_end(self):
         wolflogger.debug("shooting_animation_end called.")
-        self.game_renderer.weap_sp = self.player.weapon.value * 5
+        self.game_renderer.wpn_sp = self.player.weapon.value * 5
         pressed = pygame.key.get_pressed()
         ongoing = pressed[pygame.K_RETURN] or pygame.mouse.get_pressed()[0]
         if ongoing and self.player.has_auto():
@@ -328,7 +328,7 @@ class WolfGame:
         self.player.dec_ammo()
 
         # handle shooting animation
-        old = self.game_renderer.weap_sp
+        old = self.game_renderer.wpn_sp
         rapid = ongoing.real
         if rapid:
             if self.player.weapon.value == 2:
@@ -343,7 +343,7 @@ class WolfGame:
         self.add_animation(Animation(
             None, None, rate, 5-3*rapid, 0,
             endcallback=self.shooting_animation_end, offset=old + 2*rapid),
-            self.game_renderer, "weap_sp")
+            self.game_renderer, "wpn_sp")
         self.handle_hitscan()
 
     # door related methods start here

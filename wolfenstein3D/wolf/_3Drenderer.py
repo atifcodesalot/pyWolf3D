@@ -42,29 +42,26 @@ class Wolf3DRenderer(RayRenderer):
         #
 
     def init_weapon_sprites(self):
-        self.sp_per_weap = 5
-        self.weap_sp = self.player.weapon.value * self.sp_per_weap
+        self.sp_per_wpn = 5
+        self.wpn_sp = self.player.weapon.value * self.sp_per_wpn
         weapons: dict = SPRITES["weapons"]
-        self.weapons = {}
-        for i in weapons:
-            wepspr: Sprite = weapons[i]
-            # transform each weapon sprite to match the screen size
-            scres = self.pgsurface.get_size()
-            wepres = (int(scres[0]*0.7), scres[1])
-            self.weapons[i] = Sprite(wepspr.image.resize(wepres,
-                                                         resample=Image.Resampling.NEAREST))
-            self.wpn_xoffset = (scres[0] - wepres[0]//2) // 2
-            self.wpn_yoffset = scres[1]//3
-            surf = self.weapons[i].surface
-            self.weapons[i].surface = surf.subsurface(
-                (surf.get_width()//4, surf.get_height()//3,
-                 3*surf.get_width()//4, 2*surf.get_height()//3))
+
+        scaled_weapons = [pygame.transform.scale(
+            weapons[k].surface, (self.width*0.7, self.height)) for k in weapons]
+        bound_rects = [surf.get_bounding_rect(
+            min_alpha=1) for surf in scaled_weapons]
+        widest = max(bound_rects, key=lambda r: r.w)
+        longest = max(bound_rects, key=lambda r: r.h)
+        biggest = pygame.Rect(widest.x, longest.y, widest.w, longest.h)
+        self.weapons = dict((i, wpnsurf.subsurface(biggest))
+                            for i, wpnsurf in enumerate(scaled_weapons))
+        self.wpn_off = (self.width - biggest.w) // 2, self.height - biggest.h
 
     def render_weapon(self):
+        wpnsp = self.weapons[self.wpn_sp]
         self.pgsurface.blit(
-            self.weapons[self.weap_sp].surface,
-            (self.wpn_xoffset, self.wpn_yoffset))
-
+            wpnsp,
+            self.wpn_off)
 
     def render_sprites(self):
         # also render actors
