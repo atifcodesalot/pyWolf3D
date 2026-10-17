@@ -15,6 +15,7 @@ Simply clone this repository:
 ```
 git clone https://github.com/atifcodesalot/pyWolf3D
 ```
+change the directory to the root of the project:
 
 ```
 cd pyWolf3D
@@ -73,6 +74,9 @@ The sound engine doesn't do much, apart from attenuation.
 Directional sound is not there yet but I will implement it soon.
 The sound propagation is done via the preprocessed area tiles.
 
+Some of the sound effects, like treasure pickup, were actually synthesized during runtim
+in the original, this version uses .wav files for all sound and .ogg files for music.
+
 ## Credits
 - Code: All of the components, WL1 file parsing, rendering, sound and game logic were implemented by me, AI wasn't used in anyway for code generation.
 - Sprites, sounds: The sprites, sounds of the original were obtained from the internet, sometimes via LLM's (some sprites are relatively obscure)
@@ -80,8 +84,10 @@ The sound propagation is done via the preprocessed area tiles.
 
 ## Resources
 - [game engine black book Wolf3D](https://fabiensanglard.net/gebbwolf3d/) is an awesome book
-and I have read it extensively during developing this clone. Chase state chains, sprite rendering, sound propagation and many other aspects, I understood from this book and enjoyed its every page, it really is truly awesome.
-- 
+and I have read it extensively during the development of this clone. Chase state chains, sprite rendering, sound propagation and many other aspects, I understood from this book and enjoyed its every page, it truly is awesome.
+- https://www.spriters-resource.com/ms_dos/wolfenstein3d/ for the original sprites.
+- https://sounds.spriters-resource.com/ms_dos/wolfenstein3d for general sound effects.
+- https://forum.zdoom.org/viewtopic.php?t=46658 this forum post for adlib sound effects in .wav format.
 
 
 ## Bugs
