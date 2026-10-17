@@ -72,24 +72,24 @@ class WolfItem(Enum):
 
 
 ITEM_SPRITES_MAPPING = {
-    WolfItem.DOGFOOD:  6,  # Dog food
-    WolfItem.GOLDKEY: 20,  # Gold key
-    WolfItem.SILVERKEY: 21,  # Silver key
-    WolfItem.FOOD: 24,  # Food
-    WolfItem.MEDKIT: 25,  # First-aid kit
-    WolfItem.AMMUNITION: 26,  # Ammunition
-    WolfItem.MACHINEGUN: 27,  # Machine gun
-    WolfItem.CHAINGUN: 28,  # Chaingun
-    WolfItem.CROSS: 29,  # Cross
-    WolfItem.CHALICE: 30,  # Chalice
-    WolfItem.TREASURECHEST: 31,  # Treasure chest
-    WolfItem.CROWN: 32,  # Crown
-    WolfItem.EXTRALIFE: 33,  # Extra life
-    WolfItem.BLOODYREMAINS: 34,  # Bloody remains
-    WolfItem.BLOODPOOL: 38,  # Blood pool
+    WolfItem.DOGFOOD:  6,  
+    WolfItem.GOLDKEY: 20, 
+    WolfItem.SILVERKEY: 21,  
+    WolfItem.FOOD: 24, 
+    WolfItem.MEDKIT: 25,  
+    WolfItem.AMMUNITION: 26,  
+    WolfItem.MACHINEGUN: 27, 
+    WolfItem.CHAINGUN: 28,  
+    WolfItem.CROSS: 29,  
+    WolfItem.CHALICE: 30,  
+    WolfItem.TREASURECHEST: 31, 
+    WolfItem.CROWN: 32,  
+    WolfItem.EXTRALIFE: 33, 
+    WolfItem.BLOODYREMAINS: 34,  
+    WolfItem.BLOODPOOL: 38, 
 }
 
-ITEM_AFFECT = {
+ITEM_EFFECT = {
     WolfItem.DOGFOOD: lambda p: p.regain_health(10),
     WolfItem.FOOD: lambda p: p.regain_health(30),
     WolfItem.MEDKIT: lambda p: p.regain_health(50),
