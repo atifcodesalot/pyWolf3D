@@ -72,6 +72,7 @@ class Wolf3DRenderer(RayRenderer):
         for sprite in self.sorted_sprites:
             sprite.project()
             if not self.sprite_is_visible(sprite):
+                sprite.screen_width = None
                 continue
             self.draw_sprite(sprite)
 

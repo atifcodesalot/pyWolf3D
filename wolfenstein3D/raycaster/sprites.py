@@ -11,6 +11,7 @@ class Sprite(Texture):
         self.blocking = blocking
         self.screen_pos = None
         self.projected = None
+        self.screen_width = None
 
     def to_observer_space(self, observer):
         self.obs_space = observer.to_this_space(self.pos)

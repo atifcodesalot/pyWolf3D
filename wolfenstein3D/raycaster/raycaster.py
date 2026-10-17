@@ -1,13 +1,13 @@
 
 
-
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.maps import WolfDoor, WolfPushWall
 from wolfenstein3D.wolf.assets import SIDEDOOR
 import math
 
 # observer class,
-# contains the unit ray directions raycaster uses to cast.
+# mainly contains the unit ray directions raycaster uses to cast,
+# 
 class Observer:
     def __init__(self, pos, map_, look_dir=[1, 0], fov=120, ray_count=200):
         self.pos = list(pos)
@@ -53,16 +53,21 @@ class Raycaster:
 
     def mags_for_step(self, trace, rx, ry, xnn, ynn):
         w = self.observer.map.wall_width
-        # xnn = 2
-        # ynn = 0
+        # if ray direction u is non negative, du remains at right / down,
+        #  and left / up if vice versa
         dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
         dy = w - (trace[1] % w) if ynn else -(trace[1] % w)
 
+        # if the remaining offsets are close to zero,
+        # set them to wall widths in the ray's direction instead
         dx = dx if not self.atol > dx > -self.atol else (xnn - 1) * w
         dy = dy if not self.atol > dy > -self.atol else (ynn - 1) * w
         mags = [dx / rx, dy / ry]
         return mags
-
+    
+    # Making two other separate methods were made,
+    # with performance in mind, for the methods to be unconditional
+    # I don't exactly know if justified
     def mags_for_half_step(self, trace, rx, ry, xnn, ynn, xhalf, yhalf):
         w = self.observer.map.wall_width
         dx = w - (trace[0] % w) if xnn else -(trace[0] % w)
@@ -162,6 +167,7 @@ class Raycaster:
             offset = w - offset
         if offset > w * offset:
             # the ray passes through the opening
+            # never observed to happen
             raise NotImplementedError()
         else:
             return perpd(trace), vert_intercept, cell, True
@@ -229,20 +235,22 @@ class Raycaster:
                     vert,
                     rayctx)
                 if door_hit:
-                    return self.get_perp_dist(trace, cpos), dvert, dcell
+                    return self.get_perp_dist(trace, cpos), dvert, dcell, biased_pos
                 # the ray passes through the opening
-                return None, biased_pos
+                door_opening_block = tuple(vec_add(door_obj.block_pos, vec_mul(
+                    BASIS[door_obj.horiz], sign(rayctx[door_obj.horiz]))))
+                return None, door_opening_block
 
             elif biased_pos in self.observer.map.pushwalls:
                 pushwall = self.observer.map.get_pushwall(biased_pos)
                 pdist, pvert, pcell, pwhit = self.handle_pushwall(
                     cell, trace, pushwall, vert, *rayctx, cpos=cpos)
                 if pwhit:
-                    return pdist, pvert, pcell
+                    return pdist, pvert, pcell, biased_pos
                 return None, biased_pos
 
             # hit non special cell
-            return self.get_perp_dist(trace, cpos), vert, cell
+            return self.get_perp_dist(trace, cpos), vert, cell, biased_pos
         # no hit on an occupied cell
         return None, biased_pos
 
@@ -254,19 +262,21 @@ class Raycaster:
         first_check = False
         #
         m = self.observer.map
+        visited = set({})
         cblock = m.to_block_pos(*camera_pos)
         if cblock in m.doors:
             door_inside: WolfDoor = m.doors[cblock]
             first_check = True
         while True:
             hitinfo = self.ray_step(trace, hw, rayctx, camera_pos)
+            visited.add(hitinfo[-1])
             if hitinfo[0]:
-                dist, vert, cell = hitinfo
+                dist, vert, cell, _ = hitinfo
                 if first_check:
                     if (not door_inside.horiz) ^ vert:
                         cell = SIDEDOOR
                     first_check = False
-                return (dist, trace, vert, cell)
+                return (dist, trace, vert, cell, visited)
             else:
                 if first_check:
                     first_check = False
@@ -287,7 +297,7 @@ class Raycaster:
                 trace[0] + xb, trace[1] + yb)
             visited.append(biased_pos)
             cell = self.observer.map.raw[biased_pos[1]][biased_pos[0]]
-                
+
             if cell < 106:
                 if cell in self.observer.map.DOOR_INDICES:
                     door_obj = self.observer.map.get_door(biased_pos)
@@ -306,22 +316,22 @@ class Raycaster:
 
         return visited
 
-    def render_bird_view(self, colls, pygame, pgsurface):
-        m = self.observer.map
-        ww = m.wall_width
-        for x in range(m.size[0]):
-            for y in range(m.size[1]):
-                if (cell := m.raw[y][x]):
-                    color = (255, 0, 0)
-                    if cell in m.DOOR_INDICES:
-                        color = (0, 255, 0)
-                    elif (x, y) in m.pushwalls:
-                        color = (23, 42, 255)
-                    pygame.draw.rect(pgsurface, color,
-                                     (x*ww, y*ww, ww, ww))
+    # def render_bird_view(self, colls, pygame, pgsurface):
+    #     m = self.observer.map
+    #     ww = m.wall_width
+    #     for x in range(m.size[0]):
+    #         for y in range(m.size[1]):
+    #             if (cell := m.raw[y][x]):
+    #                 color = (255, 0, 0)
+    #                 if cell in m.DOOR_INDICES:
+    #                     color = (0, 255, 0)
+    #                 elif (x, y) in m.pushwalls:
+    #                     color = (23, 42, 255)
+    #                 pygame.draw.rect(pgsurface, color,
+    #                                  (x*ww, y*ww, ww, ww))
 
-        for coll in colls:
-            if coll is not None:
-                pygame.draw.aaline(pgsurface, (255, 255, 255),
-                                   self.observer.pos, coll[0])
-                pygame.draw.circle(pgsurface, (0, 0, 255), coll[0], 2)
+    #     for coll in colls:
+    #         if coll is not None:
+    #             pygame.draw.aaline(pgsurface, (255, 255, 255),
+    #                                self.observer.pos, coll[0])
+    #             pygame.draw.circle(pgsurface, (0, 0, 255), coll[0], 2)

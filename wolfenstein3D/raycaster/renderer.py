@@ -70,23 +70,11 @@ class RayRenderer:
         # map to 0 to len(columns)
         ci = offset / self.wall_width * (tex_src.width - 1)
         return tex_src.get_column(round(ci),
-                              self.repeat, int(height), self.height)
+                                  self.repeat, int(height), self.height)
 
-    def sprite_is_visible(self, sprite) -> bool:
-        o = self.raycaster.observer
-        sprite.get_perp_dist(o)
-        if sprite.perp_dist < 4:
-            return
-        
-        to_sprite = vec_sub(o.pos, sprite.pos)
-        if vec_mag(to_sprite) > self.maxd:
-            # too far away to be visible
-            return False
-        shw = sprite.width // 2
-        vpl = o.vp_length
-        on_vp = vpl + shw > sprite.projected[0] > -vpl - shw
-        in_front = vec_dot(o.look_dir, vec_sub(o.pos, sprite.pos)) > 0
-        return on_vp and in_front
+    def sprite_is_visible(self, sprite: Sprite) -> bool:
+        sblock = sprite.pos[0] // self.wall_width, sprite.pos[1] // self.wall_width
+        return sblock in self.visited
 
     def spcol_visible(self, dist, col_pos):
         w_1 = self.width - 1
@@ -99,6 +87,7 @@ class RayRenderer:
         sch = self.height
         schh = sch // 2
         sprite.to_screen_pos(self)
+        sprite.get_perp_dist(self.raycaster.observer)
 
         height_to_draw = self.distance_to_height(sprite.perp_dist, sprite=True)
         if height_to_draw > 800:
@@ -138,11 +127,13 @@ class RayRenderer:
 
     def render_walls(self, camera_pos, light):
         self.distbuff = []
+        self.visited = set()
         hh = self.height // 2
         dirs = self.raycaster.observer.directions
         cast = 0
         for ray in dirs:
             coll = self.raycaster.raycast(ray, camera_pos)
+            self.visited.update(coll[-1])
             self.distbuff.append(coll[0])
             start = self.repeat * cast
             chh = self.distance_to_height(coll[0]) // 2

@@ -88,7 +88,7 @@ class WolfPlayer(Observer):
         return tuple(front_block), front
 
     def hits_actor(self, actor: Actor, sw):
-        if (sp_sw := getattr(actor.current_sp, "screen_width", None)) is None:
+        if (sp_sw := actor.current_sp.screen_width) is None:
             return False
         htol = sp_sw+5
         return htol > actor.hitpos(sw) > -htol
