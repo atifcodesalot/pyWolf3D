@@ -90,9 +90,17 @@ and I have read it extensively during the development of this clone. Chase state
 - https://forum.zdoom.org/viewtopic.php?t=46658 this forum post for adlib sound effects in .wav format.
 
 
+## Features yet to be implemented
+- Baby difficulty damage reduction
+- Floor finish screen
+- Projectiles, more episode sprites and texture support
+- Hans Grösse sound effects
+- Episode 1 ending animation
+
 ## Bugs
 I have been working on this for some time now, so I decided to just put it out there before it was
 well... perfect. There are some non game breaking (in my opinion :D) bugs that I am aware of and will fix it in the future. If you notice any, let me know.
+
 
 
 
