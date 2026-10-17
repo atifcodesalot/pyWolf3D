@@ -17,7 +17,7 @@ git clone https://github.com/atifcodesalot/pyWolf3D
 ```
 
 ```
-cd wolfenstein3D
+cd pyWolf3D
 ```
 
 Then install the required packages;
