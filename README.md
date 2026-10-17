@@ -1,7 +1,7 @@
 
-# PYWOLF3D
+# pyWolf3D
 
-## What is PYWOLF?
+## What is pyWolf3D?
 PYWOLF3D is a [Wolfenstein 3D](https://en.wikipedia.org/wiki/Wolfenstein_3D) engine, game clone written from scratch in pygame, Python. 
 
 
@@ -13,7 +13,7 @@ I am a huge Doom and Wolfenstein fan so I just decided to rewrite one of the ori
 Simply clone this repository:
 
 ```
-git clone
+git clone https://github.com/atifcodesalot/pyWolf3D
 ```
 
 ```
@@ -26,14 +26,13 @@ For `Windows`:
 
 ```
 py -m pip install -r requirements.txt
-`
+```
 
 
 For `Unix`:
-`
+```
 python3 -m pip install -r requirements.txt
-`
-
+```
 
 Then run;
 
