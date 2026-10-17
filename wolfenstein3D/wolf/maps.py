@@ -220,8 +220,11 @@ class WolfMap:
         del self.sprite_lookup[pos]
 
     def add_item(self, item: WolfItem, pos):
-        effect = ITEM_AFFECT.get(item, None)
+        effect = ITEM_EFFECT.get(item, None)
         itemobj = WolfItemObj(self, item, pos, effect)
+        # dangerous bandaid, fix in the future
+        if itemobj.pos in self.item_lookup:
+            return
         self.item_lookup[itemobj.pos] = itemobj
         self.sprites.append(itemobj.sprite)
         self.sprite_lookup[itemobj.pos] = itemobj.sprite
@@ -338,7 +341,6 @@ class WolfMap:
         secrets = len(self.pushwalls)
         revealed = len([pw for pw in self.pushwalls.values() if pw.slid])
         return self.get_percentage(revealed, secrets)
-        
 
     def get_treasure_percentage(self):
         pass
