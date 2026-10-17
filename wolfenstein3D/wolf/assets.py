@@ -157,7 +157,7 @@ def init_sprites():
 
 
 def init_font():
-    font_size = 30
+    font_size = 20
     global FONT
     FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
 

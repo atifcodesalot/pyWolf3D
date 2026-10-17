@@ -63,6 +63,10 @@ class WolfPlayer(Observer):
 
     def get_current_block(self):
         return self.map.to_block_pos(*self.pos)
+    
+    def get_current_cell(self):
+        pblock = self.map.to_block_pos(*self.pos)
+        return self.map.raw[pblock[1]][pblock[0]]
 
     def get_current_area(self):
         pblock = self.get_current_block()

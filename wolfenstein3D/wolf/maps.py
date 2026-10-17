@@ -322,3 +322,33 @@ class WolfMap:
 
     def set_difficulty(self, new: WolfDifficulty):
         self.difficulty = new
+        
+        
+
+class WolfEpisode:
+    def __init__(self, maps: list[WolfMap], jukebox: list):
+        self.maps = maps
+        self.map_amount = len(self.maps)
+        self.jukebox = jukebox
+        self.link()
+        
+    def get_music(self, level_i):
+        return self.jukebox[level_i]
+        
+    def __iter__(self):
+        return self.maps
+    
+    def __getitem__(self, key):
+        return self.maps[key]
+    
+    def __setitem__(self, key, value):
+        self.maps[key] = value
+    
+    def link(self):
+        for i, map_ in enumerate(self.maps):
+            if i + 1 == self.map_amount:
+                break
+            map_.nextmap = self.maps[i + 1]
+        # link the secret's next to m2
+        self[-1].nextmap = self[1]
+        

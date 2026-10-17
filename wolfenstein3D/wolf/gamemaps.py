@@ -1,5 +1,5 @@
 
-from wolfenstein3D.wolf.maps import WolfMap, WolfDifficulty
+from wolfenstein3D.wolf.maps import WolfMap, WolfDifficulty, WolfEpisode
 from wolfenstein3D.wolf.actors import *
 from wolfenstein3D.wolf.assets import SPRITES, ASSETS_PATH
 from wolfenstein3D.wolf.game_objects import *

@@ -37,6 +37,17 @@ class WolfMenuRenderer:
         self.screen.blit(text_surf, (400 - text_surf.get_width() //
                          2, 400 - text_surf.get_height() // 2))
 
+    def render_control_instructions(self):
+        instructions = ["Use W and S to move, A and D to look left and right, and ENTER to shoot. ",
+                       "You can also use the mouse to look around and shoot with the left mouse button. "]
+        y_offset = 500
+
+        for instruction in instructions:
+            text_surf = FONT.render(instruction, True, (255, 255, 255))
+            self.screen.blit(text_surf, (400 - text_surf.get_width() //
+                             2, y_offset - text_surf.get_height() // 2))
+            y_offset += text_surf.get_height() + 5
+
     def change_menu(self, menu: WolfMenu):
         self.current_menu = menu
 
@@ -63,15 +74,14 @@ class WolfMenuRenderer:
             f"PYWOLF Version: {self.version}", True, True, (255, 255, 255))
         self.screen.blit(version_surf, (10, 10))
 
-    def load_shareware_maps(self):
-        global SHAREWAREMAPS
-        SHAREWAREMAPS = []
+    def load_shareware_episode(self):
+        shareware_maps = []
         mapgen = get_shareware_maps()
         i = 0
         while True:
             try:
                 wolfmap = next(mapgen)
-                SHAREWAREMAPS.append(wolfmap)
+                shareware_maps.append(wolfmap)
             except StopIteration:
                 self.loading = False
                 break
@@ -79,14 +89,26 @@ class WolfMenuRenderer:
             self.render(loading=f"shareware map {i} from {SHAREWARE_PATH}")
             pygame.display.flip()
             i += 1
-        for i, map_ in enumerate(SHAREWAREMAPS):
-            if i == len(SHAREWAREMAPS)-1:
-                break
-            map_.nextmap = SHAREWAREMAPS[i+1]
+
+        shareware_jukebox = {
+            0: "level1_5.ogg",
+            1: "level2_6.ogg",
+            2: "level3_7.ogg",
+            3: "level4_8.ogg",
+            4: "level1_5.ogg",
+            5: "level2_6.ogg",
+            6: "level3_7.ogg",
+            7: "level4_8.ogg",
+            8: None,
+            9: "secret.ogg"
+        }
+
+        return WolfEpisode(shareware_maps, shareware_jukebox)
 
     def render(self, loading=None):
         self.screen.fill(self.BG_COLOR)
         self.render_version()
+        self.render_control_instructions()
         if self.loading:
             return self.render_loading_screen(loading)
 
@@ -111,7 +133,7 @@ class WolfMenuRenderer:
 
     def run(self):
         self.loading = True
-        self.load_shareware_maps()
+        shareware_episode = self.load_shareware_episode()
         self.loading = False
         choice = None
         while choice is None:
@@ -119,8 +141,8 @@ class WolfMenuRenderer:
             choice = self.handle_input()
             pygame.display.flip()
         game = WolfGame(
-            SHAREWAREMAPS[0], WolfDifficulty(choice), 
-            self.screen, sound_off=False, framerate=75)
+            shareware_episode, WolfDifficulty(choice),
+            self.screen, sound_off=True, framerate=75)
         game.mainloop()
 
 

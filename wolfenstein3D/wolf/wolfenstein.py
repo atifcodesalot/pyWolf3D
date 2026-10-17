@@ -8,8 +8,11 @@ from wolfenstein3D.wolf._3Drenderer import Wolf3DRenderer, PointLight
 from wolfenstein3D.wolf._2Drenderer import Wolf2DRenderer
 from wolfenstein3D.wolf import wolflogger, pygame
 from wolfenstein3D.wolf.game_objects import WEAPON_SOUND
+
 import time
 
+
+SECRET_TILE = 107
 
 class Animation:
     def __init__(self, obj, target_attr: str, duration,
@@ -41,23 +44,12 @@ class Animation:
 
 
 class WolfGame:
-    jukebox = {
-        0: "level1_5.ogg",
-        1: "level2_6.ogg",
-        2: "level3_7.ogg",
-        3: "level4_8.ogg",
-        4: "level1_5.ogg",
-        5: "level2_6.ogg",
-        6: "level3_7.ogg",
-        7: "level4_8.ogg",
-        8: None,
-        9: "secret.ogg"
-    }
-
-    def __init__(self, map_: WolfMap, difficulty: WolfDifficulty, root_display, framerate=60,
+    def __init__(self, episode: WolfEpisode, difficulty: WolfDifficulty, root_display, framerate=60,
                  sound_off=False, noclip=False, ):
-        self.wolfmap = map_
+        self.episode = episode
         self.difficulty = difficulty
+        self.begin_episode()
+        
         self.player = WolfPlayer(self, ray_count=160, fov=54)
         self.init_renderers(root_display)
 
@@ -103,6 +95,10 @@ class WolfGame:
 
         music = self.get_music()
         self.sound_manager.play_music(music)
+        
+    def begin_episode(self):
+        self.wolfmap = self.episode[0]
+        self.jukebox = self.episode.jukebox
 
     def init_keymappings(self):
         self.key_mappings = {
@@ -185,6 +181,7 @@ class WolfGame:
                 self.schedule_sound_effect(slidesnd, None, 5)
 
         elif self.wolfmap.cell_is_elevator(fcell):
+            # check the player tile for secret floor
             self.floor_fin = True
 
         else:
@@ -521,8 +518,17 @@ class WolfGame:
 
     def floor_end(self):
         # add floor end menu later
-        self.wolfmap = self.wolfmap.nextmap
+        #
+        # check for the tile player is on,
+        # if it is 107, go to the secret level
+        pblock = self.player.get_current_block()
+        if pblock[0] == 10:
+            self.wolfmap = self.episode[-1]
+        else:
+            self.wolfmap = self.wolfmap.nextmap
         self.init_map()
+        self.player.has_gold_key = False
+        self.player.has_silver_key = False
         self.floor_fin = False
 
     def life_end(self):
