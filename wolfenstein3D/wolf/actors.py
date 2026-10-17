@@ -103,6 +103,7 @@ class DyingState(ActorState):
         if self.actor.drop is not None:
             game_ctx.wolfmap.add_item(self.actor.drop,
                                       vec_add(self.actor.pos, (2, 0)))
+        game_ctx.player.score += 100
         self.actor.flush_occupancy()
 
 
