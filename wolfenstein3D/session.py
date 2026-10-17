@@ -142,7 +142,7 @@ class WolfMenuRenderer:
             pygame.display.flip()
         game = WolfGame(
             shareware_episode, WolfDifficulty(choice),
-            self.screen, sound_off=True, framerate=75)
+            self.screen, sound_off=False, framerate=75)
         game.mainloop()
 
 
