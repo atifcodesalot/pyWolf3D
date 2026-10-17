@@ -6,7 +6,7 @@ PYWOLF3D is a [Wolfenstein 3D](https://en.wikipedia.org/wiki/Wolfenstein_3D) eng
 
 
 ## Why?
-I am a huge Doom and Wolfenstein fan so I just decided to rewrite one of the originals myself.:sunglasses:. It was mostly for fun and learning. 
+I am a huge Doom and Wolfenstein fan so I just decided to rewrite one of the originals myself :sunglasses:. It was mostly for fun and learning. 
 
 
 ## How to play?
@@ -14,7 +14,7 @@ Simply clone this repository:
 
 ```
 git clone
-
+```
 
 ```
 cd wolfenstein3D
@@ -24,15 +24,15 @@ Then install the required packages;
 
 For `Windows`:
 
-``` 
-py -m pip install -r requirements.txt
 ```
+py -m pip install -r requirements.txt
+`
 
 
 For `Unix`:
-``` 
+`
 python3 -m pip install -r requirements.txt
-```
+`
 
 
 Then run;
@@ -45,7 +45,7 @@ py -m wolfenstein3D
 
 For `Unix`:
 
-``` 
+```
 python3 -m wolfenstein3D
 ```
 
