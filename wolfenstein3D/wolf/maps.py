@@ -170,6 +170,8 @@ class WolfMap:
         # since patrol values are sparse, hashmaps are better
         self.patrol_lookup = {}
 
+        self.init_treasure_count = 0
+
     def cell_is_door(self, cell):
         return cell in self.DOOR_INDICES
 
@@ -242,7 +244,7 @@ class WolfMap:
             self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
         else:
             self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
-            
+
     def init_actor_lookup(self):
         for act in self.get_actors():
             self.actor_lookup[tuple(act.pos)] = act
@@ -322,8 +324,25 @@ class WolfMap:
 
     def set_difficulty(self, new: WolfDifficulty):
         self.difficulty = new
+
+    @staticmethod
+    def get_percentage(nom, denom):
+        return round((nom / denom)*100)
+
+    def get_kill_percentage(self):
+        actors = self.get_actors()
+        killed = len([act for act in actors if act.is_dead()])
+        return self.get_percentage(killed, len(actors))
+
+    def get_secret_percentage(self):
+        secrets = len(self.pushwalls)
+        revealed = len([pw for pw in self.pushwalls.values() if pw.slid])
+        return self.get_percentage(revealed, secrets)
         
-        
+
+    def get_treasure_percentage(self):
+        pass
+
 
 class WolfEpisode:
     def __init__(self, maps: list[WolfMap], jukebox: list):
@@ -331,19 +350,19 @@ class WolfEpisode:
         self.map_amount = len(self.maps)
         self.jukebox = jukebox
         self.link()
-        
+
     def get_music(self, level_i):
         return self.jukebox[level_i]
-        
+
     def __iter__(self):
         return self.maps
-    
+
     def __getitem__(self, key):
         return self.maps[key]
-    
+
     def __setitem__(self, key, value):
         self.maps[key] = value
-    
+
     def link(self):
         for i, map_ in enumerate(self.maps):
             if i + 1 == self.map_amount:
@@ -351,4 +370,3 @@ class WolfEpisode:
             map_.nextmap = self.maps[i + 1]
         # link the secret's next to m2
         self[-1].nextmap = self[1]
-        

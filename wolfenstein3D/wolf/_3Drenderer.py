@@ -33,7 +33,7 @@ class Wolf3DRenderer(RayRenderer):
         self.heartbeats = 0
         self.rgb_offset = [0, 0, 0]
         # in heartbeats
-        self.glow_duration = 16
+        self.glow_duration = 22
         self.glow_cycle = 0
 
         # for fizzle fade

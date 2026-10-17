@@ -99,7 +99,10 @@ class WolfGame:
     def begin_episode(self):
         self.wolfmap = self.episode[0]
         self.jukebox = self.episode.jukebox
-
+        
+    def begin_life(self):
+        self.start_time = time.monotonic()
+        
     def init_keymappings(self):
         self.key_mappings = {
             pygame.K_w: self.move_player,
@@ -182,6 +185,7 @@ class WolfGame:
 
         elif self.wolfmap.cell_is_elevator(fcell):
             # check the player tile for secret floor
+            self.end_time = time.monotonic()
             self.floor_fin = True
 
         else:
@@ -479,6 +483,7 @@ class WolfGame:
         self.render_game()
         game_screen = self.game_renderer.pgsurface
         self.renderer.heartbeat(game_screen, self.player)
+        self.root_display.blit(self.renderer.pgsurf, (0, 0))
 
     def heartbeat(self):
         self.heartbeats += 1
@@ -507,9 +512,11 @@ class WolfGame:
     def mainloop(self):
         self.ongoing = True
         self.init_map()
+        self.begin_life()
+        self.render()
+        self.renderer.fade(self.root_display)
         while self.ongoing:
             self.heartbeat()
-            self.root_display.blit(self.renderer.pgsurf, (0, 0))
             pygame.display.flip()
             if self.player.is_dead():
                 self.life_end()
@@ -517,8 +524,13 @@ class WolfGame:
                 self.floor_end()
 
     def floor_end(self):
-        # add floor end menu later
-        #
+        # in seconds
+        completion_time = self.end_time - self.start_time
+        end_duration = 1000
+        self.renderer.fade(self.root_display, out=True)
+        while end_duration != 0:
+            self.renderer.render_floor_end(completion_time)
+            end_duration -= 1
         # check for the tile player is on,
         # if it is 107, go to the secret level
         pblock = self.player.get_current_block()
@@ -530,6 +542,8 @@ class WolfGame:
         self.player.has_gold_key = False
         self.player.has_silver_key = False
         self.floor_fin = False
+        self.render()
+        self.renderer.fade(self.root_display)
 
     def life_end(self):
         self.player.excited_to_kill_nazis = False

@@ -57,9 +57,9 @@ class WolfGameTest(unittest.TestCase):
                 self.assertEqual(len(actor.sprites[0].image.getdata()), 64*64)
 
     def test_quick(self):
-        mymap = SHAREWARE_MAPS[-2]
+        mymap = SHAREWARE_MAPS[3]
         screen = pygame.display.set_mode((680, 600))
-        game = WolfGame(mymap, root_display=screen,
+        game = WolfGame(mymap, WolfDifficulty.DEATHINCARNATE, root_display=screen,
                         sound_off=False, noclip=False, framerate=75)
         raycaster = game.game_renderer.raycaster
         self.assertEqual(raycaster.observer.pos, game.player.pos)
@@ -105,7 +105,7 @@ class WolfGameTest(unittest.TestCase):
 
 if __name__ == '__main__':
     # uncomment to profile
-    # with cProfile.Profile() as pr:
-    unittest.main(exit=False)
+    with cProfile.Profile() as pr:
+        unittest.main(exit=False)
 
-    # pr.dump_stats("wolf.prof")
+    pr.dump_stats("wolf.prof")

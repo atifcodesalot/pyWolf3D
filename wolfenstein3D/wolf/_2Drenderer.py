@@ -1,5 +1,7 @@
 
 
+import time
+
 from wolfenstein3D.wolf import pygame
 from wolfenstein3D.wolf.assets import (
     STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS)
@@ -131,3 +133,26 @@ class Wolf2DRenderer:
 
     def clear_game_screen(self):
         self.pgsurf.fill(self.WHITE, rect=self.game_rect)
+
+    def fade(self, root_display, out=False):
+        blacked = pygame.Surface(root_display.get_size())
+        blacked.fill(self.BLACK)
+        alpha = 0 if out else 255
+        acc = 1 if out else -1 
+
+        while True:
+            blacked.set_alpha(alpha)
+            root_display.blit(self.pgsurf, (0, 0))
+            root_display.blit(blacked, (0, 0))
+            pygame.display.flip()
+            alpha += acc
+            
+            if out and alpha > 255:
+                break
+            elif not out and alpha < 0:
+                break 
+            time.sleep(0.001)
+        root_display.blit(self.pgsurf, (0, 0))
+
+    def render_floor_end(self, time_budget):
+        pass
