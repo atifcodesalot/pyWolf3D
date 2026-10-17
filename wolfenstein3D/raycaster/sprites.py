@@ -1,18 +1,16 @@
 
 
-from wolfenstein3D.raycaster.textures import Texture, pygame, Image
+from wolfenstein3D.raycaster.textures import Texture, Image
 from wolfenstein3D.raycaster.aux_math import vec_add, vec_dot, vec_sub
 
 
 class Sprite(Texture):
-    def __init__(self, image: Image.Image, pos=None, blocking=None, actor_sprite=False):
+    def __init__(self, image: Image.Image, pos=None, blocking=None):
         super().__init__(image)
         self.pos = pos
         self.blocking = blocking
-        self.actor_sprite = actor_sprite
         self.screen_pos = None
         self.projected = None
-        
 
     def to_observer_space(self, observer):
         self.obs_space = observer.to_this_space(self.pos)
@@ -28,8 +26,9 @@ class Sprite(Texture):
         observer = renderer.raycaster.observer
         vpl = observer.vp_length
         # transform to screen position
-        self.screen_pos = ((self.projected[0] + vpl) / (2*vpl)) * renderer.width
-    
+        self.screen_pos = (
+            (self.projected[0] + vpl) / (2*vpl)) * renderer.width
+
     def get_perp_dist(self, observer):
         to_self = vec_sub(observer.pos, self.pos)
         self.perp_dist = vec_dot(to_self, observer.look_dir)
@@ -40,16 +39,6 @@ class Sprite(Texture):
     def get_column(self, i, repeat, height, screen_height):
         scaled = self.scale_column(
             self.columns[i], repeat, height, screen_height)
-        return scaled
-
-    def get_scaled(self, width, height, screen_height):
-        width = int(width)
-        height = int(height)
-        if (width, height) in self.scale_cache:
-            return self.scale_cache[(width, height)]
-        scaled = self.scale_column(
-            self.surface, width, height, screen_height)
-        self.scale_cache[(width, height)] = scaled
         return scaled
 
     def copy(self, pos):

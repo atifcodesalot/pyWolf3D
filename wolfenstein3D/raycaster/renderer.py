@@ -96,8 +96,8 @@ class RayRenderer:
         return self.distbuff[int(col_pos // self.repeat)] > dist
 
     def draw_sprite(self, sprite: Sprite):
-        h = self.height
-        hh = h // 2
+        sch = self.height
+        schh = sch // 2
         sprite.to_screen_pos(self)
 
         height_to_draw = self.distance_to_height(sprite.perp_dist, sprite=True)
@@ -109,17 +109,17 @@ class RayRenderer:
         skip = sprite.width / width_to_draw
         visible_height = min(self.height, height_to_draw)
 
-        r = self.repeat
+        rep = self.repeat
 
-        ystart = hh - visible_height // 2
-        xstart = sprite.screen_pos - (width_to_draw // 2) * r
+        ystart = schh - visible_height // 2
+        xstart = sprite.screen_pos - (width_to_draw // 2) * rep
 
         for i in range(int(width_to_draw)):
-            col_pos = xstart + (i * r)
+            col_pos = xstart + (i * rep)
             if not self.spcol_visible(sprite.perp_dist, col_pos):
                 continue
             column = sprite.get_column(
-                int(i*skip), r, height_to_draw, h)
+                int(i*skip), rep, height_to_draw, sch)
             self.pgsurface.blit(
                 column, (col_pos, ystart))
 

@@ -22,8 +22,6 @@ class Texture:
             for x in range(self.width)
         ]
 
-        self.shade_cache = {}
-
     def scale_column(self, column, repeat, height, screen_height):
         if height > screen_height:
             # clip before scaling
