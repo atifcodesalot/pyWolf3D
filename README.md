@@ -13,7 +13,7 @@ I am a huge Doom and Wolfenstein fan so I just decided to rewrite one of the ori
 
 
 ## Code authorship
-All code present in this project was written by me, without AI code generation or coding agents. AI tools were used for discussion, research, and help locating existing game assets and resources. The implementation, including map parsing, rendering, actor behavior, and game logic is entirely my own work.
+All code present in this project was written by me, without AI code generation or coding agents. AI tools were used for discussion, research, and help locating existing game assets and resources. The implementation, including map parsing, rendering, actor behavior, and game logic is entirely my own work. But don't take my word for it: https://isvibecoded.com/.
 
 
 ## How to play?
