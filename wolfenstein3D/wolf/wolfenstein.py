@@ -75,6 +75,8 @@ class WolfGame:
         if sound_off:
             self.sound_manager.set_master(0)
 
+        self.new_floor = False
+        self.new_life = False
         self.floor_fin = False
         self.music_paused = False
 
@@ -101,7 +103,7 @@ class WolfGame:
         self.wolfmap = self.episode[0]
         self.jukebox = self.episode.jukebox
 
-    def begin_life(self):
+    def start_timer(self):
         self.start_time = time.monotonic()
 
     def init_keymappings(self):
@@ -517,25 +519,35 @@ class WolfGame:
     def mainloop(self):
         self.ongoing = True
         self.init_map()
-        self.begin_life()
+        self.start_timer()
         self.render()
         self.renderer.fade(self.root_display)
         while self.ongoing:
             self.heartbeat()
             pygame.display.flip()
-            if self.player.is_dead():
-                self.life_end()
-            elif self.floor_fin:
-                self.floor_end()
+            self.check_flags()
+    
+    
+    def check_flags(self):
+        if self.new_life:
+            self.life_start()
+        elif self.new_floor:
+            self.floor_start()                
+        elif self.floor_fin:
+            self.floor_end()
+        elif self.player.is_dead():
+            self.life_end()
 
     def floor_end(self):
         # in seconds
         completion_time = self.end_time - self.start_time
-        end_duration = 1000
+        end_duration = 0
         self.renderer.fade(self.root_display, out=True)
-        while end_duration != 0:
-            self.renderer.render_floor_end(completion_time)
-            end_duration -= 1
+        while end_duration < 1000:
+            self.renderer.render_floor_end(end_duration,
+                                           self.wolfmap, completion_time, self.root_display)
+            end_duration += 1
+            time.sleep(0.01)
         # check for the tile player is on,
         # if it is 107, go to the secret level
         pblock = self.player.get_current_block()
@@ -546,9 +558,15 @@ class WolfGame:
         self.init_map()
         self.player.has_gold_key = False
         self.player.has_silver_key = False
+        
         self.floor_fin = False
+        self.new_floor = True
+
+    def floor_start(self):
+        self.new_floor = False
         self.render()
         self.renderer.fade(self.root_display)
+        self.start_timer()
 
     def life_end(self):
         self.player.excited_to_kill_nazis = False
@@ -569,13 +587,19 @@ class WolfGame:
         self.player.reset()
         self.wolfmap.reset()
         self.game_renderer.glow = False
+        self.new_life = True
         time.sleep(0.6)
+        
+    def life_start(self):
+        self.new_life = False
         if self.player.lives == 0:
             return self.game_end()
         self.game_renderer.unfizzle(
             self.root_display, update_dest=self.renderer.game_off)
         music = self.get_music()
         self.sound_manager.play_music(music)
+        self.start_timer()
 
     def game_end(self):
+        # placeholder
         exit("game over!")
