@@ -98,7 +98,7 @@ and I have read it extensively during the development of this clone. Chase state
 
 
 ## Features yet to be implemented
-- Baby difficulty damage reduction
+- ~Baby difficulty damage reduction~ done
 - Floor finish screen
 - Projectiles, more episode sprites and texture support
 - Hans Grösse sound effects
