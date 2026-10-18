@@ -523,16 +523,15 @@ class WolfGame:
         self.render()
         self.renderer.fade(self.root_display)
         while self.ongoing:
+            self.check_flags()
             self.heartbeat()
             pygame.display.flip()
-            self.check_flags()
-    
-    
+
     def check_flags(self):
         if self.new_life:
             self.life_start()
         elif self.new_floor:
-            self.floor_start()                
+            self.floor_start()
         elif self.floor_fin:
             self.floor_end()
         elif self.player.is_dead():
@@ -558,7 +557,7 @@ class WolfGame:
         self.init_map()
         self.player.has_gold_key = False
         self.player.has_silver_key = False
-        
+
         self.floor_fin = False
         self.new_floor = True
 
@@ -589,7 +588,7 @@ class WolfGame:
         self.game_renderer.glow = False
         self.new_life = True
         time.sleep(0.6)
-        
+
     def life_start(self):
         self.new_life = False
         if self.player.lives == 0:
