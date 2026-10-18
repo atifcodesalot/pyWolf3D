@@ -160,6 +160,8 @@ def init_font():
     font_size = 20
     global FONT
     FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
+    global BIGGERFONT
+    BIGGERFONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size+20)
 
 
 def init_sounds(root=SOUND_PATH, depth=0):

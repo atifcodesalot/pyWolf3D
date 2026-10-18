@@ -4,7 +4,8 @@ import time
 
 from wolfenstein3D.wolf import pygame
 from wolfenstein3D.wolf.assets import (
-    STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS)
+    STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS, BIGGERFONT)
+from wolfenstein3D.wolf.maps import WolfMap
 
 
 class Wolf2DRenderer:
@@ -138,7 +139,7 @@ class Wolf2DRenderer:
         blacked = pygame.Surface(root_display.get_size())
         blacked.fill(self.BLACK)
         alpha = 0 if out else 255
-        acc = 1 if out else -1 
+        acc = 1 if out else -1
 
         while True:
             blacked.set_alpha(alpha)
@@ -146,13 +147,36 @@ class Wolf2DRenderer:
             root_display.blit(blacked, (0, 0))
             pygame.display.flip()
             alpha += acc
-            
+
             if out and alpha > 255:
                 break
             elif not out and alpha < 0:
-                break 
+                break
             time.sleep(0.001)
         root_display.blit(self.pgsurf, (0, 0))
+        
+    @staticmethod
+    def seconds_to_time(seconds: int) -> pygame.Surface:
+        minutes = round(seconds / 60)
+        remainder = round(seconds % 60)
+        return BIGGERFONT.render(f"TIME: {minutes}:{remainder}", True, "#04b5b7")
 
-    def render_floor_end(self, time_budget):
-        pass
+    def render_floor_end(self, elapsed, wolfmap: WolfMap, completion_time, root_display):
+        color = "#04b5b7"
+        rw, rh = root_display.get_size()
+        stats_off = (rw//3, rh//2)
+        floor = BIGGERFONT.render(
+            f"FLOOR {wolfmap.map_id + 1} COMPLETED", True, color)
+        kill_ratio = BIGGERFONT.render(
+            f"KILLS: {wolfmap.get_kill_percentage()}%", True, color)
+        secret_ratio = BIGGERFONT.render(
+            f"SECRETS: % {wolfmap.get_secret_percentage()}%", True, color)
+        ctime = self.seconds_to_time(completion_time)
+        stats = [kill_ratio, secret_ratio, ctime]
+        _50_i = elapsed // 50
+        self.pgsurf.fill(self.bgcolor)
+        self.pgsurf.blit(floor, (stats_off[0], stats_off[1] - 100))
+        for i in range(min(_50_i, len(stats))):
+            self.pgsurf.blit(stats[i], (stats_off[0], stats_off[1] + 50*i))
+        root_display.blit(self.pgsurf, (0, 0))
+        pygame.display.flip()
