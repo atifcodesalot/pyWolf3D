@@ -154,29 +154,41 @@ class Wolf2DRenderer:
                 break
             time.sleep(0.001)
         root_display.blit(self.pgsurf, (0, 0))
-        
+
     @staticmethod
     def seconds_to_time(seconds: int) -> pygame.Surface:
         minutes = round(seconds / 60)
         remainder = round(seconds % 60)
-        return BIGGERFONT.render(f"TIME: {minutes}:{remainder}", True, "#04b5b7")
+        return BIGGERFONT.render(f"TIME: {minutes:02d}:{remainder:02d}", True, "#04b5b7")
 
     def render_floor_end(self, elapsed, wolfmap: WolfMap, completion_time, root_display):
         color = "#04b5b7"
         rw, rh = root_display.get_size()
         stats_off = (rw//3, rh//2)
-        floor = BIGGERFONT.render(
+        stat_start = [100, 200, 300]
+
+        killperc = wolfmap.get_kill_percentage()
+        if 200 < elapsed < 300:
+            killperc = min(elapsed % 200, killperc)
+
+        secretperc = wolfmap.get_secret_percentage()
+        if 300 < elapsed < 400:
+            secretperc = min(elapsed % 300, secretperc)
+
+        killsurf = BIGGERFONT.render(
+            f"KILLS: {killperc}%", True, color)
+        secretsurf = BIGGERFONT.render(
+            f"SECRETS: {secretperc}%", True, color)
+        ctimesurf = self.seconds_to_time(completion_time)
+
+        stats = [ctimesurf, killsurf, secretsurf]
+
+        floorsurf = BIGGERFONT.render(
             f"FLOOR {wolfmap.map_id + 1} COMPLETED", True, color)
-        kill_ratio = BIGGERFONT.render(
-            f"KILLS: {wolfmap.get_kill_percentage()}%", True, color)
-        secret_ratio = BIGGERFONT.render(
-            f"SECRETS: % {wolfmap.get_secret_percentage()}%", True, color)
-        ctime = self.seconds_to_time(completion_time)
-        stats = [kill_ratio, secret_ratio, ctime]
-        _50_i = elapsed // 50
         self.pgsurf.fill(self.bgcolor)
-        self.pgsurf.blit(floor, (stats_off[0], stats_off[1] - 100))
-        for i in range(min(_50_i, len(stats))):
-            self.pgsurf.blit(stats[i], (stats_off[0], stats_off[1] + 50*i))
+        self.pgsurf.blit(floorsurf, (stats_off[0], stats_off[1] - 100))
+        for i, sstart in enumerate(stat_start):
+            if elapsed > sstart:
+                self.pgsurf.blit(stats[i], (stats_off[0], stats_off[1] + 50*i))
         root_display.blit(self.pgsurf, (0, 0))
         pygame.display.flip()
