@@ -16,6 +16,7 @@ class WolfSoundEffect:
     origin: tuple
     volume: float
     channel: pygame.mixer.Channel
+    repeat: bool
 
 
 class WolfSoundManager:
@@ -26,6 +27,7 @@ class WolfSoundManager:
         self.playing_effects = []
         self.heartbeats = 0
         self.channel_count = pygame.mixer.get_num_channels()
+        self.norepeat_channel = pygame.mixer.Channel(0)
 
     def cap_volume(self, vol):
         # cap to master
@@ -45,16 +47,24 @@ class WolfSoundManager:
         level = self.cap_volume(self.attenuate_func(dist))
         return level
 
-    def queue_sound_effect(self, snd: pygame.mixer.Sound, origin, game_ctx, _time):
-        sndeff = WolfSoundEffect(snd, origin, None, None)
+    def already_in_queue(self, snd: pygame.mixer.Sound):
+        return snd in self.sndeff_queue
+    
+    def already_playing(self, snd: pygame.mixer.Sound):
+        return snd.get_num_channels() > 0
+
+    def queue_sound_effect(self, snd: pygame.mixer.Sound, 
+                           origin, game_ctx, _time, repeat=True):
+            
+        sndeff = WolfSoundEffect(snd, origin, None, None, repeat=repeat)
         sndeff.volume = self.attenuate(origin, game_ctx)
-        future = game_ctx.heartbeats +_time
+        future = game_ctx.heartbeats + _time
         while future in self.sndeff_queue:
             future += 1
         self.sndeff_queue[future] = sndeff
 
     def handle_queue(self, game_ctx):
-        now = game_ctx.heartbeats 
+        now = game_ctx.heartbeats
         if now not in self.sndeff_queue:
             return
         sndeff = self.sndeff_queue.pop(now)
@@ -71,10 +81,17 @@ class WolfSoundManager:
                 self.playing_effects.remove(sndeff)
 
     def start_sound_effect(self, sndeff):
-        ch = sndeff.snd.play()
-        if ch is None:
-            ch = pygame.mixer.find_channel(force=True)
-        sndeff.channel = ch
+        if not sndeff.repeat:
+            if self.norepeat_channel.get_busy():
+                self.norepeat_channel.stop()
+            self.norepeat_channel.play(sndeff.snd)
+            sndeff.channel = self.norepeat_channel
+            self.norepeat_channel.play(sndeff.snd)
+        else:
+            ch = sndeff.snd.play()
+            if ch is None:
+                ch = pygame.mixer.find_channel(force=True)
+            sndeff.channel = ch
         # cap to master before playing
         sndeff.channel.set_volume(self.master)
         # add to the playing sounds
@@ -84,13 +101,13 @@ class WolfSoundManager:
         pygame.mixer.music.load(SOUNDS["music"][piece])
         pygame.mixer.music.set_volume(self.music_vol)
         pygame.mixer.music.play(loops=-1)
-        
+
     def stop_music(self):
         pygame.mixer.music.stop()
-        
+
     def pause_music(self):
         pygame.mixer.music.pause()
-        
+
     def continue_music(self):
         pygame.mixer.music.unpause()
 

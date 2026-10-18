@@ -204,7 +204,7 @@ class WolfItemObj:
 
     def pickup(self, game_ctx):
         if self.pickupsnd is not None:
-            game_ctx.schedule_sound_effect(self.pickupsnd, None, 1)
+            game_ctx.schedule_sound_effect(self.pickupsnd, None, 1, repeat=False)
         self.affect(game_ctx)
         glow = (0, 1, 2) if self.is_health_item or self.is_weap_item else (0, 1)
         game_ctx.game_renderer.glow = glow

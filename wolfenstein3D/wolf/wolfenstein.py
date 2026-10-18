@@ -14,6 +14,7 @@ import time
 
 SECRET_TILE = 107
 
+
 class Animation:
     def __init__(self, obj, target_attr: str, duration,
                  frame_count, shapenum=0, endcallback=None, offset=0):
@@ -49,7 +50,7 @@ class WolfGame:
         self.episode = episode
         self.difficulty = difficulty
         self.begin_episode()
-        
+
         self.player = WolfPlayer(self, ray_count=160, fov=54)
         self.init_renderers(root_display)
 
@@ -95,14 +96,14 @@ class WolfGame:
 
         music = self.get_music()
         self.sound_manager.play_music(music)
-        
+
     def begin_episode(self):
         self.wolfmap = self.episode[0]
         self.jukebox = self.episode.jukebox
-        
+
     def begin_life(self):
         self.start_time = time.monotonic()
-        
+
     def init_keymappings(self):
         self.key_mappings = {
             pygame.K_w: self.move_player,
@@ -443,8 +444,9 @@ class WolfGame:
             future += 1
         self.game_events[future] = action
 
-    def schedule_sound_effect(self, snd, origin, _time):
-        self.sound_manager.queue_sound_effect(snd, origin, self, _time)
+    def schedule_sound_effect(self, snd, origin, _time, repeat=True):
+        self.sound_manager.queue_sound_effect(
+            snd, origin, self, _time, repeat=repeat)
 
     def handle_game_events(self):
         if not self.heartbeats in self.game_events:
