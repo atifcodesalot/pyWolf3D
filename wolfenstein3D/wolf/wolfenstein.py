@@ -307,6 +307,9 @@ class WolfGame:
         if d >= 4:
             divider = 16
         inflicted = diceroll / divider
+        if self.difficulty is WolfDifficulty.BABY:
+            # take it easy
+            inflicted /= 4
         return int(inflicted)
 
     def handle_shooting(self, ongoing=False):
