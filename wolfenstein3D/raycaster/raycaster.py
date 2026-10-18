@@ -170,7 +170,7 @@ class Raycaster:
             # never observed to happen
             raise NotImplementedError()
         else:
-            return perpd(trace), vert_intercept, cell, True
+            return perpd(trace, cpos), vert_intercept, cell, True
 
     def get_perp_dist(self, trace, camera_pos):
         to_trace = vec_sub(camera_pos, trace)
