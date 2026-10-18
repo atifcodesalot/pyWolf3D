@@ -12,6 +12,10 @@ PYWOLF3D is a [Wolfenstein 3D](https://en.wikipedia.org/wiki/Wolfenstein_3D) eng
 I am a huge Doom and Wolfenstein fan so I just decided to rewrite one of the originals myself :sunglasses:. It was mostly for fun and learning. 
 
 
+## Code authorship
+All code present in this project was written by me, without AI code generation or coding agents. AI tools were used for discussion, research, and help locating existing game assets and resources. The implementation, including map parsing, rendering, actor behavior, and game logic is entirely my own work.
+
+
 ## How to play?
 Simply clone this repository:
 
@@ -81,7 +85,7 @@ Some of the sound effects, like treasure pickup, were actually synthesized durin
 in the original, this version uses .wav files for all sound and .ogg files for music.
 
 ## Credits
-- Code: All of the components, WL1 file parsing, rendering, sound and game logic were implemented by me, AI wasn't used in anyway for code generation.
+- Code: All of the components, WL1 file parsing, rendering, sound and game logic were implemented by me, as mentioned; AI wasn't used in anyway for code generation.
 - Sprites, sounds: The sprites, sounds of the original were obtained from the internet, sometimes via LLM's (some sprites are relatively obscure)
 
 
