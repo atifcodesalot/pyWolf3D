@@ -38,7 +38,7 @@ class WolfMenuRenderer:
                          2, 400 - text_surf.get_height() // 2))
 
     def render_control_instructions(self):
-        instructions = ["Use W and S to move, A and D to look left and right, and ENTER to shoot. ",
+        instructions = ["Use W and S to move, A and D to look left and right, and ENTER to shoot. Press Shift to run.",
                        "You can also use the mouse to look around and shoot with the left mouse button. "]
         y_offset = 500
 
@@ -142,7 +142,7 @@ class WolfMenuRenderer:
             pygame.display.flip()
         game = WolfGame(
             shareware_episode, WolfDifficulty(choice),
-            self.screen, sound_off=False, framerate=75)
+            self.screen, sound_off=True, framerate=75)
         game.mainloop()
 
 
