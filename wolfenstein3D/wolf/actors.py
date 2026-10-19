@@ -592,8 +592,6 @@ class Actor:
         self.occupancy.add(bpos)
         if bpos in self.wolfmap.actor_lookup:
             return
-        # if self._type == WolfActorType.DOG and type(self.state) is ChaseState:
-        #     print(f"{self} added", bpos)
         self.wolfmap.actor_lookup[bpos] = self
 
     def unoccupy_block(self, block_pos):
@@ -604,13 +602,10 @@ class Actor:
             del self.wolfmap.actor_lookup[bpos]
 
     def flush_occupancy(self):
-        # print(f"{self} called flush.")
         mirror = self.occupancy.copy()
         for bpos in mirror:
             if bpos not in self.wolfmap.actor_lookup:
                 return
-                # if self._type == WolfActorType.DOG and type(self.state) is ChaseState:
-                #     print(f"{self} cant flush:", self.get_current_block())
             self.unoccupy_block(bpos)
 
     def move(self):
