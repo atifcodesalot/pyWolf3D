@@ -39,7 +39,8 @@ class WolfMenuRenderer:
 
     def render_control_instructions(self):
         instructions = ["Use W and S to move, A and D to look left and right, and ENTER to shoot. Press Shift to run.",
-                       "You can also use the mouse to look around and shoot with the left mouse button. "]
+                       "You can also use the mouse to look around and shoot with the left mouse button.",
+                       "Finally: press ESC to chicken out."]
         y_offset = 500
 
         for instruction in instructions:
@@ -121,7 +122,7 @@ class WolfMenuRenderer:
     def handle_input(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     self.player_selection = max(0, self.player_selection - 1)

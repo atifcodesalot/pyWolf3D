@@ -113,7 +113,8 @@ class WolfGame:
             pygame.K_a: self.player.turn_cw,
             pygame.K_d: self.player.turn_cc,
             pygame.K_SPACE: lambda: setattr(self, "interact", True),
-            pygame.K_LSHIFT: lambda: setattr(self.player, "running", True)
+            pygame.K_LSHIFT: lambda: setattr(self.player, "running", True),
+            pygame.K_ESCAPE: lambda: exit("COWARD!")
         }
 
     def init_mouse(self):
