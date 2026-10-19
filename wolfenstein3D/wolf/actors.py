@@ -110,6 +110,11 @@ class DyingState(ActorState):
 class HurtState(ActorState):
     def __init__(self, actor):
         super().__init__(actor, 2, nextstate=None, lifetime=20)
+        if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
+            self.lifetime = 10
+        elif self.actor.type == WolfActorType.HANS:
+            self.lifetime = 1
+
 
     def think(self, game_ctx):
         if type(self.next) is not ChaseState:
@@ -771,10 +776,9 @@ class HansGrosse(Actor):
                          hurt_offset=0,
                          health=1000,
                          drop=WolfItem.GOLDKEY,
-                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
-                                       SOUNDS["common"]["LEBENSND.WAV"]],
-                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
+                         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+                         alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
                          patrol=False)
         self.pace = 0.15
 
