@@ -12,9 +12,6 @@ from wolfenstein3D.wolf.game_objects import WEAPON_SOUND
 import time
 
 
-SECRET_TILE = 107
-
-
 class Animation:
     def __init__(self, obj, target_attr: str, duration,
                  frame_count, shapenum=0, endcallback=None, offset=0):
@@ -45,6 +42,9 @@ class Animation:
 
 
 class WolfGame:
+    SECRET_TILE = 107
+    SWITCH_UP = 42
+
     def __init__(self, episode: WolfEpisode, difficulty: WolfDifficulty, root_display, framerate=60,
                  sound_off=False, noclip=False, ):
         self.episode = episode
@@ -190,6 +190,7 @@ class WolfGame:
         elif self.wolfmap.cell_is_elevator(fcell):
             # check the player tile for secret floor
             self.end_time = time.monotonic()
+            self.wolfmap.raw[fblock[1]][fblock[0]] = self.SWITCH_UP
             self.floor_fin = True
 
         else:
@@ -213,6 +214,7 @@ class WolfGame:
         # placeholder
         self.game_renderer.wpn_sp = self.player.weapon.value * \
             self.game_renderer.sp_per_wpn
+        #
         pblock: tuple = self.player.get_current_block()
         # if there is an item on the player block
         if pblock in self.wolfmap.item_lookup:
@@ -542,6 +544,7 @@ class WolfGame:
         # in seconds
         completion_time = self.end_time - self.start_time
         end_duration = 0
+        self.render()
         self.renderer.fade(self.root_display, out=True)
         while end_duration < 1000:
             self.renderer.render_floor_end(end_duration,
