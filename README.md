@@ -77,10 +77,9 @@ find collisions with the non empty tiles. The special cases are doors and pushwa
 which the raycaster handles explicitly.
 
 #### Sound
-The sound engine doesn't do much, apart from attenuation.
-Directional sound is not there yet but I will implement it soon.
+The sound engine is responsible for attenuation and directional sound.
+Directional sound is achieved by panning the audio via hardcoded configurations.
 The sound propagation is done via the preprocessed area tiles.
-
 Some of the sound effects, like treasure pickup, were actually synthesized during runtim
 in the original, this version uses .wav files for all sound and .ogg files for music.
 
