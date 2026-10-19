@@ -226,10 +226,11 @@ class WolfGame:
         if self.interact:
             self.handle_interaction()
 
-    def dec_player_health(self, dmg):
+    def hurt_player(self, dmg):
         if dmg == 0:
+            # actor missed
             return
-        self.game_renderer.glow = (0,)
+        self.game_renderer.begin_glow((0,), dmg*2)
         self.player.dec_health(dmg)
         self.schedule_game_event(
             self.game_renderer.glow_duration,
@@ -521,10 +522,8 @@ class WolfGame:
 
     def mainloop(self):
         self.ongoing = True
-        self.init_map()
-        self.start_timer()
-        self.render()
-        self.renderer.fade(self.root_display)
+        
+        self.floor_start()
         while self.ongoing:
             self.check_flags()
             self.heartbeat()
@@ -553,12 +552,12 @@ class WolfGame:
             time.sleep(0.01)
         # check for the tile player is on,
         # if it is 107, go to the secret level
+        # the shareware version checks if the player block x is 10
         pblock = self.player.get_current_block()
         if pblock[0] == 10:
             self.wolfmap = self.episode[-1]
         else:
             self.wolfmap = self.wolfmap.nextmap
-        self.init_map()
         self.player.has_gold_key = False
         self.player.has_silver_key = False
 
@@ -566,6 +565,7 @@ class WolfGame:
         self.new_floor = True
 
     def floor_start(self):
+        self.init_map()
         self.new_floor = False
         self.render()
         self.renderer.fade(self.root_display)

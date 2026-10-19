@@ -114,10 +114,7 @@ class Wolf3DRenderer(RayRenderer):
             w, h = pixelref.shape
             #
             pos = (i % w, i // w)
-            try:
-                pixelref[pos] = 0xFF0000
-            except:
-                exit()
+            pixelref[pos] = 0xFF0000
             red += 1
             if not red % 60:
                 # update display per 15 writes
@@ -148,6 +145,10 @@ class Wolf3DRenderer(RayRenderer):
         self.rgb_offset = [0, 0, 0]
         self.glow = False
         self.glow_cycle = 0
+        
+    def begin_glow(self, data, duration):
+        self.glow = data
+        self.glow_duration = duration
 
     def clear_screen(self):
         self.pgsurface.fill(self.WHITE)

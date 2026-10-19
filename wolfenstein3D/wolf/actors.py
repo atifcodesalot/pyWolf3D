@@ -153,7 +153,7 @@ class AttackState(ActorState):
 
     def attack(self, game_ctx):
         damage = game_ctx.calc_actor_dmg(self.actor)
-        game_ctx.dec_player_health(damage)
+        game_ctx.hurt_player(damage)
         if game_ctx.player.is_dead():
             # killed the player
             game_ctx.player_slayer = self.actor
@@ -511,7 +511,7 @@ class Actor:
         self.state = GuardingState(
             self) if not patrol else PatrolState(self, self.wolfmap)
 
-        self.drawn_sprite = None
+        self.current_sp = None
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
