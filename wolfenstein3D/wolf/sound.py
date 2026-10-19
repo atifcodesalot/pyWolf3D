@@ -34,7 +34,7 @@ class WolfSoundManager:
         (0.86, 0.5)
     ]
 
-    def __init__(self, master, music_vol=0.1):
+    def __init__(self, master, music_vol=0.3):
         self.master = master
         self.music_vol = self.cap_volume(music_vol)
         self.sndeff_queue = {}
