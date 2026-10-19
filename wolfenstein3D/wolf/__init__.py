@@ -3,7 +3,7 @@ import pygame
 import logging
 
 pygame.font.init()
-pygame.mixer.init(44100, -16, 2, 512) 
+pygame.mixer.init(44100, -16, channels=2, buffer=512) 
 pygame.init()
 
 SPRITES = {}
