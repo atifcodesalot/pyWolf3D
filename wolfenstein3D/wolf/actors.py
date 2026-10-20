@@ -171,7 +171,8 @@ class AttackState(ActorState):
         hitprob = int(dist * self.actor.accuracy)
         hitprob = 1 if hitprob == 0 else hitprob
         if random.randint(1, hitprob) in range(1, 3):
-            self.attack(game_ctx)
+            if self.actor.sees_player(game_ctx):
+                self.attack(game_ctx)
 
     def act(self, game_ctx):
         if self.heartbeats + 2 == self.lifetime:
