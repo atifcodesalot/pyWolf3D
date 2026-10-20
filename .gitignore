@@ -2,6 +2,10 @@
 # custom
 *.prof
 
+# ignore any gamemaps files that arent shareware
+*.wl6
+*.WL6
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

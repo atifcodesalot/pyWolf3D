@@ -1,5 +1,5 @@
 
-from wolfenstein3D.wolf.maps import WolfMap, WolfDifficulty, WolfEpisode
+from wolfenstein3D.wolf.maps import WolfMap, WolfDifficulty
 from wolfenstein3D.wolf.actors import *
 from wolfenstein3D.wolf.assets import SPRITES, ASSETS_PATH
 from wolfenstein3D.wolf.game_objects import *
@@ -117,21 +117,25 @@ def get_n_bytes_LI(start, n, data: bytearray):
 
 
 class GameMapsParser:
-    def __init__(self, mapheader: bytearray, maptemp: bytearray, level_count=10):
+    def __init__(self, mapheader: bytearray, maptemp: bytearray, level_count=10, carmackized=False):
         self.mapheader = mapheader
         self.maptemp = maptemp
         self.get_magic_marker()
         self.levels = level_count
+        self.carmackized = carmackized
         self.parse()
 
     def parse(self):
-        dcmp = self.decompress
+        rlewdcmp = self.RLEW_decompress
+        cardcmp = self.CARMACK_decompress
+        dcmp = rlewdcmp if not self.carmackized else lambda d: cardcmp(
+            rlewdcmp(d))
         self.level_offsets = [get_n_bytes_LI(
             2 + 4*i, 4, self.mapheader) for i in range(self.levels)]
         self.planes = [(dcmp(self.get_level_plane(i, 0)), dcmp(self.get_level_plane(i, 1)))
                        for i in range(self.levels)]
 
-    def decompress(self, plane):
+    def RLEW_decompress(self, plane):
         decompressed = []
         # skip the uncompressed size header
         i = 2
@@ -147,6 +151,9 @@ class GameMapsParser:
             decompressed.append(entry)
             i += 2
         return decompressed
+
+    def CARMACK_decompress(self, plane):
+        return
 
     def get_level_header(self, level_i):
         pos = self.level_offsets[level_i]
@@ -246,19 +253,43 @@ class GameMapsAdaptor:
 
         return wolfmap
 
-SHAREWARE_PATH = path.join(ASSETS_PATH, "maps")
-MAPHEAD_PATH = path.join(SHAREWARE_PATH, "MAPHEAD.WL1")
-MAPTEMP_PATH = path.join(SHAREWARE_PATH, "MAPTEMP.WL1")
 
-def get_shareware_maps():
-    maphead = open(MAPHEAD_PATH, "rb")
-    maptemp = open(MAPTEMP_PATH, "rb")
-    parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
-    adaptor = GameMapsAdaptor(parser)
-    
-    for level_i in range(10):
-        map_ = adaptor.to_wolfmap(level_i)
-        yield map_
-        
-    maphead.close()
-    maptemp.close()
+MAPS_PATH = path.join(ASSETS_PATH, "maps")
+
+
+class GameMapsLoader:
+    VALID_EXT = [".wl1", ".wl6"]
+
+    def __init__(self, maps_path=MAPS_PATH):
+        self.maps_path = maps_path
+        self.init_map_filenames()
+
+    def init_map_filenames(self):
+        self.map_files = []
+        for entry in os.scandir(self.maps_path):
+            for ext in self.VALID_EXT:
+                if entry.name.lower().endswith(ext):
+                    self.map_files.append(entry.path)
+
+    def get_shareware_maps(self):
+        shareware_maphead = [
+            fn for fn in self.map_files if fn.lower().endswith("maphead.wl1")][0]
+        shareware_maptemp = [
+            fn for fn in self.map_files if fn.lower().endswith("maptemp.wl1")][0]
+        maphead = open(shareware_maphead, "rb")
+        maptemp = open(shareware_maptemp, "rb")
+        parser = GameMapsParser(maphead.read(), maptemp.read(), level_count=10)
+        adaptor = GameMapsAdaptor(parser)
+
+        for level_i in range(10):
+            map_ = adaptor.to_wolfmap(level_i)
+            yield map_
+
+        maphead.close()
+        maptemp.close()
+
+    def get_other_maps(self):
+        gamemaps6 = [
+                    fn for fn in self.map_files if fn.lower().endswith("gamemaps.wl6")][0]
+        maptemp6 = [
+            fn for fn in self.map_files if fn.lower().endswith("maptemp.wl6")][0]

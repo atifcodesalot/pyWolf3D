@@ -2,7 +2,7 @@
 
 from wolfenstein3D.wolf.assets import FONT
 from wolfenstein3D.wolf.wolfenstein import *
-from wolfenstein3D.wolf.gamemaps import get_shareware_maps, SHAREWARE_PATH
+from wolfenstein3D.gamemaps import GameMapsLoader
 import pygame
 from dataclasses import dataclass
 
@@ -75,9 +75,10 @@ class WolfMenuRenderer:
             f"PYWOLF Version: {self.version}", True, True, (255, 255, 255))
         self.screen.blit(version_surf, (10, 10))
 
-    def load_shareware_episode(self):
+    def load_shareware_episode(self) -> WolfEpisode:
+        loader = GameMapsLoader()
         shareware_maps = []
-        mapgen = get_shareware_maps()
+        mapgen = loader.get_shareware_maps()
         i = 0
         while True:
             try:
@@ -87,7 +88,7 @@ class WolfMenuRenderer:
                 self.loading = False
                 break
             self.screen.fill(self.BG_COLOR)
-            self.render(loading=f"shareware map {i} from {SHAREWARE_PATH}")
+            self.render(loading=f"shareware map {i} from {loader.maps_path}")
             pygame.display.flip()
             i += 1
 
@@ -105,6 +106,9 @@ class WolfMenuRenderer:
         }
 
         return WolfEpisode(shareware_maps, shareware_jukebox)
+    
+    def load_other_maps(self):
+        pass
 
     def render(self, loading=None):
         self.screen.fill(self.BG_COLOR)
@@ -144,6 +148,8 @@ class WolfMenuRenderer:
         game = WolfGame(
             shareware_episode, WolfDifficulty(choice),
             self.screen, sound_off=False, framerate=75)
+        # game.wolfmap = shareware_episode[6]
+        # game.init_map()
         game.mainloop()
 
 
