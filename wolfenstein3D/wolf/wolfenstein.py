@@ -79,6 +79,8 @@ class WolfGame:
         self.new_life = False
         self.floor_fin = False
         self.music_paused = False
+        
+        self.wait_between_states = 0.25
 
     def init_renderers(self, root):
         self.game_res = (640, 420)
@@ -549,7 +551,7 @@ class WolfGame:
             self.renderer.render_floor_end(end_duration,
                                            self.wolfmap, completion_time, self.root_display)
             end_duration += 1
-            time.sleep(0.01)
+            time.sleep(0.005)
         # check for the tile player is on,
         # if it is 107, go to the secret level
         # the shareware version checks if the player block x is 10
@@ -563,8 +565,10 @@ class WolfGame:
 
         self.floor_fin = False
         self.new_floor = True
+        time.sleep(self.wait_between_states)
 
     def floor_start(self):
+        time.sleep(self.wait_between_states)
         self.init_map()
         self.new_floor = False
         self.render()
@@ -591,9 +595,12 @@ class WolfGame:
         self.wolfmap.reset()
         self.game_renderer.glow = False
         self.new_life = True
-        time.sleep(0.6)
+        pygame.event.clear()
+        self.animations.clear()
+        time.sleep(self.wait_between_states)
 
     def life_start(self):
+        time.sleep(self.wait_between_states)
         self.new_life = False
         if self.player.lives == 0:
             return self.game_end()
@@ -601,6 +608,7 @@ class WolfGame:
             self.root_display, update_dest=self.renderer.game_off)
         music = self.get_music()
         self.sound_manager.play_music(music)
+        pygame.event.clear()
         self.start_timer()
 
     def game_end(self):
