@@ -262,7 +262,7 @@ class WolfGame:
         # visible sprites are already determined
         # use them for hitscan
         for act in self.wolfmap.get_actors():
-            if act.is_dead() or not act:
+            if act.is_dead() or act is None:
                 continue
             if self.player.hits_actor(act, self.game_renderer.width):
                 if self.player.has_knife():
