@@ -74,7 +74,8 @@ class RayRenderer:
 
     def sprite_is_visible(self, sprite: Sprite) -> bool:
         sblock = sprite.pos[0] // self.wall_width, sprite.pos[1] // self.wall_width
-        return sblock in self.visited
+        adjs = set(tuple(vec_add(sblock, adj)) for adj in ADJACENT_MATRIX)
+        return bool(adjs.intersection(self.visited))
 
     def spcol_visible(self, dist, col_pos):
         w_1 = self.width - 1

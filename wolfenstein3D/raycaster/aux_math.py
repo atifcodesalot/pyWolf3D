@@ -4,8 +4,17 @@ import math
 import numpy as np
 
 BASIS = (np.array((1, 0)), np.array((0, 1)))
-
 ZERO_VEC = [0, 0]
+
+ADJACENT_MATRIX = [[1, 0],
+                   [1, -1],
+                   [0, -1],
+                   [-1, -1],
+                   [-1, 0],
+                   [-1, 1],
+                   [0, 1],
+                   [1, 1]]
+
 
 def ROT_MATRIX(a): return np.array(
     [[math.cos(a), -math.sin(a)],

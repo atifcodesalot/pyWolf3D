@@ -262,7 +262,7 @@ class Raycaster:
         first_check = False
         #
         m = self.observer.map
-        visited = set({})
+        visited = {tuple(camera_pos.copy())}
         cblock = m.to_block_pos(*camera_pos)
         if cblock in m.doors:
             door_inside: WolfDoor = m.doors[cblock]
@@ -296,6 +296,8 @@ class Raycaster:
             biased_pos = self.observer.map.to_block_pos(
                 trace[0] + xb, trace[1] + yb)
             visited.append(biased_pos)
+            if not self.observer.map.in_boundary(biased_pos):
+                return visited
             cell = self.observer.map.raw[biased_pos[1]][biased_pos[0]]
 
             if cell < 106:

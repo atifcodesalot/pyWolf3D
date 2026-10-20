@@ -566,6 +566,8 @@ class Actor:
 
     def get_current_area(self):
         ablock = self.get_current_block()
+        if not self.wolfmap.in_boundary(ablock):
+            return 106
         cell = self.wolfmap.raw[ablock[1]][ablock[0]]
         if cell in self.wolfmap.DOOR_INDICES:
             # if inside door tile, return the second area
