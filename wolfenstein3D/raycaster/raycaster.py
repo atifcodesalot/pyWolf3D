@@ -301,6 +301,8 @@ class Raycaster:
             if cell < 106:
                 if cell in self.observer.map.DOOR_INDICES:
                     door_obj = self.observer.map.get_door(biased_pos)
+                    if door_obj is None:
+                        continue
                     _, _, door_hit = self.handle_door(
                         cell,
                         trace,
