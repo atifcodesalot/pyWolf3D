@@ -525,8 +525,8 @@ class WolfGame:
         
         self.floor_start()
         while self.ongoing:
-            self.check_flags()
             self.heartbeat()
+            self.check_flags()
             pygame.display.flip()
 
     def check_flags(self):
