@@ -116,6 +116,10 @@ def get_n_bytes_LI(start, n, data: bytearray):
     return result
 
 
+def get_word_BI(start, data: bytearray):
+    return data[start] << 8 | data[start+1]
+
+
 class GameMapsParser:
     def __init__(self, mapheader: bytearray, maptemp: bytearray, level_count=10, carmackized=False):
         self.mapheader = mapheader
@@ -128,8 +132,8 @@ class GameMapsParser:
     def parse(self):
         rlewdcmp = self.RLEW_decompress
         cardcmp = self.CARMACK_decompress
-        dcmp = rlewdcmp if not self.carmackized else lambda d: cardcmp(
-            rlewdcmp(d))
+        dcmp = rlewdcmp if not self.carmackized else lambda d: rlewdcmp(
+            cardcmp(d))
         self.level_offsets = [get_n_bytes_LI(
             2 + 4*i, 4, self.mapheader) for i in range(self.levels)]
         self.planes = [(dcmp(self.get_level_plane(i, 0)), dcmp(self.get_level_plane(i, 1)))
@@ -137,29 +141,86 @@ class GameMapsParser:
 
     def RLEW_decompress(self, plane):
         decompressed = []
-        # skip the uncompressed size header
-        i = 2
-        #
-        while i < len(plane):
-            entry = get_n_bytes_LI(i, 2, plane)
-            if entry == self.magic_marker:
-                repeat = get_n_bytes_LI(i + 2, 2, plane)
-                value = get_n_bytes_LI(i + 4, 2, plane)
-                decompressed += [value,] * repeat
-                i += 6
-                continue
-            decompressed.append(entry)
-            i += 2
+        if self.carmackized:
+            # skip the uncompressed size header
+            i = 1
+            #
+            while i < len(plane):
+                entry = plane[i]
+                if entry == self.magic_marker:
+                    repeat = plane[i + 1]
+                    value = plane[i + 2]
+                    decompressed += [value,] * repeat
+                    i += 3
+                    continue
+                decompressed.append(entry)
+                i += 1
+
+        else:
+            i = 2
+            while i < len(plane):
+                entry = get_n_bytes_LI(i, 2, plane)
+                if entry == self.magic_marker:
+                    repeat = get_n_bytes_LI(i + 2, 2, plane)
+                    value = get_n_bytes_LI(i + 4, 2, plane)
+                    decompressed += [value,] * repeat
+                    i += 6
+                    continue
+                decompressed.append(entry)
+                i += 2
         return decompressed
 
-    def CARMACK_decompress(self, plane):
-        return
+    @staticmethod
+    def CARMACK_decompress(plane):
+        near, far = 0xA7, 0xA8
+        special = [near, far]
+
+        decompressed = []
+        outi, ini = 0, 2  # skip the uncompressed size header for ini
+
+        def set_word_out(start, BI=False):
+            nonlocal decompressed, plane, outi
+            def fetcher(s): return get_word_BI(
+                s, plane) if BI else get_n_bytes_LI(s, 2, plane)
+            decompressed.append(fetcher(start))
+            outi += 1
+
+        def repeat_word_out(di):
+            nonlocal decompressed, outi
+            decompressed.append(decompressed[di])
+            outi += 1
+
+        while ini < len(plane):
+            byte = plane[ini]
+            successor = plane[ini+1]
+            if successor not in special:
+                # ordinary data
+                set_word_out(ini)
+                ini += 2
+
+            elif byte == 0:
+                # escaped ordinary data
+                set_word_out(ini+1, BI=True)
+                ini += 3
+            else:
+                # near or far pointer
+                nearp = successor == near
+                repeat = byte
+                start = outi - plane[ini +
+                                     2] if nearp else get_n_bytes_LI(ini + 2, 2, plane)
+                inc = 3 if nearp else 4
+                for i in range(repeat):
+                    pointer = start + i
+                    repeat_word_out(pointer)
+                ini += inc
+
+        return decompressed
 
     def get_level_header(self, level_i):
         pos = self.level_offsets[level_i]
         return self.maptemp[pos: pos + 38]
 
-    def get_level_plane(self, level_i, plane_i):
+    def get_level_plane(self, level_i, plane_i) -> bytearray:
         header = self.get_level_header(level_i)
         plane_size = get_n_bytes_LI(12+2*plane_i, 2, header)
         offset = get_n_bytes_LI(plane_i * 4, 4, header)
@@ -288,8 +349,27 @@ class GameMapsLoader:
         maphead.close()
         maptemp.close()
 
-    def get_other_maps(self):
+    def wl6_maps_present(self):
+        low_files = [os.path.basename(fn.lower()) for fn in self.map_files]
+        gamemaps6_present = "gamemaps.wl6" in low_files
+        maphead6_present = "maphead.wl6" in low_files
+        return gamemaps6_present and maphead6_present
+
+    # requires wl6 files
+    def get_wl6_maps(self):
         gamemaps6 = [
-                    fn for fn in self.map_files if fn.lower().endswith("gamemaps.wl6")][0]
-        maptemp6 = [
-            fn for fn in self.map_files if fn.lower().endswith("maptemp.wl6")][0]
+            fn for fn in self.map_files if fn.lower().endswith("gamemaps.wl6")][0]
+        maphead6 = [
+            fn for fn in self.map_files if fn.lower().endswith("maphead.wl6")][0]
+        gamemaps6 = open(gamemaps6, "rb")
+        maphead6 = open(maphead6, "rb")
+        parser = GameMapsParser(
+            maphead6.read(), gamemaps6.read(), level_count=60, carmackized=True)
+        adaptor = GameMapsAdaptor(parser)
+
+        for level_i in range(60):
+            map_ = adaptor.to_wolfmap(level_i)
+            yield map_
+
+        maphead6.close()
+        gamemaps6.close()
