@@ -212,10 +212,12 @@ class WolfItemObj:
 
 class WolfActorType(Enum):
     GUARD = 108
+    OFFICER = 116
     SCHUTZSTAFFEL = 126
     DOG = 134
     HANS = 214
     MUTANT = 216
+    
 
 
 WEAPON_MULTIPLIER = 1.1

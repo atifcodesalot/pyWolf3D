@@ -77,7 +77,7 @@ def init_actor_entries():
     # entry: type, difficulty, patrolling (bool)
     global ACTOR_ENTRIES
     ACTOR_ENTRIES = {}
-    starts = {108: WolfActorType.GUARD,
+    starts = {108: WolfActorType.GUARD, 116: WolfActorType.OFFICER,
               126: WolfActorType.SCHUTZSTAFFEL, 134: WolfActorType.DOG}
 
     for start in starts:

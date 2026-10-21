@@ -347,10 +347,11 @@ class WolfMap:
 
 
 class WolfEpisode:
-    def __init__(self, maps: list[WolfMap], jukebox: list):
+    def __init__(self, maps: list[WolfMap], jukebox: list, name):
         self.maps = maps
         self.map_amount = len(self.maps)
         self.jukebox = jukebox
+        self.name = name
         self.link()
 
     def get_music(self, level_i):
@@ -367,6 +368,7 @@ class WolfEpisode:
 
     def link(self):
         for i, map_ in enumerate(self.maps):
+            map_.map_id = i
             if i + 1 == self.map_amount:
                 break
             map_.nextmap = self.maps[i + 1]

@@ -52,6 +52,7 @@ class WolfMenuRenderer:
             y_offset += text_surf.get_height() + 5
 
     def change_menu(self, menu: WolfMenu):
+        self.player_selection = 0
         self.current_menu = menu
 
     def render_label(self, label: str, labelpos=None):
@@ -105,7 +106,7 @@ class WolfMenuRenderer:
             9: "secret.ogg"
         }
 
-        return WolfEpisode(shareware_maps, shareware_jukebox)
+        return WolfEpisode(shareware_maps, shareware_jukebox, "Episode 1 shareware version")
 
     def load_wl6_episodes(self):
         if not self.loader.wl6_maps_present():
@@ -125,6 +126,15 @@ class WolfMenuRenderer:
             time.sleep(0.01)
             i += 1
 
+        # placeholder until music assets are completed
+        jukebox = {
+            0: "level1_5.ogg"
+        }
+
+        wl6_episodes = [WolfEpisode(
+            wl6_maps[i*10: (i+1)*10], jukebox, f"Episode {i+1}") for i in range(6)]
+        return wl6_episodes
+
     def render(self, loading=None):
         self.screen.fill(self.BG_COLOR)
         self.render_version()
@@ -137,6 +147,14 @@ class WolfMenuRenderer:
     def render_menu(self):
         self.render_label(self.current_menu.label)
         self.render_selections(self.current_menu.selections)
+
+    def wait_menu(self):
+        choice = None
+        while choice is None:
+            self.render()
+            choice = self.handle_input()
+            pygame.display.flip()
+        return choice
 
     def handle_input(self):
         for event in pygame.event.get():
@@ -153,18 +171,27 @@ class WolfMenuRenderer:
 
     def run(self):
         self.loading = True
+        episodes = []
         shareware_episode = self.load_shareware_episode()
+        episodes.append(shareware_episode)
         wl6_episodes = self.load_wl6_episodes()
+        if wl6_episodes:
+            episodes.extend(wl6_episodes)
         self.loading = False
-        
-        choice = None
-        while choice is None:
-            self.render()
-            choice = self.handle_input()
-            pygame.display.flip()
-            
+
+        episode_selections = [ep.name for ep in episodes]
+
+        self.change_menu(WolfMenu("Choose an episode to play",
+                         selections=episode_selections, sel_count=len(episodes)))
+
+        epchoice = self.wait_menu()
+        episode = episodes[epchoice]
+
+        self.change_menu(self.difficulty_menu)
+        diffchoice = self.wait_menu()
+
         game = WolfGame(
-            shareware_episode, WolfDifficulty(choice),
+            episode, WolfDifficulty(diffchoice),
             self.screen, sound_off=False, framerate=75)
         game.mainloop()
 

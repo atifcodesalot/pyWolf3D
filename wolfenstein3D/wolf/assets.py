@@ -59,6 +59,9 @@ def init_wall_textures():
     walls = Image.open(WALLS_PATH)
     WALL_TEXTURES = texmap_parse(
         486, 16, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
+    nocturnal = texmap_parse(
+            1, 631, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
+    WALL_TEXTURES.extend(nocturnal)
 
     # extend to 120 slot texture table
     WALL_TEXTURES.extend([None]*120)
@@ -104,6 +107,7 @@ def init_weapon_srites():
 
 
 def init_character_sprites():
+    # todo: please refactor this shit in the name of jesus christ
     SPRITES["characters"] = {}
     guard_sheet = Image.open(os.path.join(
         SPRITE_PATH, 'characters', 'guard.png'))
@@ -118,6 +122,14 @@ def init_character_sprites():
     SS_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'SS.png'))
     SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite, 1, 1)
     SPRITES["characters"]["SS"] = dict(enumerate(SS_sprites))
+    
+    officer_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'officer.png'))
+    officer_sprites = texmap_parse(1, 1, 1, 1, 64, 64, officer_sheet, Sprite, 1, 1)
+    SPRITES["characters"]["officer"] = dict(enumerate(officer_sprites))
+    
+    mutant_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'mutant.png'))
+    mutant_sprites = texmap_parse(1, 1, 1, 1, 64, 64, mutant_sheet, Sprite, 1, 1)
+    SPRITES["characters"]["mutant"] = dict(enumerate(mutant_sprites))
 
     # init bosses here
     SPRITES["characters"]["boss"] = {}
