@@ -5,8 +5,9 @@ from wolfenstein3D.raycaster.aux_math import vec_add, vec_dot, vec_sub
 
 
 class Sprite(Texture):
-    def __init__(self, image: Image.Image, pos=None, blocking=None):
-        super().__init__(image)
+    def __init__(self, image: Image.Image, pos=None,
+                 blocking=None, surf=None, converted=False, columns=None):
+        super().__init__(image, surf=surf, converted=converted, columns=columns)
         self.pos = pos
         self.blocking = blocking
         self.screen_pos = None
@@ -43,6 +44,11 @@ class Sprite(Texture):
         return scaled
 
     def copy(self, pos):
-        copied = self.__new__(self.__class__)
-        copied.__init__(self.image, pos=pos, blocking=self.blocking)
+        copied = object.__new__(self.__class__)
+        copied.__init__(self.image, pos=pos,
+                        blocking=self.blocking,
+                        surf=self.surface,
+                        converted=True,
+                        columns=self.columns
+                        )
         return copied

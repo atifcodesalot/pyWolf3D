@@ -5,9 +5,10 @@ import pygame
 
 
 class Texture:
-    def __init__(self, image: Image.Image):
-        self.image = image.convert("RGBA")
+    def __init__(self, image: Image.Image, surf=None, converted=False, columns=None):  
 
+        self.image = image.convert("RGBA") if not converted else image
+        
         self.width, self.height = image.size
         self.half_height = self.height // 2
 
@@ -15,12 +16,12 @@ class Texture:
             self.image.tobytes(),
             self.image.size,
             "RGBA",
-        )
+        ) if surf is None else surf
 
         self.columns = [
             self.surface.subsurface((x, 0, 1, self.height)).copy()
             for x in range(self.width)
-        ]
+        ] if columns is None else columns
 
     def scale_column(self, column, repeat, height, screen_height):
         if height > screen_height:
