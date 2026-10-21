@@ -150,6 +150,8 @@ class WolfPlayer(Observer):
             [WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
         self.has_silver_key = False
         self.has_gold_key = False
+        
+        self.running = False
 
     def _1up(self):
         self.lives = (self.lives + 1) % 10
