@@ -494,7 +494,7 @@ class Actor:
             if sp is not None:
                 self.sprites.append(sp.copy(self.pos))
             else:
-                self.sprites.append(sp)
+                self.sprites.append(None)
         self.sprite_layout = sprite_layout
         self.sprite_per_state = self.sprite_layout[0]
         self.death_frames = death_frames
@@ -794,5 +794,6 @@ TYPE_ACTOR_OBJ = {
     WolfActorType.GUARD: Guard,
     WolfActorType.DOG: Shepherd,
     WolfActorType.SCHUTZSTAFFEL: SS,
+    WolfActorType.MUTANT: Shepherd,
     WolfActorType.HANS: HansGrosse,
 }
