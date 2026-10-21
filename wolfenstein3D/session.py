@@ -5,6 +5,7 @@ from wolfenstein3D.wolf.wolfenstein import *
 from wolfenstein3D.gamemaps import GameMapsLoader
 import pygame
 from dataclasses import dataclass
+import time
 
 
 @dataclass
@@ -31,6 +32,7 @@ class WolfMenuRenderer:
                                         4)
 
         self.current_menu = self.difficulty_menu
+        self.loader = GameMapsLoader()
 
     def render_loading_screen(self, entity):
         text_surf = FONT.render(f"loading {entity}...", True, (255, 255, 255))
@@ -39,8 +41,8 @@ class WolfMenuRenderer:
 
     def render_control_instructions(self):
         instructions = ["Use W and S to move, A and D to look left and right, and ENTER to shoot. Press Shift to run.",
-                       "You can also use the mouse to look around and shoot with the left mouse button.",
-                       "Finally: press ESC to chicken out."]
+                        "You can also use the mouse to look around and shoot with the left mouse button.",
+                        "Finally: press ESC to chicken out."]
         y_offset = 500
 
         for instruction in instructions:
@@ -76,19 +78,17 @@ class WolfMenuRenderer:
         self.screen.blit(version_surf, (10, 10))
 
     def load_shareware_episode(self) -> WolfEpisode:
-        loader = GameMapsLoader()
         shareware_maps = []
-        mapgen = loader.get_shareware_maps()
+        mapgen = self.loader.get_shareware_maps()
         i = 0
         while True:
             try:
                 wolfmap = next(mapgen)
                 shareware_maps.append(wolfmap)
             except StopIteration:
-                self.loading = False
                 break
-            self.screen.fill(self.BG_COLOR)
-            self.render(loading=f"shareware map {i} from {loader.maps_path}")
+            self.render(
+                loading=f"shareware map {i} from {self.loader.maps_path}")
             pygame.display.flip()
             i += 1
 
@@ -106,9 +106,24 @@ class WolfMenuRenderer:
         }
 
         return WolfEpisode(shareware_maps, shareware_jukebox)
-    
-    def load_other_maps(self):
-        pass
+
+    def load_wl6_episodes(self):
+        if not self.loader.wl6_maps_present():
+            return
+        wl6_maps = []
+        mapgen = self.loader.get_wl6_maps()
+        i = 0
+        while True:
+            try:
+                wolfmap = next(mapgen)
+                wl6_maps.append(wolfmap)
+            except StopIteration:
+                self.loading = False
+                break
+            self.render(loading=f"map {i} from {self.loader.maps_path}")
+            pygame.display.flip()
+            time.sleep(0.01)
+            i += 1
 
     def render(self, loading=None):
         self.screen.fill(self.BG_COLOR)
@@ -139,17 +154,18 @@ class WolfMenuRenderer:
     def run(self):
         self.loading = True
         shareware_episode = self.load_shareware_episode()
+        wl6_episodes = self.load_wl6_episodes()
         self.loading = False
+        
         choice = None
         while choice is None:
             self.render()
             choice = self.handle_input()
             pygame.display.flip()
+            
         game = WolfGame(
             shareware_episode, WolfDifficulty(choice),
             self.screen, sound_off=False, framerate=75)
-        # game.wolfmap = shareware_episode[6]
-        # game.init_map()
         game.mainloop()
 
 
