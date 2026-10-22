@@ -109,7 +109,7 @@ class WolfPlayer(Observer):
     def get_ammo(self):
         if self.out_of_ammo():
             self.switch_weapon(self.best_weapon())
-        self.ammo += 5
+        self.ammo = min(self.ammo + 5, 99)
 
     def dec_ammo(self):
         self.ammo = max(self.ammo - 1, 0)

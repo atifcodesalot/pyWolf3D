@@ -197,7 +197,7 @@ class WolfItemObj:
                 return player.health < 20
             return player.health < 100
         elif self.item is WolfItem.AMMUNITION:
-            return player.ammo < 100
+            return player.ammo != 99
         return True
 
     def affect(self, game_ctx):
