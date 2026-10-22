@@ -645,6 +645,7 @@ class WolfGame:
         self.new_life = False
         if self.player.lives == 0:
             return self.game_end()
+        self.render_all()
         self.game_renderer.unfizzle(
             self.root_display, update_dest=self.renderer.game_off)
         music = self.get_music()
