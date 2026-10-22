@@ -123,9 +123,12 @@ class WolfGame:
             pygame.K_d: self.player.turn_cc,
             pygame.K_SPACE: lambda: setattr(self, "interact", True),
             pygame.K_LSHIFT: lambda: setattr(self.player, "running", True),
-            pygame.K_p: lambda: self.spawn_projectile(self.player.look_dir, 1, self.player.pos),
             pygame.K_ESCAPE: lambda: setattr(self, "ongoing", False)
         }
+
+    def toggle_pause(self):
+        pygame.event.clear()
+        self.paused = not self.paused
 
     def init_mouse(self):
         pygame.mouse.set_visible(False)
@@ -454,19 +457,31 @@ class WolfGame:
         if pygame.mouse.get_pressed()[0]:
             self.handle_shooting()
 
-    def handle_events(self, pgevents):
-        self.handle_mouse()
+    def handle_pgevents(self, pgevents, paused=False):
         for event in pgevents:
+            if paused:
+                if event.type == pygame.QUIT:
+                    self.ongoing = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_p:
+                        self.toggle_pause()
+                return
             if event.type == pygame.QUIT:
                 self.ongoing = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
+                if event.key == pygame.K_p:
+                    self.toggle_pause()
+                elif event.key == pygame.K_RETURN:
                     self.handle_shooting()
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     self.interact = False
                 if event.key == pygame.K_LSHIFT:
                     self.player.running = False
+    
+    def handle_events(self, pgevents):
+        self.handle_pgevents(pgevents)
+        self.handle_mouse()
         self.handle_keystate()
 
     def schedule_game_event(self, _time, action):
@@ -546,6 +561,7 @@ class WolfGame:
 
     def mainloop(self):
         self.ongoing = True
+        self.paused = False
 
         self.floor_start()
         while self.ongoing:
@@ -554,6 +570,9 @@ class WolfGame:
             pygame.display.flip()
 
     def check_flags(self):
+        while self.paused:
+            self.handle_pgevents(pygame.event.get(), paused=True)
+            time.sleep(0.001)
         if self.new_life:
             self.life_start()
         elif self.new_floor:
@@ -569,7 +588,7 @@ class WolfGame:
         end_duration = 0
         self.render_all()
         self.renderer.fade(self.root_display, out=True)
-        while end_duration < 1000:
+        while end_duration < 800:
             self.renderer.render_floor_end(end_duration,
                                            self.wolfmap, completion_time, self.root_display)
             end_duration += 1
