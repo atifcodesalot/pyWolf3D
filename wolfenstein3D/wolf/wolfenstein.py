@@ -274,6 +274,8 @@ class WolfGame:
         for act in self.wolfmap.get_actors():
             if act.is_dead() or act is None:
                 continue
+            if act.get_current_block() not in self.game_renderer.visited:
+                continue
             if self.player.hits_actor(act, self.game_renderer.width):
                 if self.player.has_knife():
                     ablock = self.wolfmap.to_block_pos(*act.pos)
