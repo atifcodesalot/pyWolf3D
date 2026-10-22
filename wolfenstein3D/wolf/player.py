@@ -122,7 +122,7 @@ class WolfPlayer(Observer):
         return better
 
     def acquire_weapon(self, weap: WolfWeapon):
-        self.ammo += 5
+        self.get_ammo()
         if self.is_new_weapon(weap):
             self.excited_to_kill_nazis = True
             self.switch_weapon(weap)
