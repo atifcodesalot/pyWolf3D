@@ -785,10 +785,9 @@ class Officer(Actor):
                          hurt_offset=1,
                          health=50,
                          drop=WolfItem.AMMUNITION,
-                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
-                                       SOUNDS["common"]["LEBENSND.WAV"]],
-                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         death_sounds=[SOUNDS["death"]["NEINSOVASSND.WAV"],],
+                         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
+                         alert_sound=SOUNDS["alert"]["SPIONSND.WAV"],
                          patrol=patrol)
         self.pace = 0.2
 
@@ -805,10 +804,9 @@ class Mutant(Actor):
                          hurt_offset=0,
                          health=25,
                          drop=None,
-                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
-                                       SOUNDS["common"]["LEBENSND.WAV"]],
-                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         death_sounds=[SOUNDS["death"]["AHHHGSND.WAV"]],
+                         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
+                         alert_sound=None,
                          patrol=patrol)
         self.pace = 0.15
         
