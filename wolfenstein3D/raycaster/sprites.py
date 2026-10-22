@@ -1,7 +1,7 @@
 
 
 from wolfenstein3D.raycaster.textures import Texture, Image
-from wolfenstein3D.raycaster.aux_math import vec_add, vec_dot, vec_sub
+from wolfenstein3D.raycaster.aux_math import *
 
 
 class Sprite(Texture):
@@ -52,3 +52,27 @@ class Sprite(Texture):
                         columns=self.columns
                         )
         return copied
+
+
+class Projectile:
+    def __init__(self, direction, speed, pos, sprites: list[Sprite]):
+        self.direction = direction
+        self.speed = speed
+        self.pos = pos
+        self.sprites = sprites
+        self.spidx = 0
+
+    def current_sprite(self) -> Sprite:
+        csp = self.sprites[self.spidx]
+        csp.pos = self.pos
+        return csp
+
+    def travel(self):
+        self.pos = vec_add(self.pos, vec_mul(self.direction, self.speed))
+
+    def stop(self):
+        self.speed = 0
+
+    def collides_map(self, map_):
+        pjblock = map_.to_block_pos(*self.pos)
+        return map_.cell_occupied(pjblock)

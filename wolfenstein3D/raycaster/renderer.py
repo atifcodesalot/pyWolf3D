@@ -119,9 +119,9 @@ class RayRenderer:
             key=lambda s: s.to_observer_space(self.raycaster.observer),
             reverse=True)
 
-    def render_sprites(self):
+    def render_sprites(self, *additional_sprites):
         m = self.raycaster.observer.map
-        self.sort_sprites(m.sprites)
+        self.sort_sprites(m.sprites + additional_sprites)
         for sprite in self.sorted_sprites:
             sprite.project()
             self.draw_sprite(sprite)
@@ -143,7 +143,7 @@ class RayRenderer:
             self.pgsurface.blit(column, (start, hh - chh))
             cast += 1
 
-    def render(self, camera_pos, light: PointLight):
+    def render(self, camera_pos, light: PointLight, *additional_sprites):
         self.render_walls(camera_pos, light)
         self.maxd = max(self.distbuff)
-        self.render_sprites()
+        self.render_sprites(*additional_sprites)

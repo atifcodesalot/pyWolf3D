@@ -1,203 +1,198 @@
 
 from wolfenstein3D.raycaster.sprites import Sprite
 from wolfenstein3D.raycaster.textures import Texture
-from wolfenstein3D.wolf import SPRITES, WALL_TEXTURES, pygame
+from wolfenstein3D.wolf import pygame
 from PIL import Image
 import os
 
 
-ASSETS_PATH = os.path.join('.', __package__.split('.')[0], 'assets')
+class WolfAssetManager:
+    def __init__(self):
+        self.assets_path = os.path.join(
+            '.', __package__.split('.')[0], 'assets')
 
-FONT_PATH = os.path.join(ASSETS_PATH, 'fonts')
-SPRITE_PATH = os.path.join(ASSETS_PATH, 'sprites')
-TEXTURE_PATH = os.path.join(ASSETS_PATH, 'textures')
-SOUND_PATH = os.path.join(ASSETS_PATH, 'sound')
+        self.font_path = os.path.join(self.assets_path, 'fonts')
+        self.sprite_path = os.path.join(self.assets_path, 'sprites')
+        self.texture_path = os.path.join(self.assets_path, 'textures')
+        self.sound_path = os.path.join(self.assets_path, 'sound')
 
-WALLS_PATH = os.path.join(TEXTURE_PATH, 'wallmap.png')
-HUD_PATH = os.path.join(TEXTURE_PATH, 'hud.png')
+        self.walls_path = os.path.join(self.texture_path, 'wallmap.png')
+        self.hud_path = os.path.join(self.texture_path, 'hud.png')
 
-SPRITE_OBJECTS_PATH = os.path.join(SPRITE_PATH, 'objects.png')
-SPRITE_WEAPONS_PATH = os.path.join(SPRITE_PATH, 'weapons.png')
+        self.sprite_objects_path = os.path.join(
+            self.sprite_path, 'objects.png')
+        self.sprite_weapons_path = os.path.join(
+            self.sprite_path, 'weapons.png')
 
+        self.init_font()
+        self.init_textures()
+        self.init_sprites()
+        self.init_sounds()
 
-# code used for creating transparency
-# def convert_sheet_trans(sheet: Image.Image, target: tuple, savename: str):
-#     sheet = sheet.convert("RGBA")
-#     datas = sheet.getdata()
+    @staticmethod
+    def texmap_parse(texmap: Image.Image, bmarg, tmarg,
+                     vsep, hsep, tw, th, init, lmarg=0, rmarg=0):
+        textures = []
+        init = init if callable(init) else lambda im: im
+        w, h = texmap.width, texmap.height
+        for j in range(tmarg, h-bmarg, vsep + th):
+            for i in range(lmarg, w-rmarg, hsep + tw):
+                cursor = (i, j)
+                subimage = texmap.crop((
+                    cursor[0], cursor[1], cursor[0] + tw, cursor[1] + th))
+                if callable(init):
+                    textures.append(init(subimage))
+                else:
+                    textures.append(subimage)
+        return textures
 
-#     new = []
-#     for item in datas:
-#         if item[0] == target[0] and item[1] == target[1] and item[2] == target[2]:
-#             new.append((255, 255, 255, 0))
-#         else:
-#             new.append(item)
+    def init_wall_textures(self):
+        walls = Image.open(self.walls_path)
+        self.wall_textures = self.texmap_parse(walls,
+                                               486, 16, 1, 1, 64, 64, init=Texture, lmarg=1, rmarg=1)
+        nocturnal = self.texmap_parse(walls,
+                                      1, 631, 1, 1, 64, 64, init=Texture, lmarg=1, rmarg=1)
+        self.wall_textures.extend(nocturnal)
 
-#     sheet.putdata(new)
-#     sheet.save(savename, "PNG")
+        # extend to 120 slot texture table
+        self.wall_textures.extend([None]*120)
 
+    @staticmethod
+    def convert_sheet_trans(sheet: Image.Image, target: tuple, savename: str):
+        sheet = sheet.convert("RGBA")
+        datas = sheet.getdata()
 
-def texmap_parse(bmarg, tmarg, vsep, hsep, tw, th,
-                 texmap: Image.Image, init, lmarg=0, rmarg=0):
-    textures = []
-    init = init if callable(init) else lambda im: im
-    w, h = texmap.width, texmap.height
-    for j in range(tmarg, h-bmarg, vsep + th):
-        for i in range(lmarg, w-rmarg, hsep + tw):
-            cursor = (i, j)
-            subimage = texmap.crop((
-                cursor[0], cursor[1], cursor[0] + tw, cursor[1] + th))
-            if callable(init):
-                textures.append(init(subimage))
+        new = []
+        for item in datas:
+            if item[0] == target[0] and item[1] == target[1] and item[2] == target[2]:
+                new.append((255, 255, 255, 0))
             else:
-                textures.append(subimage)
-    return textures
+                new.append(item)
 
+        sheet.putdata(new)
+        sheet.save(savename, "PNG")
 
-def init_wall_textures():
-    global WALL_TEXTURES, SIDEDOOR
-    SIDEDOOR = 58
-    walls = Image.open(WALLS_PATH)
-    WALL_TEXTURES = texmap_parse(
-        486, 16, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
-    nocturnal = texmap_parse(
-            1, 631, 1, 1, 64, 64, walls, init=Texture, lmarg=1, rmarg=1)
-    WALL_TEXTURES.extend(nocturnal)
+    def init_hud_textures(self):
+        def to_surf(im):
+            return pygame.image.frombytes(
+                im.tobytes(),
+                im.size,
+                "RGBA",
+            )
+        hudim = Image.open(self.hud_path)
+        self.hud_faces = self.texmap_parse(hudim,
+                                           52, 42, 1, 1, 24, 32, init=to_surf, lmarg=1, rmarg=91)
+        hudsurf = to_surf(hudim)
+        self.statusbar = hudsurf.subsurface((1, 1, 320, 40))
+        self.hud_numbers = self.texmap_parse(hudim,
+                                             68, 75, 0, 1, 8, 16, init=to_surf, lmarg=301, rmarg=1)
+        self.hud_weapons = self.texmap_parse(hudim,
+                                             1, 109, 1, 1, 48, 24, init=to_surf, lmarg=226, rmarg=68)
+        self.hud_keys = self.texmap_parse(hudim,
+                                          51, 92, 0, 1, 8, 16, init=to_surf, lmarg=301, rmarg=55)
 
-    # extend to 120 slot texture table
-    WALL_TEXTURES.extend([None]*120)
+    def init_textures(self):
+        self.init_wall_textures()
+        self.init_hud_textures()
+        # init more textures in the future?
 
+    def init_object_sprites(self):
+        objects_sheet = Image.open(self.sprite_objects_path)
+        objects_ = self.texmap_parse(objects_sheet,
+                                     0, 0, 0, 0, 64, 64, init=Sprite)
+        self.sprites["objects"] = dict(enumerate(objects_))
 
-def init_hud_textures():
-    def to_surf(im):
-        return pygame.image.frombytes(
-            im.tobytes(),
-            im.size,
-            "RGBA",
-        )
-    global HUD_FACES, STATUSBAR, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS
-    hudim = Image.open(HUD_PATH)
-    HUD_FACES = texmap_parse(
-        52, 42, 1, 1, 24, 32, hudim, init=to_surf, lmarg=1, rmarg=91)
-    hudsurf = to_surf(hudim)
-    STATUSBAR = hudsurf.subsurface((1, 1, 320, 40))
-    HUD_NUMBERS = texmap_parse(
-        68, 75, 0, 1, 8, 16, hudim, init=to_surf, lmarg=301, rmarg=1)
-    HUD_WEAPONS = texmap_parse(
-        1, 109, 1, 1, 48, 24, hudim, init=to_surf, lmarg=226, rmarg=68)
-    HUD_KEYS = texmap_parse(
-            51, 92, 0, 1, 8, 16, hudim, init=to_surf, lmarg=301, rmarg=55)
+    def init_weapon_sprites(self):
+        weapons_sheet = Image.open(self.sprite_weapons_path)
+        weapons = self.texmap_parse(weapons_sheet,
+                                    34, 16, 16, 1, 64, 64, init=Sprite, lmarg=1, rmarg=1)
+        self.sprites["weapons"] = dict(enumerate(weapons))
 
+    def init_character_sprite(self, filename, charname, *texmap_args):
+        char_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', filename))
+        char_sprites = self.texmap_parse(char_sheet, *texmap_args)
+        self.sprites["characters"][charname] = dict(enumerate(char_sprites))
 
-def init_textures():
-    init_wall_textures()
-    init_hud_textures()
-    # init more textures in the future?
+    def init_character_sprites(self):
+        self.sprites["characters"] = {}
+        self.init_character_sprite(
+            'guard.png', 'guard', 0, 0, 1, 1, 64, 64, Sprite)
+        self.init_character_sprite(
+            'shepherd.png', 'shepherd', 0, 0, 1, 1, 64, 64, Sprite)
+        self.init_character_sprite('SS.png', 'SS', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        self.init_character_sprite(
+            'officer.png', 'officer', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        self.init_character_sprite(
+            'mutant.png', 'mutant', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
 
+        # init bosses here
+        # todo: please refactor this shit in the name of jesus christ
+        self.sprites["characters"]["boss"] = {}
+        # init hans grösse
+        hans_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', 'boss', 'hansgrösse.png'))
+        hans_sprites = self.texmap_parse(hans_sheet,
+                                         1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        ogsrc = dict(enumerate(hans_sprites))
+        hans_sprites = {}
+        for i in range(4):
+            hans_sprites[i*4] = ogsrc[i]
+        death_off = 16
+        for i in range(4):
+            hans_sprites[death_off + i] = ogsrc[8 + i]
+        attack_off = 20
+        for i in range(3):
+            hans_sprites[attack_off + i] = ogsrc[4 + i]
+        self.sprites["characters"]["boss"]["hans"] = hans_sprites
 
-def init_object_sprites():
-    objects_sheet = Image.open(SPRITE_OBJECTS_PATH)
-    objects_ = texmap_parse(0, 0, 0, 0, 64, 64, objects_sheet, init=Sprite)
-    SPRITES["objects"] = dict(enumerate(objects_))
+    def init_sprites(self):
+        self.sprites = {}
+        self.init_object_sprites()
+        self.init_weapon_sprites()
+        self.init_character_sprites()
 
+        def clean_remaining():
+            for entry in os.scandir(self.sprite_path):
+                if entry.is_file():
+                    self.sprites[entry.name] = Sprite(
+                        Image.open(entry.path), None, None)
+                if entry.is_dir():
+                    for entry2 in os.scandir(entry.path):
+                        if entry2.is_file():
+                            self.sprites[entry.name + "/" + entry2.name] = Sprite(
+                                Image.open(entry2.path), None, None)
+        clean_remaining()
 
-def init_weapon_srites():
-    weapons_sheet = Image.open(SPRITE_WEAPONS_PATH)
-    weapons = texmap_parse(34, 16, 16, 1, 64, 64, weapons_sheet, Sprite, 1, 1)
-    SPRITES["weapons"] = dict(enumerate(weapons))
+    def init_font(self):
+        font_size = 20
 
+        self.font = pygame.font.Font(os.path.join(
+            self.font_path, "ITCHonda.ttf"), font_size)
+        self.biggerfont = pygame.font.Font(os.path.join(
+            self.font_path, "ITCHonda.ttf"), font_size+20)
 
-def init_character_sprites():
-    # todo: please refactor this shit in the name of jesus christ
-    SPRITES["characters"] = {}
-    guard_sheet = Image.open(os.path.join(
-        SPRITE_PATH, 'characters', 'guard.png'))
-    guard_sprites = texmap_parse(0, 0, 1, 1, 64, 64, guard_sheet, Sprite)
-    SPRITES["characters"]["guard"] = dict(enumerate(guard_sprites))
-
-    dog_sheet = Image.open(os.path.join(
-        SPRITE_PATH, 'characters', 'shepherd.png'))
-    dog_sprites = texmap_parse(0, 0, 1, 1, 64, 64, dog_sheet, Sprite)
-    SPRITES["characters"]["shepherd"] = dict(enumerate(dog_sprites))
-
-    SS_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'SS.png'))
-    SS_sprites = texmap_parse(1, 1, 1, 1, 64, 64, SS_sheet, Sprite, 1, 1)
-    SPRITES["characters"]["SS"] = dict(enumerate(SS_sprites))
-    
-    officer_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'officer.png'))
-    officer_sprites = texmap_parse(1, 1, 1, 1, 64, 64, officer_sheet, Sprite, 1, 1)
-    SPRITES["characters"]["officer"] = dict(enumerate(officer_sprites))
-    
-    mutant_sheet = Image.open(os.path.join(SPRITE_PATH, 'characters', 'mutant.png'))
-    mutant_sprites = texmap_parse(1, 1, 1, 1, 64, 64, mutant_sheet, Sprite, 1, 1)
-    SPRITES["characters"]["mutant"] = dict(enumerate(mutant_sprites))
-
-    # init bosses here
-    SPRITES["characters"]["boss"] = {}
-    # init hans grösse
-    hans_sheet = Image.open(os.path.join(
-        SPRITE_PATH, 'characters', 'boss', 'hansgrösse.png'))
-    hans_sprites = texmap_parse(1, 1, 1, 1, 64, 64, hans_sheet, Sprite, 1, 1)
-    ogsrc = dict(enumerate(hans_sprites))
-    hans_sprites = {}
-    for i in range(4):
-        hans_sprites[i*4] = ogsrc[i]
-    death_off = 16
-    for i in range(4):
-        hans_sprites[death_off + i] = ogsrc[8 + i]
-    attack_off = 20
-    for i in range(3):
-        hans_sprites[attack_off + i] = ogsrc[4 + i]
-    SPRITES["characters"]["boss"]["hans"] = hans_sprites
-
-
-def init_sprites():
-    init_object_sprites()
-    init_weapon_srites()
-    init_character_sprites()
-
-    def clean_remaining():
-        for entry in os.scandir(SPRITE_PATH):
-            if entry.is_file():
-                SPRITES[entry.name] = Sprite(
-                    Image.open(entry.path), None, None)
+    def init_sounds(self, root=None, depth=0):
+        if root is None:
+            root = self.sound_path
+        if depth == 0:
+            self.sounds = {}
+        base = os.path.basename(root)
+        self.sounds[base] = {}
+        for entry in os.scandir(root):
             if entry.is_dir():
-                for entry2 in os.scandir(entry.path):
-                    if entry2.is_file():
-                        SPRITES[entry.name + "/" + entry2.name] = Sprite(
-                            Image.open(entry2.path), None, None)
-    clean_remaining()
+                self.init_sounds(root=entry.path, depth=depth+1)
+            elif entry.is_file():
+                if base == "music":
+                    self.sounds[base][entry.name] = entry.path
+                else:
+                    self.sounds[base][entry.name] = pygame.mixer.Sound(
+                        entry.path)
 
 
-def init_font():
-    font_size = 20
-    global FONT
-    FONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size)
-    global BIGGERFONT
-    BIGGERFONT = pygame.font.Font(os.path.join(FONT_PATH, "ITCHonda.ttf"), font_size+20)
+def init_assets():
+    global ASSET_MANAGER
+    ASSET_MANAGER = WolfAssetManager()
 
 
-def init_sounds(root=SOUND_PATH, depth=0):
-    if depth == 0:
-        global SOUNDS
-        SOUNDS = {}
-    base = os.path.basename(root)
-    SOUNDS[base] = {}
-    for entry in os.scandir(root):
-        if entry.is_dir():
-            init_sounds(root=entry.path, depth=depth+1)
-        elif entry.is_file():
-            if base == "music":
-                SOUNDS[base][entry.name] = entry.path
-            else:
-                SOUNDS[base][entry.name] = pygame.mixer.Sound(entry.path)
-                
-
-LOADERS = frozenset([
-    init_textures,
-    init_sprites,
-    init_sounds,
-    init_font
-])
-
-for ld in LOADERS:
-    ld()
+init_assets()

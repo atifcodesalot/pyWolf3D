@@ -1,11 +1,11 @@
 
 
-from wolfenstein3D.wolf.assets import FONT
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.wolfenstein import *
 from wolfenstein3D.gamemaps import GameMapsLoader
 import pygame
 from dataclasses import dataclass
-import time
+import cProfile
 
 
 @dataclass
@@ -14,6 +14,8 @@ class WolfMenu:
     selections: list[str]
     sel_count: int
 
+
+FONT = ASSET_MANAGER.font
 
 class WolfMenuRenderer:
     BG_COLOR = "#890000"
@@ -197,5 +199,8 @@ class WolfMenuRenderer:
 
 
 def main():
-    menu_renderer = WolfMenuRenderer("Alpha")
-    menu_renderer.run()
+    # with cProfile.Profile() as pr:
+        menu_renderer = WolfMenuRenderer("Alpha")
+        menu_renderer.run()
+    
+    # pr.dump_stats("wolf.prof")

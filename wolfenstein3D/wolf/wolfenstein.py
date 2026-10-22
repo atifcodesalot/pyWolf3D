@@ -1,15 +1,20 @@
 
 from wolfenstein3D.raycaster.aux_math import *
+from wolfenstein3D.raycaster.sprites import Projectile
 from wolfenstein3D.wolf.maps import *
 from wolfenstein3D.wolf.player import *
 from wolfenstein3D.wolf.actors import *
 from wolfenstein3D.wolf.sound import WolfSoundManager
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf._3Drenderer import Wolf3DRenderer, PointLight
 from wolfenstein3D.wolf._2Drenderer import Wolf2DRenderer
 from wolfenstein3D.wolf import wolflogger, pygame
 from wolfenstein3D.wolf.game_objects import WEAPON_SOUND
-
 import time
+
+
+SOUNDS = ASSET_MANAGER.sounds
+SPRITES = ASSET_MANAGER.sprites
 
 
 class Animation:
@@ -63,10 +68,12 @@ class WolfGame:
         # game events to schedule: (ticks-> func)
         self.game_events = {}
         self.animations: list[Animation] = []
+        self.projectiles: list[Projectile] = []
 
         self.ongoing = True
         self.interact = False
 
+        # used for sound propagation
         self.areabyplayer = [[0,]*37]*37
         self.noclip = noclip
 
@@ -79,7 +86,7 @@ class WolfGame:
         self.new_life = False
         self.floor_fin = False
         self.music_paused = False
-        
+
         self.wait_between_states = 0.25
 
     def init_renderers(self, root):
@@ -116,7 +123,8 @@ class WolfGame:
             pygame.K_d: self.player.turn_cc,
             pygame.K_SPACE: lambda: setattr(self, "interact", True),
             pygame.K_LSHIFT: lambda: setattr(self.player, "running", True),
-            pygame.K_ESCAPE: lambda: exit("COWARD!")
+            pygame.K_p: lambda: self.spawn_projectile(self.player.look_dir, 1, self.player.pos),
+            pygame.K_ESCAPE: lambda: setattr(self, "ongoing", False)
         }
 
     def init_mouse(self):
@@ -275,6 +283,17 @@ class WolfGame:
                 else:
                     damage = self.calc_player_dmg(act)
                     act.get_shot(damage, self)
+
+    def handle_projectiles(self):
+        for pj in self.projectiles:
+            if pj.collides_map(self.wolfmap):
+                self.projectiles.remove(pj)
+                continue
+            pj.travel()
+
+    def spawn_projectile(self, direction, speed, pos):
+        new_pj = Projectile(direction, speed, pos, [SPRITES["objects"][1],])
+        self.projectiles.append(new_pj)
 
     def calc_player_dmg(self, actor: Actor):
         pblock = self.player.get_current_block()
@@ -490,9 +509,9 @@ class WolfGame:
         if type(self.game_renderer.light) is PointLight:
             self.game_renderer.light.pos = self.player.pos
         self.game_renderer.clear_screen()
-        self.game_renderer.render(heartbeats=1)
+        self.game_renderer.render(heartbeats=1, game_ctx=self)
 
-    def render(self):
+    def render_all(self):
         self.render_game()
         game_screen = self.game_renderer.pgsurface
         self.renderer.heartbeat(game_screen, self.player)
@@ -502,7 +521,7 @@ class WolfGame:
         self.heartbeats += 1
         self.clock.tick(self.framerate)
         # render everything
-        self.render()
+        self.render_all()
         #
         pgevents = pygame.event.get()
         self.handle_actors()
@@ -512,6 +531,7 @@ class WolfGame:
         self.handle_doors()
         self.handle_secrets()
         self.handle_animations()
+        self.handle_projectiles()
         self.handle_areas()
         self.sound_manager.handle_sound(self)
 
@@ -524,7 +544,7 @@ class WolfGame:
 
     def mainloop(self):
         self.ongoing = True
-        
+
         self.floor_start()
         while self.ongoing:
             self.heartbeat()
@@ -545,7 +565,7 @@ class WolfGame:
         # in seconds
         completion_time = self.end_time - self.start_time
         end_duration = 0
-        self.render()
+        self.render_all()
         self.renderer.fade(self.root_display, out=True)
         while end_duration < 1000:
             self.renderer.render_floor_end(end_duration,
@@ -571,7 +591,7 @@ class WolfGame:
         time.sleep(self.wait_between_states)
         self.init_map()
         self.new_floor = False
-        self.render()
+        self.render_all()
         self.renderer.fade(self.root_display)
         self.start_timer()
 
@@ -580,7 +600,7 @@ class WolfGame:
         self.sound_manager.stop_music()
         self.player.lives -= 1
         self.renderer.update_hud(self.player)
-        self.render()
+        self.render_all()
         self.sound_manager.handle_sound(self)
         pygame.display.flip()
         killer = getattr(self, "player_slayer", None)

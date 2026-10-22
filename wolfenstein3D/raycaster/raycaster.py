@@ -2,7 +2,6 @@
 
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.maps import WolfDoor, WolfPushWall
-from wolfenstein3D.wolf.assets import SIDEDOOR
 import math
 
 # observer class,
@@ -44,6 +43,7 @@ class Observer:
     def translate(self, tvec):
         self.pos = vec_add(self.pos, tvec)
 
+SIDEDOOR = 58
 
 class Raycaster:
     atol = 1e-10

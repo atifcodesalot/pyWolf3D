@@ -2,7 +2,7 @@
 from wolfenstein3D.raycaster.sprites import Sprite
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import *
-from wolfenstein3D.wolf.assets import SPRITES
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
 from enum import Enum
@@ -264,7 +264,7 @@ class WolfMap:
         if decor not in WolfDecoration:
             raise TypeError("can't add non decoration")
         spidx = DECORATION_SPRITES_MAPPING[decor]
-        self.add_sprite(SPRITES["objects"][spidx], coor)
+        self.add_sprite(ASSET_MANAGER.sprites["objects"][spidx], coor)
 
     def add_pushwall(self, block_pos):
         cell = self.raw[block_pos[1]][block_pos[0]]

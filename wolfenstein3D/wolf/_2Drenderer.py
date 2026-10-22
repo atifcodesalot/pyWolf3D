@@ -1,10 +1,8 @@
 
 
 import time
-
 from wolfenstein3D.wolf import pygame
-from wolfenstein3D.wolf.assets import (
-    STATUSBAR, HUD_FACES, HUD_NUMBERS, HUD_WEAPONS, HUD_KEYS, BIGGERFONT)
+from wolfenstein3D.wolf.assets import ASSET_MANAGER as AM
 from wolfenstein3D.wolf.maps import WolfMap
 
 
@@ -28,9 +26,9 @@ class Wolf2DRenderer:
         self.heartbeats = 0
 
     def init_hud(self):
-        self.hudscale = self.game_res[0] / STATUSBAR.get_size()[0]
+        self.hudscale = self.game_res[0] / AM.statusbar.get_size()[0]
         def scale(surf): return pygame.transform.scale_by(surf, self.hudscale)
-        self.hud = scale(STATUSBAR)
+        self.hud = scale(AM.statusbar)
         self.hudsurf = pygame.Surface(self.hud.get_size())
         self.hud_size = self.hudsurf.get_size()
         self.hud_topmarg = 10
@@ -38,10 +36,10 @@ class Wolf2DRenderer:
         self.hud_off = (self.hud_horizmarg,
                         self.game_off[1] + self.game_res[1] + self.hud_topmarg)
         self.hud_rect = pygame.Rect(self.hud_off, self.hud_size)
-        self.hud_faces = [scale(face) for face in HUD_FACES]
-        self.hud_nums = [scale(num) for num in HUD_NUMBERS]
-        self.hud_weapons = [scale(weap) for weap in HUD_WEAPONS]
-        self.hud_keys = [scale(key) for key in HUD_KEYS]
+        self.hud_faces = [scale(face) for face in AM.hud_faces]
+        self.hud_nums = [scale(num) for num in AM.hud_numbers]
+        self.hud_weapons = [scale(weap) for weap in AM.hud_weapons]
+        self.hud_keys = [scale(key) for key in AM.hud_keys]
 
         swap = self.hud_weapons[1].copy()
         self.hud_weapons[1] = self.hud_weapons[2]
@@ -159,7 +157,7 @@ class Wolf2DRenderer:
     def seconds_to_time(seconds: int) -> pygame.Surface:
         minutes = round(seconds / 60)
         remainder = round(seconds % 60)
-        return BIGGERFONT.render(f"TIME: {minutes:02d}:{remainder:02d}", True, "#04b5b7")
+        return AM.biggerfont.render(f"TIME: {minutes:02d}:{remainder:02d}", True, "#04b5b7")
 
     def render_floor_end(self, elapsed, wolfmap: WolfMap, completion_time, root_display):
         color = "#04b5b7"
@@ -175,15 +173,15 @@ class Wolf2DRenderer:
         if 300 < elapsed < 400:
             secretperc = min(elapsed % 300, secretperc)
 
-        killsurf = BIGGERFONT.render(
+        killsurf = AM.biggerfont.render(
             f"KILLS: {killperc}%", True, color)
-        secretsurf = BIGGERFONT.render(
+        secretsurf = AM.biggerfont.render(
             f"SECRETS: {secretperc}%", True, color)
         ctimesurf = self.seconds_to_time(completion_time)
 
         stats = [ctimesurf, killsurf, secretsurf]
 
-        floorsurf = BIGGERFONT.render(
+        floorsurf = AM.biggerfont.render(
             f"FLOOR {wolfmap.map_id + 1} COMPLETED", True, color)
         self.pgsurf.fill(self.bgcolor)
         self.pgsurf.blit(floorsurf, (stats_off[0], stats_off[1] - 100))

@@ -4,7 +4,7 @@ from wolfenstein3D.raycaster.aux_math import vec_mul
 from wolfenstein3D.raycaster.renderer import RayRenderer, PointLight
 from wolfenstein3D.wolf import pygame
 from wolfenstein3D.wolf.player import WolfPlayer
-from wolfenstein3D.wolf.assets import SPRITES, WALL_TEXTURES, FONT
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.raycaster.sprites import *
 import random
 import numpy as np
@@ -22,7 +22,7 @@ class Wolf3DRenderer(RayRenderer):
         super().__init__(Raycaster(player), pgsurface,
                          topcolor="#5C5602",
                          bottomcolor="#707070",
-                         wall_textures=WALL_TEXTURES)
+                         wall_textures=ASSET_MANAGER.wall_textures)
         self.light = LIGHT_OPTIONS[0]
         self.init_weapon_sprites()
         self.font = pygame.font.SysFont("arial", 6)
@@ -44,7 +44,7 @@ class Wolf3DRenderer(RayRenderer):
     def init_weapon_sprites(self):
         self.sp_per_wpn = 5
         self.wpn_sp = self.player.weapon.value * self.sp_per_wpn
-        weapons: dict = SPRITES["weapons"]
+        weapons: dict = ASSET_MANAGER.sprites["weapons"]
 
         scaled_weapons = [pygame.transform.scale(
             weapons[k].surface, (self.width*0.7, self.height)) for k in weapons]
@@ -63,12 +63,12 @@ class Wolf3DRenderer(RayRenderer):
             wpnsp,
             self.wpn_off)
 
-    def render_sprites(self):
+    def render_sprites(self, *additional_sprites):
         # also render actors
         actor_sprites = [act.current_sprite(self.raycaster.observer)
                          for act in self.player.map.get_actors()]
         self.sort_sprites(
-            actor_sprites + self.player.map.sprites)
+            actor_sprites + self.player.map.sprites + list(additional_sprites))
         for sprite in self.sorted_sprites:
             sprite.project()
             if not self.sprite_is_visible(sprite):
@@ -93,17 +93,17 @@ class Wolf3DRenderer(RayRenderer):
 
         del pixelref
 
-    def render(self, heartbeats, weapon=True):
+    def render(self, heartbeats, game_ctx, weapon=True):
         self.pgsurface.fill(self.topcolor, rect=self.toprect)
         self.pgsurface.fill(self.bottomcolor, rect=self.bottrect)
         offset = vec_mul(self.player.look_dir, -1)
         camera_pos = vec_add(self.player.pos, offset)
-        super().render(camera_pos, self.light)
+        super().render(camera_pos, self.light, *
+                       [pj.current_sprite() for pj in game_ctx.projectiles])
         if self.glow:
             self.handle_glow()
         if weapon:
             self.render_weapon()
-        # self.render_statusbar()
         self.heartbeats += heartbeats
 
     def fizzle_fade(self, master, update_dest):
@@ -123,7 +123,6 @@ class Wolf3DRenderer(RayRenderer):
                 pygame.display.flip()
 
     def unfizzle(self, master, update_dest):
-        self.render(1)
         mirror = self.pgsurface.copy()
         self.pgsurface.fill("0xff0000")
         pixelref = pygame.PixelArray(self.pgsurface)
@@ -145,7 +144,7 @@ class Wolf3DRenderer(RayRenderer):
         self.rgb_offset = [0, 0, 0]
         self.glow = False
         self.glow_cycle = 0
-        
+
     def begin_glow(self, data, duration):
         self.glow = data
         self.glow_duration = duration

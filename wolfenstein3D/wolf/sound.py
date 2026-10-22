@@ -1,7 +1,7 @@
 
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf import pygame
-from wolfenstein3D.wolf.assets import SOUNDS
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from math import pow, pi, atan2
 from dataclasses import dataclass
 
@@ -131,7 +131,7 @@ class WolfSoundManager:
 
     # music related methods start here
     def play_music(self, piece):
-        pygame.mixer.music.load(SOUNDS["music"][piece])
+        pygame.mixer.music.load(ASSET_MANAGER.sounds["music"][piece])
         pygame.mixer.music.set_volume(self.music_vol)
         pygame.mixer.music.play(loops=-1)
 

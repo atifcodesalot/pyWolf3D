@@ -1,10 +1,12 @@
 
 from wolfenstein3D.wolf.maps import WolfMap, WolfDifficulty
 from wolfenstein3D.wolf.actors import *
-from wolfenstein3D.wolf.assets import SPRITES, ASSETS_PATH
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.game_objects import *
 from wolfenstein3D.wolf import wolflogger
-from os import path
+import os
+
+SPRITES = ASSET_MANAGER.sprites
 
 ID_TO_ATLAS = {
     1:  0,
@@ -101,6 +103,12 @@ def init_actor_entries():
                  WolfDifficulty(i+1),
                  patrolling,
                  (entry - mutant_start) % 4)
+
+    # add fake hitler
+    ACTOR_ENTRIES[160] = (WolfActorType.FAKEHITLER,
+                          WolfDifficulty(0),
+                          False,
+                          0)
 
 
 init_actor_entries()
@@ -315,7 +323,7 @@ class GameMapsAdaptor:
         return wolfmap
 
 
-MAPS_PATH = path.join(ASSETS_PATH, "maps")
+MAPS_PATH = os.path.join(ASSET_MANAGER.assets_path, "maps")
 
 
 class GameMapsLoader:

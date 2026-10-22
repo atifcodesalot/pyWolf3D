@@ -1,11 +1,12 @@
 
 import unittest
-from wolfenstein3D.wolf.gamemaps import *
+from wolfenstein3D.gamemaps import *
 from wolfenstein3D.wolf.wolfenstein import *
 from wolfenstein3D.wolf.game_objects import *
 import cProfile
+from os import path
 
-SHAREWARE_MAPS = list(get_shareware_maps())
+SHAREWARE_MAPS = list(GameMapsLoader(MAPS_PATH).get_shareware_maps())
 
 class ParserTest(unittest.TestCase):
     def test_parse(self):
