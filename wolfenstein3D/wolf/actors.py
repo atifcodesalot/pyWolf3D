@@ -812,25 +812,10 @@ class Mutant(Actor):
                          patrol=patrol)
         self.pace = 0.15
         
-        
-class FakeHitler(Actor):
-    def __init__(self, wolfmap, pos, look_dir, patrol):
-        super().__init__(wolfmap, WolfActorType.MUTANT, pos, look_dir,
-                         sprites=SPRITES["characters"]["mutant"],
-                         sprite_layout=(8, 7),
-                         death_frames=6,
-                         move_frames=4,
-                         attack_frames=4,
-                         dead_offset=6,
-                         hurt_offset=0,
-                         health=25,
-                         drop=None,
-                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
-                                       SOUNDS["common"]["LEBENSND.WAV"]],
-                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
-                         patrol=patrol)
-        self.pace = 0.2
+    
+# placeholder
+class FakeHitler(Guard):
+    pass
 
 class HansGrosse(Actor):
     def __init__(self, wolfmap, pos, *_, **__):
