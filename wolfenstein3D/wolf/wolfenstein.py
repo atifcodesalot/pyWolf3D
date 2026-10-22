@@ -296,8 +296,8 @@ class WolfGame:
                 continue
             pj.travel()
 
-    def spawn_projectile(self, direction, speed, pos):
-        new_pj = Projectile(direction, speed, pos, [SPRITES["objects"][1],])
+    def spawn_projectile(self, direction, speed, pos, sprites):
+        new_pj = Projectile(direction, speed, pos, sprites)
         self.projectiles.append(new_pj)
 
     def calc_player_dmg(self, actor: Actor):
