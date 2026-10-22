@@ -1,9 +1,9 @@
 
 
-from wolfenstein3D.wolf.assets import *
+from wolfenstein3D.wolf.assets import ASSET_MANAGER, Sprite
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import WolfItem, WolfActorType
-from wolfenstein3D.wolf import wolflogger
+from wolfenstein3D.wolf import pygame, wolflogger
 import copy
 import random
 from math import pi, atan2
@@ -115,7 +115,6 @@ class HurtState(ActorState):
         elif self.actor.type == WolfActorType.HANS:
             self.lifetime = 1
 
-
     def think(self, game_ctx):
         if type(self.next) is not ChaseState:
             self.next = ChaseState(self.actor, 0, game_ctx)
@@ -157,6 +156,10 @@ class AttackState(ActorState):
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
     def attack(self, game_ctx):
+        callback = getattr(self.actor, "attack_callback", None)
+        if callable(callback):
+            return callback(game_ctx)
+
         damage = game_ctx.calc_actor_dmg(self.actor)
         game_ctx.hurt_player(damage)
         if game_ctx.player.is_dead():
@@ -707,7 +710,10 @@ class Actor:
         self.state = GuardingState(
             self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
-
+        
+        
+SOUNDS = ASSET_MANAGER.sounds
+SPRITES = ASSET_MANAGER.sprites
 
 class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir, patrol):
@@ -767,6 +773,50 @@ class SS(Actor):
         self.pace = 0.15
 
 
+class Officer(Actor):
+    def __init__(self, wolfmap, pos, look_dir, patrol):
+        super().__init__(wolfmap, WolfActorType.OFFICER, pos, look_dir,
+                         sprites=SPRITES["characters"]["officer"],
+                         sprite_layout=(8, 7),
+                         death_frames=6,
+                         move_frames=4,
+                         attack_frames=3,
+                         dead_offset=6,
+                         hurt_offset=1,
+                         health=50,
+                         drop=WolfItem.AMMUNITION,
+                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
+                                       SOUNDS["common"]["LEBENSND.WAV"]],
+                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
+                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         patrol=patrol)
+        self.pace = 0.2
+
+
+class Mutant(Actor):
+    def __init__(self, wolfmap, pos, look_dir, patrol):
+        super().__init__(wolfmap, WolfActorType.MUTANT, pos, look_dir,
+                         sprites=SPRITES["characters"]["mutant"],
+                         sprite_layout=(8, 7),
+                         death_frames=6,
+                         move_frames=4,
+                         attack_frames=4,
+                         dead_offset=6,
+                         hurt_offset=0,
+                         health=25,
+                         drop=None,
+                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
+                                       SOUNDS["common"]["LEBENSND.WAV"]],
+                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
+                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+                         patrol=patrol)
+        self.pace = 0.15
+        
+    
+# placeholder
+class FakeHitler(Guard):
+    pass
+
 class HansGrosse(Actor):
     def __init__(self, wolfmap, pos, *_, **__):
         super().__init__(wolfmap, WolfActorType.HANS, pos, [0, 1],
@@ -794,6 +844,8 @@ TYPE_ACTOR_OBJ = {
     WolfActorType.GUARD: Guard,
     WolfActorType.DOG: Shepherd,
     WolfActorType.SCHUTZSTAFFEL: SS,
-    WolfActorType.MUTANT: Shepherd,
+    WolfActorType.MUTANT: Mutant,
+    WolfActorType.OFFICER: Officer,
+    WolfActorType.FAKEHITLER: FakeHitler,
     WolfActorType.HANS: HansGrosse,
 }

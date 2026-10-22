@@ -163,7 +163,7 @@ class WolfPlayer(Observer):
         while angle_diff > 2:
             self.rotate(da)
             angle_diff = degrees(acos(vec_dot(to_killer, self.look_dir)))
-            game_ctx.game_renderer.render(1, weapon=False)
+            game_ctx.game_renderer.render(1, game_ctx, weapon=False)
             master_surf.blit(
                 game_ctx.game_renderer.pgsurface, update_dest)
             pygame.display.flip()

@@ -2,7 +2,7 @@
 from wolfenstein3D.raycaster.sprites import Sprite
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import *
-from wolfenstein3D.wolf.assets import SPRITES
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.actors import TYPE_ACTOR_OBJ
 from copy import deepcopy
 from enum import Enum
@@ -264,7 +264,7 @@ class WolfMap:
         if decor not in WolfDecoration:
             raise TypeError("can't add non decoration")
         spidx = DECORATION_SPRITES_MAPPING[decor]
-        self.add_sprite(SPRITES["objects"][spidx], coor)
+        self.add_sprite(ASSET_MANAGER.sprites["objects"][spidx], coor)
 
     def add_pushwall(self, block_pos):
         cell = self.raw[block_pos[1]][block_pos[0]]
@@ -347,10 +347,11 @@ class WolfMap:
 
 
 class WolfEpisode:
-    def __init__(self, maps: list[WolfMap], jukebox: list):
+    def __init__(self, maps: list[WolfMap], jukebox: list, name):
         self.maps = maps
         self.map_amount = len(self.maps)
         self.jukebox = jukebox
+        self.name = name
         self.link()
 
     def get_music(self, level_i):
@@ -367,6 +368,7 @@ class WolfEpisode:
 
     def link(self):
         for i, map_ in enumerate(self.maps):
+            map_.map_id = i
             if i + 1 == self.map_amount:
                 break
             map_.nextmap = self.maps[i + 1]

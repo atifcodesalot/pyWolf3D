@@ -1,5 +1,5 @@
 
-from wolfenstein3D.wolf.assets import SPRITES, SOUNDS
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from enum import Enum
 
 
@@ -106,6 +106,8 @@ ITEM_EFFECT = {
     WolfItem.BLOODPOOL: lambda p: p.regain_health(5)
 }
 
+SOUNDS = ASSET_MANAGER.sounds
+
 ITEM_SOUND = {
     WolfItem.DOGFOOD: SOUNDS["pickup"]["ALFOODUP.wav"],
     WolfItem.GOLDKEY: SOUNDS["pickup"]["ALGETKEY.wav"],
@@ -179,7 +181,7 @@ class WolfItemObj:
         self.map = map_
         self.item = item
         self.pyindex = ITEM_SPRITES_MAPPING[item]
-        self.sprite = SPRITES["objects"][self.pyindex].copy(pos)
+        self.sprite = ASSET_MANAGER.sprites["objects"][self.pyindex].copy(pos)
         self.sprite.blocking = item in BLOCKING_SPRITES
         self.pos = self.map.to_block_pos(*pos)
         self.pickup_callback = pickup_callback
@@ -212,10 +214,13 @@ class WolfItemObj:
 
 class WolfActorType(Enum):
     GUARD = 108
+    OFFICER = 116
     SCHUTZSTAFFEL = 126
     DOG = 134
+    FAKEHITLER = 160
     HANS = 214
     MUTANT = 216
+    
 
 
 WEAPON_MULTIPLIER = 1.1
