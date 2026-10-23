@@ -72,6 +72,9 @@ class WolfMenuRenderer:
         selh = sum(s.get_height() for s in rendered_surfs)
         selsurf_offset = [(self.scw - selw) // 2 + xoff,
                           (self.sch - selh) // 2 + yoff]
+        selection_rect = pygame.Rect(
+            *vec_sub((5, 5), selsurf_offset), *vec_mul((selw, selh), 1.1))
+        pygame.draw.rect(self.screen, (0, 0, 0), selection_rect, width=2)
         for surf in rendered_surfs:
             self.screen.blit(surf, selsurf_offset)
             selsurf_offset[1] += surf.get_height()
@@ -173,31 +176,35 @@ class WolfMenuRenderer:
                     return self.player_selection
 
     def run(self):
-        self.loading = True
-        episodes = []
-        shareware_episode = self.load_shareware_episode()
-        episodes.append(shareware_episode)
-        wl6_episodes = self.load_wl6_episodes()
-        if wl6_episodes:
-            episodes.extend(wl6_episodes)
-        self.loading = False
+        while True:
+            self.loading = True
+            episodes = []
+            shareware_episode = self.load_shareware_episode()
+            episodes.append(shareware_episode)
+            wl6_episodes = self.load_wl6_episodes()
+            if wl6_episodes:
+                episodes.extend(wl6_episodes)
+            self.loading = False
 
-        episode_selections = [ep.name for ep in episodes]
+            episode_selections = [
+                ep.name for ep in episodes] + ["CHICKEN OUT",]
 
-        self.change_menu(WolfMenu("Choose an episode to play",
-                         selections=episode_selections, sel_count=len(episodes)))
+            self.change_menu(WolfMenu("Choose an episode to play or chicken out (quit)!",
+                                      selections=episode_selections, sel_count=len(episodes) + 1))
 
-        epchoice = self.wait_menu()
-        episode = episodes[epchoice]
+            epchoice = self.wait_menu()
+            if epchoice == self.current_menu.sel_count-1:
+                exit("Coward!")
 
-        self.change_menu(self.difficulty_menu)
-        diffchoice = self.wait_menu()
+            episode = episodes[epchoice]
+            self.change_menu(self.difficulty_menu)
+            diffchoice = self.wait_menu()
 
-        game = WolfGame(
-            episode, WolfDifficulty(diffchoice),
-            self.screen, sound_off=False, framerate=75)
+            game = WolfGame(
+                episode, WolfDifficulty(diffchoice),
+                self.screen, sound_off=False, framerate=75)
 
-        game.mainloop()
+            game.mainloop()
 
 
 def main():
