@@ -25,8 +25,8 @@ class Sprite(Texture):
 
     # takes RayRenderer object
     def to_screen_pos(self, renderer):
-        observer = renderer.raycaster.observer
-        vpl = observer.vp_length
+        o = renderer.raycaster.observer
+        vpl = o.vp_length
         # transform to screen position
         self.screen_pos = (
             (self.projected[0] + vpl) / (2*vpl)) * renderer.width

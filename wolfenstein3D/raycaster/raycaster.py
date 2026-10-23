@@ -262,8 +262,8 @@ class Raycaster:
         first_check = False
         #
         m = self.observer.map
-        visited = {tuple(camera_pos.copy())}
         cblock = m.to_block_pos(*camera_pos)
+        visited = {cblock}
         if cblock in m.doors:
             door_inside: WolfDoor = m.doors[cblock]
             first_check = True

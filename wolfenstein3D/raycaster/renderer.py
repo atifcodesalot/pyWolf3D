@@ -39,7 +39,7 @@ class RayRenderer:
         self.sprite_wh_ratio = 1 / self.repeat
         self.wall_textures = wall_textures
         self.wall_scaler = scaler
-        self.sprite_scaler = self.wall_scaler
+        self.sprite_scaler = self.wall_scaler 
         self.distbuff = []
 
     def distance_to_height(self, dist, sprite=False):
@@ -85,14 +85,14 @@ class RayRenderer:
         return self.distbuff[int(col_pos // self.repeat)] > dist
 
     def draw_sprite(self, sprite: Sprite):
-        sch = self.height
-        schh = sch // 2
-        sprite.to_screen_pos(self)
         sprite.get_perp_dist(self.raycaster.observer)
 
         height_to_draw = self.distance_to_height(sprite.perp_dist, sprite=True)
-        if height_to_draw > 800:
+        if height_to_draw > 1100:
             return
+        sch = self.height
+        schh = sch // 2
+        sprite.to_screen_pos(self)
         width_to_draw = height_to_draw * self.sprite_wh_ratio
         sprite.screen_width = width_to_draw
 
