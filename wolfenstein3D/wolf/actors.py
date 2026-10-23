@@ -230,7 +230,8 @@ class ChaseState(ActorState):
         vblock, occupied = self.actor.dir_occupied(dir_, game_ctx)
         if occupied:
             wolflogger.debug(f"direction {dir_} is occupied.")
-            if vblock in m.doors:
+            # if not moving diagonally, open doors
+            if vblock in m.doors and not all(dir_):
                 door = m.get_door(vblock)
                 if self.actor.type != WolfActorType.DOG:
                     self.open_door(door)
