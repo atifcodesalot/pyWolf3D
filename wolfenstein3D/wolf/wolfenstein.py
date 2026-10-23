@@ -123,7 +123,7 @@ class WolfGame:
             pygame.K_d: self.player.turn_cc,
             pygame.K_SPACE: lambda: setattr(self, "interact", True),
             pygame.K_LSHIFT: lambda: setattr(self.player, "running", True),
-            pygame.K_ESCAPE: lambda: setattr(self, "ongoing", False)
+            pygame.K_ESCAPE: lambda: self.game_end(chicken=True)
         }
 
     def toggle_pause(self):
@@ -572,7 +572,7 @@ class WolfGame:
     def check_flags(self):
         while self.paused:
             self.handle_pgevents(pygame.event.get(), paused=True)
-            time.sleep(0.001)
+            self.clock.tick(self.framerate)
         if self.new_life:
             self.life_start()
         elif self.new_floor:
@@ -592,7 +592,7 @@ class WolfGame:
             self.renderer.render_floor_end(end_duration,
                                            self.wolfmap, completion_time, self.root_display)
             end_duration += 1
-            time.sleep(0.005)
+            self.clock.tick(self.framerate)
         # check for the tile player is on,
         # if it is 107, go to the secret level
         # the shareware version checks if the player block x is 10
@@ -653,6 +653,12 @@ class WolfGame:
         pygame.event.clear()
         self.start_timer()
 
-    def game_end(self):
-        # placeholder
-        exit("game over!")
+    def game_end(self, chicken=False):
+        beats = 300
+        while beats != 0:    
+            self.renderer.render_gameover(self.root_display, chicken=chicken)
+            self.clock.tick(self.framerate)
+            beats -=1
+        self.ongoing = False
+        self.sound_manager.stop_music()
+        del self
