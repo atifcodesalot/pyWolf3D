@@ -100,11 +100,9 @@ class DyingState(ActorState):
         return col + self.heartbeats // self.hb_perframe
 
     def endcallback(self, game_ctx):
-        if self.actor.drop is not None:
-            game_ctx.wolfmap.add_item(self.actor.drop,
-                                      vec_add(self.actor.pos, (2, 0)))
         game_ctx.player.score += 100
         self.actor.flush_occupancy()
+        self.actor.drop_item()
 
 
 class HurtState(ActorState):
@@ -651,6 +649,20 @@ class Actor:
     def is_dead(self):
         return self.health == 0
 
+    def drop_item(self):
+        rp = self.wolfmap.to_real_pos
+        if self.drop is None:
+            return
+        dblock = self.wolfmap.to_block_pos(*vec_add(self.pos, (2, 0)))
+        if dblock not in self.wolfmap.item_lookup:
+            return self.wolfmap.add_item(self.drop, vec_add(self.pos, (2, 0)))
+        # the drop block has another item
+        for adj in ADJACENT_MATRIX:
+            dblock = tuple(vec_add(dblock, adj))
+            if dblock not in self.wolfmap.item_lookup:
+                return self.wolfmap.add_item(self.drop, rp(*dblock))
+        # all drop blocks occupied, there is nothing we can do
+
     def get_shot(self, damage, game_ctx):
         self.dec_health(damage)
         dead = self.is_dead()
@@ -711,10 +723,11 @@ class Actor:
         self.state = GuardingState(
             self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
-        
-        
+
+
 SOUNDS = ASSET_MANAGER.sounds
 SPRITES = ASSET_MANAGER.sprites
+
 
 class Guard(Actor):
     def __init__(self, wolfmap, pos, look_dir, patrol):
@@ -810,11 +823,12 @@ class Mutant(Actor):
                          alert_sound=None,
                          patrol=patrol)
         self.pace = 0.15
-        
-    
+
+
 # placeholder
 class FakeHitler(Guard):
     pass
+
 
 class HansGrosse(Actor):
     def __init__(self, wolfmap, pos, *_, **__):

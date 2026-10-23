@@ -275,6 +275,10 @@ class WolfMap:
 
     def to_block_pos(self, x, y):
         return int(x // self.wall_width), int(y // self.wall_width)
+    
+    def to_real_pos(self, bx, by):
+        w = self.wall_width
+        return (bx + 0.5) * w, (by + 0.5) * w
 
     def get_door(self, block_pos) -> WolfDoor:
         return self.doors.get(block_pos, None)
