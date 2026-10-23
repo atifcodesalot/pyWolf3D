@@ -17,6 +17,7 @@ class WolfMenu:
 
 FONT = ASSET_MANAGER.font
 
+
 class WolfMenuRenderer:
     BG_COLOR = "#890000"
 
@@ -44,7 +45,7 @@ class WolfMenuRenderer:
     def render_control_instructions(self):
         instructions = ["Use W and S to move, A and D to look left and right, and ENTER to shoot. Press Shift to run.",
                         "You can also use the mouse to look around and shoot with the left mouse button.",
-                        "Finally: press ESC to chicken out."]
+                        "Finally, press ESC to chicken out and P to pause the carnage."]
         y_offset = 500
 
         for instruction in instructions:
@@ -195,12 +196,13 @@ class WolfMenuRenderer:
         game = WolfGame(
             episode, WolfDifficulty(diffchoice),
             self.screen, sound_off=False, framerate=75)
+
         game.mainloop()
 
 
 def main():
     # with cProfile.Profile() as pr:
-        menu_renderer = WolfMenuRenderer("Alpha")
-        menu_renderer.run()
-    
+    menu_renderer = WolfMenuRenderer("Alpha")
+    menu_renderer.run()
+
     # pr.dump_stats("wolf.prof")
