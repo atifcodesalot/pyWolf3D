@@ -112,7 +112,9 @@ class WolfMenuRenderer:
             9: "secret.ogg"
         }
 
-        return WolfEpisode(shareware_maps, shareware_jukebox, "Episode 1 shareware version")
+        return WolfEpisode(
+            shareware_maps, shareware_jukebox,
+            "Episode 1 Escape from Wolfenstein, shareware version")
 
     def load_wl6_episodes(self):
         if not self.loader.wl6_maps_present():
@@ -136,9 +138,19 @@ class WolfMenuRenderer:
         jukebox = {
             0: "level1_5.ogg"
         }
+        
+        epnames = [
+            "Escape from Wolfenstein",
+            "Operation: Eisenfaust",
+            "Die, Führer, Die!",
+            "A Dark Secret",
+            "Trail of the Madman",
+            "Confrontation"
+        ]
 
         wl6_episodes = [WolfEpisode(
-            wl6_maps[i*10: (i+1)*10], jukebox, f"Episode {i+1}") for i in range(6)]
+            wl6_maps[i*10: (i+1)*10], jukebox, 
+            f"Episode {i+1} {epnames[i]}") for i in range(6)]
         return wl6_episodes
 
     def render(self, loading=None):
