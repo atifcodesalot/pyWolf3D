@@ -209,6 +209,7 @@ class ChaseState(ActorState):
 
         self.decide_dir(game_ctx)
         self.dest_block = None
+        self.mov_budget = 0
         self.committo_dest()
 
         self.waiting_door = False
@@ -216,7 +217,7 @@ class ChaseState(ActorState):
 
     def valid_dir(self, dir_, game_ctx):
         if not any(vec_add(self.prev_dir, dir_)):
-            wolflogger.debug(f"direction {dir_} would reversse prev direction: "
+            wolflogger.debug(f"direction {dir_} would reverse prev direction: "
                              f"{self.prev_dir}, not allowed")
             # reverses previous direction
             return False
@@ -230,6 +231,8 @@ class ChaseState(ActorState):
             wolflogger.debug(f"direction {dir_} is occupied.")
             # if not moving diagonally, open doors
             if vblock in m.doors and not all(dir_):
+                if self.actor.occupied_by_other(vblock):
+                    return False
                 door = m.get_door(vblock)
                 if self.actor.type != WolfActorType.DOG:
                     self.open_door(door)
@@ -333,6 +336,9 @@ class ChaseState(ActorState):
             door.begin_opening()
 
     def committo_dest(self):
+        if self.stuck:
+            self.dest_block = None
+            return
         if self.dest_block:
             self.actor.unoccupy_block(
                 self.actor.wolfmap.to_block_pos(*self.dest_block))
@@ -357,7 +363,8 @@ class ChaseState(ActorState):
     def budget_end(self, game_ctx):
         # clamp to center
         if not self.stuck:
-            self.actor.pos = self.dest_block
+            if self.dest_block is not None:
+                self.actor.pos = self.dest_block
         #
         self.decide_dir(game_ctx)
         self.committo_dest()
