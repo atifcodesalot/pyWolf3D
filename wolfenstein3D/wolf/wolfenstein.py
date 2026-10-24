@@ -51,10 +51,10 @@ class WolfGame:
     SWITCH_UP = 42
 
     def __init__(self, episode: WolfEpisode, difficulty: WolfDifficulty, root_display, framerate=60,
-                 sound_off=False, noclip=False, ):
+                 sound_off=False, noclip=False, lvl_offset=0):
         self.episode = episode
         self.difficulty = difficulty
-        self.begin_episode()
+        self.begin_episode(lvl_offset)
 
         self.player = WolfPlayer(self, ray_count=160, fov=54)
         self.init_renderers(root_display)
@@ -108,8 +108,8 @@ class WolfGame:
         music = self.get_music()
         self.sound_manager.play_music(music)
 
-    def begin_episode(self):
-        self.wolfmap = self.episode[0]
+    def begin_episode(self, lvl_offset):
+        self.wolfmap = self.episode[lvl_offset]
         self.jukebox = self.episode.jukebox
 
     def start_timer(self):
