@@ -24,7 +24,9 @@ All code present in this project was written by me, without AI code generation o
 <img width="401" height="316" alt="ss1" src="https://github.com/user-attachments/assets/fe2d7534-f7e1-466a-9399-553d2f54795e" />
 
 ## How to play?
-Simply clone this repository:
+
+### Episode 1 shareware version
+To play the shareware version of episode 1, simply clone this repository:
 
 ```
 git clone https://github.com/atifcodesalot/pyWolf3D
@@ -62,14 +64,19 @@ For `Unix`:
 ```
 python3 -m wolfenstein3D
 ```
+### Original Maps
+
+You can now play all 6 episodes, but they aren't quite complete: the bosses and the music aren't there.
+If you still want to play, you will need to drop the `GAMEMAPS.wl6` and `MAPHEAD.wl6`from your 
+purchased installation into the `./wolfenstein3D/assets/maps folder.
 
 
 ## Info on the project
 
 I tried to keep this clone as accurate as possible (compared to the original)
 but some things are probably different. The damage model and actor behaviour are mostly similar.
-The clone currently doesn't support beyond episode 1, there is no projectile or texture support for, e.g
-Spear of Destiny. It extracts the original maps from the shareware version files MAPHEAD.WL1 and MAP. In the near future, I plan to complete it.
+The clone currently supports playing the original 6 episodes but it is incomplete as mentioned. It extracts the original maps from the shareware version files MAPHEAD.WL1 and MAP. If you want to play the original episodes, as previously stated, you will need to drop the `GAMEMAPS.wl6` and `MAPHEAD.wl6`from your 
+purchased installation into the `./wolfenstein3D/assets/maps folder.
 
 ### Technical stuff
 
@@ -87,12 +94,12 @@ which the raycaster handles explicitly.
 The sound engine is responsible for attenuation and directional sound.
 Directional sound is achieved by panning the audio via hardcoded configurations.
 The sound propagation is done via the preprocessed area tiles.
-Some of the sound effects, like treasure pickup, were actually synthesized during runtim
+Some of the sound effects, like treasure pickup, were actually synthesized during runtime
 in the original, this version uses .wav files for all sound and .ogg files for music.
 
 ## Credits
-- Code: All of the components, WL1 file parsing, rendering, sound and game logic were implemented by me, as mentioned; AI wasn't used in anyway for code generation.
-- Sprites, sounds: The sprites, sounds of the original were obtained from the internet, sometimes via LLM's (some sprites are relatively obscure)
+- Code: All of the components, WL1, WL6 file parsing, rendering, sound and game logic were implemented by me, as mentioned; AI wasn't used in anyway for code generation.
+- Sprites, sounds: The sprites, sounds of the original were obtained from the internet, sometimes via LLM's (some sprites are relatively obscure \[like fake hitler sprites\])
 
 
 ## Resources
@@ -109,6 +116,7 @@ and I have read it extensively during the development of this clone. Chase state
 - Projectiles, more episode sprites and texture support (working on it)
 - ~Hans Grösse sound effects~ done
 - Episode 1 ending animation
+- Spear of destiny 
 
 ## Bugs
 I have been working on this for some time now, so I decided to just put it out there before it was
