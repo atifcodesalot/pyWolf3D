@@ -17,11 +17,11 @@ I am a huge Doom and Wolfenstein fan so I just decided to rewrite one of the ori
 All code present in this project was written by me, without AI code generation or coding agents. AI tools were used for discussion, research, and help locating existing game assets and resources. The implementation, including map parsing, rendering, actor behavior, and game logic is entirely my own work. But don't take my word for it: https://isvibecoded.com/.
 
 ## Some screenshots
-<img width="802" height="632" alt="ss5" src="https://github.com/user-attachments/assets/6fb449fb-2550-4b86-bb63-cab538fd5f79" />
-<img width="802" height="632" alt="ss4" src="https://github.com/user-attachments/assets/3450b257-dbd7-4388-be90-366c568cd97e" />
-<img width="802" height="632" alt="ss3" src="https://github.com/user-attachments/assets/63286186-6e3e-41f0-a770-2a410becaec6" />
-<img width="802" height="632" alt="ss2" src="https://github.com/user-attachments/assets/6c85836e-ea27-42ed-a191-792aed1f9c3e" />
-<img width="802" height="632" alt="ss1" src="https://github.com/user-attachments/assets/fe2d7534-f7e1-466a-9399-553d2f54795e" />
+<img width="401" height="316" alt="ss5" src="https://github.com/user-attachments/assets/6fb449fb-2550-4b86-bb63-cab538fd5f79" />
+<img width="401" height="316" alt="ss4" src="https://github.com/user-attachments/assets/3450b257-dbd7-4388-be90-366c568cd97e" />
+<img width="401" height="316" alt="ss3" src="https://github.com/user-attachments/assets/63286186-6e3e-41f0-a770-2a410becaec6" />
+<img width="401" height="316" alt="ss2" src="https://github.com/user-attachments/assets/6c85836e-ea27-42ed-a191-792aed1f9c3e" />
+<img width="401" height="316" alt="ss1" src="https://github.com/user-attachments/assets/fe2d7534-f7e1-466a-9399-553d2f54795e" />
 
 ## How to play?
 Simply clone this repository:
