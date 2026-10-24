@@ -72,21 +72,21 @@ class WolfItem(Enum):
 
 
 ITEM_SPRITES_MAPPING = {
-    WolfItem.DOGFOOD:  6,  
-    WolfItem.GOLDKEY: 20, 
-    WolfItem.SILVERKEY: 21,  
-    WolfItem.FOOD: 24, 
-    WolfItem.MEDKIT: 25,  
-    WolfItem.AMMUNITION: 26,  
-    WolfItem.MACHINEGUN: 27, 
-    WolfItem.CHAINGUN: 28,  
-    WolfItem.CROSS: 29,  
-    WolfItem.CHALICE: 30,  
-    WolfItem.TREASURECHEST: 31, 
-    WolfItem.CROWN: 32,  
-    WolfItem.EXTRALIFE: 33, 
-    WolfItem.BLOODYREMAINS: 34,  
-    WolfItem.BLOODPOOL: 38, 
+    WolfItem.DOGFOOD:  6,
+    WolfItem.GOLDKEY: 20,
+    WolfItem.SILVERKEY: 21,
+    WolfItem.FOOD: 24,
+    WolfItem.MEDKIT: 25,
+    WolfItem.AMMUNITION: 26,
+    WolfItem.MACHINEGUN: 27,
+    WolfItem.CHAINGUN: 28,
+    WolfItem.CROSS: 29,
+    WolfItem.CHALICE: 30,
+    WolfItem.TREASURECHEST: 31,
+    WolfItem.CROWN: 32,
+    WolfItem.EXTRALIFE: 33,
+    WolfItem.BLOODYREMAINS: 34,
+    WolfItem.BLOODPOOL: 38,
 }
 
 ITEM_EFFECT = {
@@ -206,7 +206,8 @@ class WolfItemObj:
 
     def pickup(self, game_ctx):
         if self.pickupsnd is not None:
-            game_ctx.schedule_sound_effect(self.pickupsnd, None, 1, repeat=False)
+            game_ctx.schedule_sound_effect(
+                self.pickupsnd, None, 1, repeat=False)
         self.affect(game_ctx)
         glow = (0, 1, 2) if self.is_health_item or self.is_weap_item else (0, 1)
         game_ctx.game_renderer.begin_glow(glow, 22)
@@ -220,7 +221,11 @@ class WolfActorType(Enum):
     FAKEHITLER = 160
     HANS = 214
     MUTANT = 216
-    
+
+    BLINKY = 224
+    CLYDE = 225
+    PINKY = 226
+    INKY = 227
 
 
 WEAPON_MULTIPLIER = 1.1

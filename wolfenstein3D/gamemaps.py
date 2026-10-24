@@ -77,6 +77,7 @@ ID_TO_ATLAS = {
 
 def init_actor_entries():
     # entry: type, difficulty, patrolling (bool)
+    # did not want to make a dataclass for entries
     global ACTOR_ENTRIES
     ACTOR_ENTRIES = {}
     starts = {108: WolfActorType.GUARD, 116: WolfActorType.OFFICER,
@@ -104,19 +105,25 @@ def init_actor_entries():
                  patrolling,
                  (entry - mutant_start) % 4)
 
-    # add fake hitler
-    ACTOR_ENTRIES[160] = (WolfActorType.FAKEHITLER,
-                          WolfDifficulty(0),
-                          False,
-                          0)
+    # an actor is "trivial" if it has no orientation,
+    # and is not a boss
+    trivial_actors_types = [WolfActorType.FAKEHITLER, 
+                            WolfActorType.BLINKY, WolfActorType.PINKY,
+                            WolfActorType.INKY, WolfActorType.CLYDE]
+
+    for act_type in trivial_actors_types:
+        ACTOR_ENTRIES[act_type.value] = (act_type,
+                                         WolfDifficulty(0),
+                                         False,
+                                         0)
 
 
 init_actor_entries()
 
-# return n bytes little endian from data
 
 
 def get_n_bytes_LI(start, n, data: bytearray):
+    '''return n bytes little endian from data'''
     result = 0
     for i in range(n):
         result <<= 8
@@ -252,7 +259,7 @@ class GameMapsAdaptor:
         if obj not in ACTOR_ENTRIES:
             if obj == 0x00D6:
                 # hans grösse boss
-                wolfmap.add_actor(WolfActorType.HANS, pos, None,
+                wolfmap.add_actor(WolfActorType.HANS, pos, [0, -1],
                                   WolfDifficulty.BABY, None)
             return
         _type, diff, patrol, look_i = ACTOR_ENTRIES[obj]

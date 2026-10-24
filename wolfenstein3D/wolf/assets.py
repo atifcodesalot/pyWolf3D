@@ -114,36 +114,88 @@ class WolfAssetManager:
         char_sprites = self.texmap_parse(char_sheet, *texmap_args)
         self.sprites["characters"][charname] = dict(enumerate(char_sprites))
 
+    # the sprite sheet (a list of sprites) must be in the form of the matrix:
+    # Standing sprites (orientation variants)
+    # n columns of moving sprites (orientation variants)
+    # :
+    # :
+    # :
+    # Death sprites and hurt sprite
+    # Attack sprites
+
+    @staticmethod
+    def adapt_character_sprites(move_frames, move_frame_amount, death_frames,
+                                attack_frames, layout, stand_frames=None,
+                                no_orientation=True, move_transpose=True):
+
+        adapted = {}
+        w, h = layout
+        for i in range(w*h):
+            adapted[i] = None
+
+        ori = 1 if no_orientation else w
+
+        if stand_frames is not None:
+            # adapt standing sprites
+            for i in range(ori):
+                adapted[i] = stand_frames[i]
+        else:
+            for i in range(ori):
+                adapted[i] = move_frames[i]
+
+        # adapt moving sprites
+        for j in range(move_frame_amount):
+            for i in range(ori):
+                move_frame = move_frames[i*w +
+                                         j] if move_transpose else move_frames[j*w + i]
+                adapted[i+(j+1)*w] = move_frame
+
+        # adapt death sprites
+        for i in range(len(death_frames)):
+            adapted[i + (1 + move_frame_amount)*w] = death_frames[i]
+
+        # adapt attack sprites
+        for i in range(len(attack_frames)):
+            adapted[i + (2 + move_frame_amount)*w] = attack_frames[i]
+
+        return adapted
+
     def init_character_sprites(self):
         self.sprites["characters"] = {}
         self.init_character_sprite(
             'guard.png', 'guard', 0, 0, 1, 1, 64, 64, Sprite)
         self.init_character_sprite(
             'shepherd.png', 'shepherd', 0, 0, 1, 1, 64, 64, Sprite)
-        self.init_character_sprite('SS.png', 'SS', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        self.init_character_sprite(
+            'SS.png', 'SS', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         self.init_character_sprite(
             'officer.png', 'officer', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         self.init_character_sprite(
             'mutant.png', 'mutant', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        self.init_character_sprite(
+            'pacman.png', 'pacman-ghosts', 64, 0, 0, 0, 64, 64, Sprite, 0, 0)
 
+        ps = list(self.sprites["characters"]["pacman-ghosts"].values())
+
+        ghosts = ["blinky", "pinky", "clyde", "inky"]
+        for i, gn in enumerate(ghosts):
+            self.sprites["characters"][gn] = self.adapt_character_sprites(
+                move_frames=ps[i*2:(i+1)*2], move_frame_amount=2,
+                death_frames=ps[i*2:(i+1)*2],
+                attack_frames=ps[i*2:(i+1)*2], layout=[2, 5])
+            
         # init bosses here
-        # todo: please refactor this shit in the name of jesus christ
         self.sprites["characters"]["boss"] = {}
         # init hans grösse
         hans_sheet = Image.open(os.path.join(
             self.sprite_path, 'characters', 'boss', 'hansgrösse.png'))
         hans_sprites = self.texmap_parse(hans_sheet,
                                          1, 1, 1, 1, 64, 64, Sprite, 1, 1)
-        ogsrc = dict(enumerate(hans_sprites))
-        hans_sprites = {}
-        for i in range(4):
-            hans_sprites[i*4] = ogsrc[i]
-        death_off = 16
-        for i in range(4):
-            hans_sprites[death_off + i] = ogsrc[8 + i]
-        attack_off = 20
-        for i in range(3):
-            hans_sprites[attack_off + i] = ogsrc[4 + i]
+
+        hans_sprites = self.adapt_character_sprites(
+            move_frames=hans_sprites[:4], move_frame_amount=4,
+            death_frames=hans_sprites[8:12],
+            attack_frames=hans_sprites[4: 7], layout=[4, 7])
         self.sprites["characters"]["boss"]["hans"] = hans_sprites
 
     def init_sprites(self):

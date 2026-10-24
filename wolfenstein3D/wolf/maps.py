@@ -3,7 +3,7 @@ from wolfenstein3D.raycaster.sprites import Sprite
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import *
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
-from wolfenstein3D.wolf.actors import TYPE_ACTOR_OBJ
+from wolfenstein3D.wolf.actors import ACTOR_RECIPES, ActorBuilder
 from copy import deepcopy
 from enum import Enum
 
@@ -237,9 +237,12 @@ class WolfMap:
     def add_actor(self, actor_type: WolfActorType, pos, look_dir, act_diff, patrol=False):
         if actor_type not in WolfActorType:
             raise TypeError("can't add non actor type")
-        actor_obj = TYPE_ACTOR_OBJ[actor_type](
-            self, pos, look_dir, patrol=patrol)
-        if act_diff is WolfDifficulty.DONTHURTME:
+        elif actor_type not in ACTOR_RECIPES:
+            # raise NotImplementedError(actor_type)
+            return
+        builder = ActorBuilder(self, actor_type, pos, look_dir, patrol)
+        actor_obj = builder.build(ACTOR_RECIPES[actor_type])
+        if act_diff in [WolfDifficulty.BABY, WolfDifficulty.DONTHURTME]:
             for k in self.actors:
                 self.actors[k].append(actor_obj)
         elif act_diff is WolfDifficulty.BRINGEM:
