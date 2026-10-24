@@ -792,7 +792,7 @@ ACTOR_RECIPES = {
                       SOUNDS["common"]["LEBENSND.WAV"]],
         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
-        health=200,
+        health=100,
         range_=50,
         accuracy=1,
         drop=WolfItem.MACHINEGUN,
