@@ -100,6 +100,7 @@ in the original, this version uses .wav files for all sound and .ogg files for m
 ## Credits
 - Code: All of the components, WL1, WL6 file parsing, rendering, sound and game logic were implemented by me, as mentioned; AI wasn't used in anyway for code generation.
 - Sprites, sounds: The sprites, sounds of the original were obtained from the internet, sometimes via LLM's (some sprites are relatively obscure \[like fake hitler sprites\])
+- Pacman sprites from Ultimecia
 
 
 ## Resources
