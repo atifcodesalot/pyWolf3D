@@ -4,9 +4,11 @@ from wolfenstein3D.wolf.assets import ASSET_MANAGER, Sprite
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import WolfItem, WolfActorType
 from wolfenstein3D.wolf import pygame, wolflogger
+
+from math import pi, atan2
 import copy
 import random
-from math import pi, atan2
+from dataclasses import dataclass
 
 
 class ActorState:
@@ -68,8 +70,7 @@ class DeadState(ActorState):
         super().__init__(actor, 2, nextstate=self, lifetime=5000)
 
     def shapenum(self, _):
-        col = self.colnum() if self.actor.type is not WolfActorType.HANS else 4 * \
-            self.actor.sprite_per_state
+        col = self.colnum()
         return col + self.actor.dead_offset
 
 
@@ -82,8 +83,6 @@ class DyingState(ActorState):
         super().__init__(actor, 2, nextstate=DeadState(actor), lifetime=lifetime)
         self.hb_perframe = self.lifetime // actor.death_frames
         self.heartbeats = 0
-        if self.actor.type is WolfActorType.HANS:
-            self.spcolumn -= 1
 
     def start(self, gamectx):
         if snds := self.actor.death_sounds:
@@ -95,8 +94,6 @@ class DyingState(ActorState):
 
     def shapenum(self, _):
         col = self.colnum()
-        if self.actor.type is WolfActorType.HANS:
-            col = 4 * self.actor.sprite_per_state
         return col + self.heartbeats // self.hb_perframe
 
     def endcallback(self, game_ctx):
@@ -126,8 +123,6 @@ class AttackState(ActorState):
     def __init__(self, actor, frame_lifetime=12):
         lifetime = frame_lifetime * actor.attack_frames
         super().__init__(actor, 3, nextstate=None, lifetime=lifetime)
-        if actor.type is WolfActorType.HANS:
-            self.spcolumn = 2
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.auto = False
@@ -169,7 +164,7 @@ class AttackState(ActorState):
             game_ctx.schedule_sound_effect(snd, self.actor.pos, 0)
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist //= game_ctx.wolfmap.wall_width
-        hitprob = int(dist * self.actor.accuracy)
+        hitprob = int(dist)
         hitprob = 1 if hitprob == 0 else hitprob
         if random.randint(1, hitprob) in range(1, 3):
             if self.actor.sees_player(game_ctx):
@@ -196,7 +191,8 @@ class AttackState(ActorState):
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 40)
-        if self.actor.type in [WolfActorType.DOG, WolfActorType.HANS]:
+        
+        if self.actor.type is WolfActorType.DOG:
             # dogs and hans dont have standing sprites
             self.spcolumn = 0
 
@@ -477,54 +473,22 @@ class PatrolState(ChaseState):
         if self.mov_budget == 0:
             self.budget_end(game_ctx)
 
+# the prototype actor class
+# its specifics get built by its builder class
+
 
 class Actor:
-    def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir,
-                 sprites: list[Sprite], sprite_layout,
-                 death_frames, move_frames, attack_frames, dead_offset, hurt_offset,
-                 health=100, drop=None, _range=100, accuracy=1,
-                 death_sounds=[], attack_sound=None, alert_sound=None,
-                 patrol=False):
-
+    def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir, patrol=False):
         self.wolfmap = wolfmap
         self.type = _type
         self.pos = list(pos)
         self.occupancy = set()
         self.look_dir = look_dir
         self.left = [-self.look_dir[1], self.look_dir[0]]
-        self.health = health
-        self.drop = drop
-        self.range = _range
-        self.accuracy = accuracy
-
-        self.sprites = []
-        for i in range(sprite_layout[0]*sprite_layout[1]):
-            sp = sprites.get(i, None)
-            if sp is not None:
-                self.sprites.append(sp.copy(self.pos))
-            else:
-                self.sprites.append(None)
-        self.sprite_layout = sprite_layout
-        self.sprite_per_state = self.sprite_layout[0]
-        self.death_frames = death_frames
-        self.move_frames = move_frames
-        self.attack_frames = attack_frames
-        self.dead_offset = dead_offset
-        self.hurt_offset = hurt_offset
-
         self.ticks_since_trans = 0
-        self.pace = 0.25
         self.proximity_radius = self.wolfmap.wall_width
         self.interrupted = False
-
-        self.death_sounds = death_sounds
-        self.attack_sound = attack_sound
-        self.alert_sound = alert_sound
-
         self.patrol = patrol
-        self.state = None
-        self.state = GuardingState(
-            self) if not patrol else PatrolState(self, self.wolfmap)
 
         self.current_sp = None
 
@@ -732,140 +696,233 @@ class Actor:
         self.ticks_since_trans = 0
 
 
+@dataclass
+class ActorRecipe:
+    sprites: dict
+    sprite_layout: list
+    death_frames: int
+    move_frames: int
+    attack_frames: int
+    dead_offset: int
+    hurt_offset: int
+
+    death_sounds: list[pygame.mixer.Sound]
+    attack_sound: pygame.mixer.Sound
+    alert_sound: pygame.mixer.Sound
+
+    health: int
+    range_: int
+    accuracy: float
+    drop: WolfItem
+    pace: float
+
+    no_orientation: bool = False
+
+
 SOUNDS = ASSET_MANAGER.sounds
 SPRITES = ASSET_MANAGER.sprites
 
 
-class Guard(Actor):
-    def __init__(self, wolfmap, pos, look_dir, patrol):
-        super().__init__(wolfmap, WolfActorType.GUARD, pos, look_dir,
-                         sprites=SPRITES["characters"]["guard"],
-                         sprite_layout=(8, 7),
-                         death_frames=5,
-                         move_frames=4,
-                         attack_frames=3,
-                         dead_offset=4,
-                         hurt_offset=7,
-                         health=25,
-                         drop=WolfItem.AMMUNITION,
-                         death_sounds=list(SOUNDS["death"].values()),
-                         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["HALTSND.WAV"],
-                         patrol=patrol)
-        self.pace = 0.2
+def pacman_ghost_recipe(gn): return ActorRecipe(
+    sprites=SPRITES["characters"][gn],
+    sprite_layout=(2, 5),
+    death_frames=5,
+    move_frames=2,
+    attack_frames=1,
+    dead_offset=0,
+    hurt_offset=0,
+    death_sounds=list(SOUNDS["death"].values()),
+    attack_sound=None,
+    alert_sound=None,
+    health=1000000000000,
+    range_=8,
+    accuracy=1,
+    drop=WolfItem.EXTRALIFE,
+    pace=0.2,
+    no_orientation=True
+)
 
 
-class Shepherd(Actor):
-    def __init__(self, wolfmap, pos, look_dir, patrol):
-        super().__init__(wolfmap, WolfActorType.DOG, pos, look_dir,
-                         sprites=SPRITES["characters"]["shepherd"],
-                         sprite_layout=(8, 6),
-                         death_frames=3,
-                         move_frames=3,
-                         attack_frames=3,
-                         dead_offset=3,
-                         hurt_offset=0,
-                         health=1,
-                         _range=(wolfmap.wall_width)*2,
-                         death_sounds=[SOUNDS["dogs"]["DOGDEATHSND.WAV"],],
-                         attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
-                         alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"],
-                         patrol=patrol)
-        self.pace = 0.4
+ACTOR_RECIPES = {
+    WolfActorType.GUARD: ActorRecipe(
+        sprites=SPRITES["characters"]["guard"],
+        sprite_layout=(8, 7),
+        death_frames=5,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=4,
+        hurt_offset=7,
+        death_sounds=list(SOUNDS["death"].values()),
+        attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
+        alert_sound=SOUNDS["alert"]["HALTSND.WAV"],
+        health=25,
+        range_=200,
+        accuracy=1,
+        drop=WolfItem.AMMUNITION,
+        pace=0.2
+    ),
+    WolfActorType.DOG: ActorRecipe(
+        sprites=SPRITES["characters"]["shepherd"],
+        sprite_layout=(8, 6),
+        death_frames=3,
+        move_frames=3,
+        attack_frames=3,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["dogs"]["DOGDEATHSND.WAV"],],
+        attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
+        alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"],
+        health=1,
+        range_=8,
+        accuracy=1,
+        drop=None,
+        pace=0.4
+    ),
 
 
-class SS(Actor):
-    def __init__(self, wolfmap, pos, look_dir, patrol):
-        super().__init__(wolfmap, WolfActorType.SCHUTZSTAFFEL, pos, look_dir,
-                         sprites=SPRITES["characters"]["SS"],
-                         sprite_layout=(8, 7),
-                         death_frames=5,
-                         move_frames=4,
-                         attack_frames=3,
-                         dead_offset=5,
-                         hurt_offset=0,
-                         health=100,
-                         drop=WolfItem.MACHINEGUN,
-                         death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
-                                       SOUNDS["common"]["LEBENSND.WAV"]],
-                         attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
-                         patrol=patrol)
-        self.pace = 0.15
+    WolfActorType.SCHUTZSTAFFEL: ActorRecipe(
+        sprites=SPRITES["characters"]["SS"],
+        sprite_layout=(8, 7),
+        death_frames=5,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=5,
+        hurt_offset=1,
+        death_sounds=[SOUNDS["death"]["DEATHSCREAM6SND.WAV"],
+                      SOUNDS["common"]["LEBENSND.WAV"]],
+        attack_sound=SOUNDS["fire"]["SSFIRESND.WAV"],
+        alert_sound=SOUNDS["alert"]["SCHUTZADSND.WAV"],
+        health=200,
+        range_=50,
+        accuracy=1,
+        drop=WolfItem.MACHINEGUN,
+        pace=0.15
+    ),
 
 
-class Officer(Actor):
-    def __init__(self, wolfmap, pos, look_dir, patrol):
-        super().__init__(wolfmap, WolfActorType.OFFICER, pos, look_dir,
-                         sprites=SPRITES["characters"]["officer"],
-                         sprite_layout=(8, 7),
-                         death_frames=6,
-                         move_frames=4,
-                         attack_frames=3,
-                         dead_offset=6,
-                         hurt_offset=1,
-                         health=50,
-                         drop=WolfItem.AMMUNITION,
-                         death_sounds=[SOUNDS["death"]["NEINSOVASSND.WAV"],],
-                         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
-                         alert_sound=SOUNDS["alert"]["SPIONSND.WAV"],
-                         patrol=patrol)
-        self.pace = 0.2
+    WolfActorType.OFFICER: ActorRecipe(
+        sprites=SPRITES["characters"]["officer"],
+        sprite_layout=(8, 7),
+        death_frames=6,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=6,
+        hurt_offset=1,
+        death_sounds=[SOUNDS["death"]["NEINSOVASSND.WAV"],],
+        attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
+        alert_sound=SOUNDS["alert"]["SPIONSND.WAV"],
+        health=50,
+        range_=200,
+        accuracy=1,
+        drop=WolfItem.AMMUNITION,
+        pace=0.2
+    ),
 
+    WolfActorType.MUTANT: ActorRecipe(
+        sprites=SPRITES["characters"]["mutant"],
+        sprite_layout=(8, 7),
+        death_frames=6,
+        move_frames=4,
+        attack_frames=4,
+        dead_offset=6,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["death"]["AHHHGSND.WAV"]],
+        attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
+        alert_sound=None,
+        health=40,
+        range_=150,
+        accuracy=1,
+        drop=WolfItem.AMMUNITION,
+        pace=0.35
+    ),
 
-class Mutant(Actor):
-    def __init__(self, wolfmap, pos, look_dir, patrol):
-        super().__init__(wolfmap, WolfActorType.MUTANT, pos, look_dir,
-                         sprites=SPRITES["characters"]["mutant"],
-                         sprite_layout=(8, 7),
-                         death_frames=6,
-                         move_frames=4,
-                         attack_frames=4,
-                         dead_offset=6,
-                         hurt_offset=0,
-                         health=25,
-                         drop=None,
-                         death_sounds=[SOUNDS["death"]["AHHHGSND.WAV"]],
-                         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
-                         alert_sound=None,
-                         patrol=patrol)
-        self.pace = 0.15
+    WolfActorType.HANS: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["hans"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
+        health=1200,
+        range_=150,
+        accuracy=1,
+        drop=WolfItem.GOLDKEY,
+        pace=0.15,
+        no_orientation=True
+    ),
 
+    WolfActorType.BLINKY: pacman_ghost_recipe("blinky"),
+    WolfActorType.PINKY: pacman_ghost_recipe("pinky"),
+    WolfActorType.INKY: pacman_ghost_recipe("inky"),
+    WolfActorType.CLYDE: pacman_ghost_recipe("clyde"),
 
-# placeholder
-class FakeHitler(Guard):
-    pass
-
-
-class HansGrosse(Actor):
-    def __init__(self, wolfmap, pos, *_, **__):
-        super().__init__(wolfmap, WolfActorType.HANS, pos, [0, 1],
-                         sprites=SPRITES["characters"]["boss"]["hans"],
-                         sprite_layout=(4, 6),
-                         death_frames=4,
-                         move_frames=4,
-                         attack_frames=3,
-                         dead_offset=3,
-                         hurt_offset=0,
-                         health=1000,
-                         drop=WolfItem.GOLDKEY,
-                         death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
-                         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
-                         alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
-                         patrol=False)
-        self.pace = 0.15
-
-    def orientation_idx(self, _, **__):
-        # hans has not orientation sprites :()
-        return 0
-
-
-TYPE_ACTOR_OBJ = {
-    WolfActorType.GUARD: Guard,
-    WolfActorType.DOG: Shepherd,
-    WolfActorType.SCHUTZSTAFFEL: SS,
-    WolfActorType.MUTANT: Mutant,
-    WolfActorType.OFFICER: Officer,
-    WolfActorType.FAKEHITLER: FakeHitler,
-    WolfActorType.HANS: HansGrosse,
 }
+
+
+class ActorBuilder:
+    def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir, patrol=False):
+        self.actor = Actor(wolfmap, _type, pos, look_dir, patrol)
+
+    def build_sprites(self, sprites: list, sprite_layout):
+        self.actor.sprites = []
+        for i in range(sprite_layout[0]*sprite_layout[1]):
+            sp = sprites.get(i, None)
+            if sp is not None:
+                self.actor.sprites.append(sp.copy(self.actor.pos))
+            else:
+                self.actor.sprites.append(None)
+        self.actor.sprite_per_state = sprite_layout[0]
+
+    def build_frame_count(self, death: int, move: int, attack: int):
+        self.actor.death_frames = death
+        self.actor.move_frames = move
+        self.actor.attack_frames = attack
+
+    def build_sprite_offsets(self, dead_offset, hurt_offset):
+        self.actor.dead_offset = dead_offset
+        self.actor.hurt_offset = hurt_offset
+
+    def build_moving_sprites(self):
+        pass
+
+    def build_standing_sprites(self):
+        pass
+
+    def build_sounds(self, death_sounds, attack_sound, alert_sound):
+        self.actor.death_sounds = death_sounds
+        self.actor.attack_sound = attack_sound
+        self.actor.alert_sound = alert_sound
+
+    def build_characteristics(self, health: int, _range: int,
+                              accuracy, drop: WolfItem, pace: float):
+        self.actor.health = health
+        self.actor.range = _range
+        self.actor.accuracy = accuracy
+        self.actor.drop = drop
+        self.actor.pace = pace
+
+    def build_state(self):
+        state = GuardingState(
+            self.actor) if not self.actor.patrol else PatrolState(self.actor, self.actor.wolfmap)
+        self.actor.state = state
+
+    def build(self, recipe: ActorRecipe) -> Actor:
+        self.build_sprites(recipe.sprites, recipe.sprite_layout)
+        self.build_frame_count(recipe.death_frames,
+                               recipe.move_frames, recipe.attack_frames)
+        self.build_sprite_offsets(recipe.dead_offset, recipe.hurt_offset)
+        self.build_sounds(recipe.death_sounds,
+                          recipe.attack_sound, recipe.alert_sound)
+        self.build_characteristics(
+            recipe.health, recipe.range_, recipe.accuracy,
+            recipe.drop, recipe.pace)
+
+        self.build_state()
+
+        if recipe.no_orientation:
+            self.actor.orientation_idx = lambda *_, **__: 0
+        return self.actor
