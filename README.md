@@ -76,7 +76,7 @@ purchased installation into the `./wolfenstein3D/assets/maps folder.
 I tried to keep this clone as accurate as possible (compared to the original)
 but some things are probably different. The damage model and actor behaviour are mostly similar.
 The clone currently supports playing the original 6 episodes but it is incomplete as mentioned. It extracts the original maps from the shareware version files MAPHEAD.WL1 and MAP. If you want to play the original episodes, as previously stated, you will need to drop the `GAMEMAPS.wl6` and `MAPHEAD.wl6`from your 
-purchased installation into the `./wolfenstein3D/assets/maps folder.
+purchased installation into the `./wolfenstein3D/assets/maps` folder.
 
 ### Technical stuff
 
