@@ -3,6 +3,7 @@
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.wolfenstein import *
 from wolfenstein3D.gamemaps import GameMapsLoader
+from wolfenstein3D.find_installation import WolfInstallationFinder
 import pygame
 from dataclasses import dataclass
 import cProfile
@@ -38,7 +39,7 @@ class WolfMenuRenderer:
         self.loader = GameMapsLoader()
 
     def render_loading_screen(self, entity):
-        text_surf = FONT.render(f"loading {entity}...", True, (255, 255, 255))
+        text_surf = FONT.render(f"[LOADING] {entity}...", True, (255, 255, 255))
         self.screen.blit(text_surf, (400 - text_surf.get_width() //
                          2, 400 - text_surf.get_height() // 2))
 
@@ -97,6 +98,7 @@ class WolfMenuRenderer:
             self.render(
                 loading=f"shareware map {i} from {self.loader.maps_path}")
             pygame.display.flip()
+            time.sleep(0.1)
             i += 1
 
         shareware_jukebox = {
@@ -118,7 +120,17 @@ class WolfMenuRenderer:
 
     def load_wl6_episodes(self):
         if not self.loader.wl6_maps_present():
-            return
+            self.render(loading="Could not find GAMEMAPS.WL6 or MAPHEAD.WL6 files, trying to find them automatically.")
+            pygame.display.flip()
+            time.sleep(2)
+            try:
+                helper = WolfInstallationFinder()
+                if not helper.find_installation():
+                    return
+                else:
+                    self.loader.init_map_filenames()
+            except:
+                return
         wl6_maps = []
         mapgen = self.loader.get_wl6_maps()
         i = 0
@@ -138,7 +150,7 @@ class WolfMenuRenderer:
         jukebox = {
             0: "level1_5.ogg"
         }
-        
+
         epnames = [
             "Escape from Wolfenstein",
             "Operation: Eisenfaust",
@@ -149,7 +161,7 @@ class WolfMenuRenderer:
         ]
 
         wl6_episodes = [WolfEpisode(
-            wl6_maps[i*10: (i+1)*10], jukebox, 
+            wl6_maps[i*10: (i+1)*10], jukebox,
             f"Episode {i+1} {epnames[i]}") for i in range(6)]
         return wl6_episodes
 
@@ -196,6 +208,11 @@ class WolfMenuRenderer:
             wl6_episodes = self.load_wl6_episodes()
             if wl6_episodes:
                 episodes.extend(wl6_episodes)
+            else:
+                self.render("Could not locate original 6 episodes in your maps folder.")
+                pygame.display.flip()
+                time.sleep(2)
+            
             self.loading = False
 
             episode_selections = [
