@@ -73,7 +73,7 @@ python3 -m wolfenstein3D
 
 You can now play all 6 episodes, but they aren't quite complete: the bosses and the music aren't there (but will be completed in the near future).
 If you still want to play, you will need to drop the `GAMEMAPS.wl6` and `MAPHEAD.wl6`from your 
-purchased installation into the `./wolfenstein3D/assets/maps folder, I also wrote a simple script to
+purchased installation into the `./wolfenstein3D/assets/maps folder`, I also wrote a simple script to
 detect it automatically if you have a steam installation of the game.
 
 
