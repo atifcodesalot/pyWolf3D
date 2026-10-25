@@ -164,7 +164,7 @@ class WolfGame:
     def handle_areas(self):
         player_area = self.player.get_current_area()
         if player_area > 37 or 0 > player_area:
-            wolflogger.warning("player area out of bounds!")
+            wolflogger.debug("player area out of bounds!")
             return
         self.areabyplayer = self.wolfmap.area_matrix[player_area]
         self.areabyplayer[player_area] = 1
