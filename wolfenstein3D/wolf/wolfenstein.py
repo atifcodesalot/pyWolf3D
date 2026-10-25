@@ -204,6 +204,7 @@ class WolfGame:
             # check the player tile for secret floor
             self.end_time = time.monotonic()
             self.wolfmap.raw[fblock[1]][fblock[0]] = self.SWITCH_UP
+            self.schedule_sound_effect(SOUNDS["doors"]["LEVELDONESND.WAV"], None, 0)
             self.floor_fin = True
 
         else:
