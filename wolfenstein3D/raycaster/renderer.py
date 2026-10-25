@@ -145,5 +145,4 @@ class RayRenderer:
 
     def render(self, camera_pos, light: PointLight, *additional_sprites):
         self.render_walls(camera_pos, light)
-        self.maxd = max(self.distbuff)
         self.render_sprites(*additional_sprites)
