@@ -174,6 +174,16 @@ class WolfAssetManager:
             'mutant.png', 'mutant', 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         self.init_character_sprite(
             'pacman.png', 'pacman-ghosts', 64, 0, 0, 0, 64, 64, Sprite, 0, 0)
+        self.init_character_sprite(
+            'fakehitler.png', 'fakehitler', 1, 0, 1, 0, 64, 64, Sprite, 0, 0)
+        
+        hs = list(self.sprites["characters"]["fakehitler"].values())
+        self.sprites["characters"]["fakehitler"] = self.adapt_character_sprites(
+                move_frames=hs[:3], move_frame_amount=3,
+                death_frames=hs[7:13],
+                attack_frames=hs[3:5], layout=[6,6])
+        self.sprites["projectiles"] = {}
+        self.sprites["projectiles"]["fireballs"] = hs[5:7]
 
         ps = list(self.sprites["characters"]["pacman-ghosts"].values())
 
@@ -183,7 +193,7 @@ class WolfAssetManager:
                 move_frames=ps[i*2:(i+1)*2], move_frame_amount=2,
                 death_frames=ps[i*2:(i+1)*2],
                 attack_frames=ps[i*2:(i+1)*2], layout=[2, 5])
-            
+
         # init bosses here
         self.sprites["characters"]["boss"] = {}
         # init hans grösse

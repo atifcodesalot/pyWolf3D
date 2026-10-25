@@ -9,6 +9,7 @@ from math import pi, atan2
 import copy
 import random
 from dataclasses import dataclass
+from typing import Callable, Optional
 
 
 class ActorState:
@@ -142,9 +143,6 @@ class AttackState(ActorState):
         self.next = self.before_auto
         self.exit_auto = True
 
-    def set_sprite_offset(self, off):
-        self.offset = off
-
     def shapenum(self, _):
         col = self.colnum()
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
@@ -152,7 +150,7 @@ class AttackState(ActorState):
     def attack(self, game_ctx):
         callback = getattr(self.actor, "attack_callback", None)
         if callable(callback):
-            return callback(game_ctx)
+            return callback(self.actor, game_ctx)
 
         damage = game_ctx.calc_actor_dmg(self.actor)
         game_ctx.hurt_player(damage)
@@ -167,7 +165,10 @@ class AttackState(ActorState):
         dist //= game_ctx.wolfmap.wall_width
         hitprob = int(dist)
         hitprob = 1 if hitprob == 0 else hitprob
-        if random.randint(1, hitprob) in range(1, 3):
+        if self.actor.type is WolfActorType.FAKEHITLER:
+            if self.actor.sees_player(game_ctx):
+                self.attack(game_ctx)
+        elif random.randint(1, hitprob) in range(1, 3):
             if self.actor.sees_player(game_ctx):
                 self.attack(game_ctx)
 
@@ -175,7 +176,7 @@ class AttackState(ActorState):
         if self.heartbeats + 2 == self.lifetime:
             self.try_attacking(game_ctx)
         elif self.heartbeats == self.frame_lifetime \
-            and self.actor.type is WolfActorType.MUTANT:
+                and self.actor.type is WolfActorType.MUTANT:
             # mutants attack twice
             self.try_attacking(game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
@@ -196,7 +197,7 @@ class AttackState(ActorState):
 class ChaseState(ActorState):
     def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 40)
-        
+
         if self.actor.type is WolfActorType.DOG:
             # dogs and hans dont have standing sprites
             self.spcolumn = 0
@@ -700,6 +701,10 @@ class Actor:
             self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
 
+    def throw_projectile(self, speed, sprites, game_ctx):
+        pj_dir = vec_norm(vec_sub(self.pos, game_ctx.player.pos))
+        game_ctx.spawn_projectile(pj_dir, speed, self.pos, sprites)
+
 
 @dataclass
 class ActorRecipe:
@@ -722,6 +727,8 @@ class ActorRecipe:
     pace: float
 
     no_orientation: bool = False
+
+    attack_callback: Optional[Callable[[], None]] = None
 
 
 SOUNDS = ASSET_MANAGER.sounds
@@ -813,7 +820,7 @@ ACTOR_RECIPES = {
         attack_frames=3,
         dead_offset=6,
         hurt_offset=1,
-        death_sounds=[SOUNDS["death"]["NEINSOVASSND.WAV"],],
+        death_sounds=[SOUNDS["common"]["NEINSOVASSND.WAV"],],
         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
         alert_sound=SOUNDS["alert"]["SPIONSND.WAV"],
         health=50,
@@ -831,7 +838,7 @@ ACTOR_RECIPES = {
         attack_frames=4,
         dead_offset=6,
         hurt_offset=0,
-        death_sounds=[SOUNDS["death"]["AHHHGSND.WAV"]],
+        death_sounds=[SOUNDS["common"]["AHHHGSND.WAV"]],
         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
         alert_sound=None,
         health=45,
@@ -839,6 +846,27 @@ ACTOR_RECIPES = {
         accuracy=1,
         drop=WolfItem.AMMUNITION,
         pace=0.35
+    ),
+
+    WolfActorType.FAKEHITLER: ActorRecipe(
+        sprites=SPRITES["characters"]["fakehitler"],
+        sprite_layout=(6, 6),
+        death_frames=6,
+        move_frames=3,
+        attack_frames=2,
+        dead_offset=5,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["common"]["HITLERHASND.WAV"]],
+        attack_sound=None,
+        alert_sound=SOUNDS["alert"]["TOT_HUNDSND.WAV"],
+        health=15,
+        range_=300,
+        accuracy=1,
+        drop=None,
+        pace=0.35,
+        no_orientation=True,
+        attack_callback=lambda self, game_ctx: self.throw_projectile(
+            0.5, SPRITES["projectiles"]["fireballs"], game_ctx)
     ),
 
     WolfActorType.HANS: ActorRecipe(
@@ -930,4 +958,6 @@ class ActorBuilder:
 
         if recipe.no_orientation:
             self.actor.orientation_idx = lambda *_, **__: 0
+        if recipe.attack_callback:
+            self.actor.attack_callback = recipe.attack_callback
         return self.actor
