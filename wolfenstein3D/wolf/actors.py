@@ -121,6 +121,7 @@ class HurtState(ActorState):
 
 class AttackState(ActorState):
     def __init__(self, actor, frame_lifetime=12):
+        self.frame_lifetime = frame_lifetime
         lifetime = frame_lifetime * actor.attack_frames
         super().__init__(actor, 3, nextstate=None, lifetime=lifetime)
         self.hb_perframe = self.lifetime // actor.attack_frames
@@ -172,6 +173,10 @@ class AttackState(ActorState):
 
     def act(self, game_ctx):
         if self.heartbeats + 2 == self.lifetime:
+            self.try_attacking(game_ctx)
+        elif self.heartbeats == self.frame_lifetime \
+            and self.actor.type is WolfActorType.MUTANT:
+            # mutants attack twice
             self.try_attacking(game_ctx)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
 
@@ -815,7 +820,7 @@ ACTOR_RECIPES = {
         range_=200,
         accuracy=1,
         drop=WolfItem.AMMUNITION,
-        pace=0.2
+        pace=0.3
     ),
 
     WolfActorType.MUTANT: ActorRecipe(
@@ -829,7 +834,7 @@ ACTOR_RECIPES = {
         death_sounds=[SOUNDS["death"]["AHHHGSND.WAV"]],
         attack_sound=SOUNDS["fire"]["NAZIFIRESND.WAV"],
         alert_sound=None,
-        health=40,
+        health=45,
         range_=150,
         accuracy=1,
         drop=WolfItem.AMMUNITION,
