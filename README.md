@@ -66,7 +66,7 @@ python3 -m wolfenstein3D
 ```
 ### Original Maps
 
-You can now play all 6 episodes, but they aren't quite complete: the bosses and the music aren't there.
+You can now play all 6 episodes, but they aren't quite complete: the bosses and the music aren't there (but will be completed in the near future).
 If you still want to play, you will need to drop the `GAMEMAPS.wl6` and `MAPHEAD.wl6`from your 
 purchased installation into the `./wolfenstein3D/assets/maps folder.
 
@@ -89,6 +89,8 @@ It is simple and reusable.
 The maps are 64 to 64 grids and the raycaster uses the DDA algorithm to
 find collisions with the non empty tiles. The special cases are doors and pushwalls,
 which the raycaster handles explicitly.
+
+Sprites, projectiles are rendered via perspective projection.
 
 #### Sound
 The sound engine is responsible for attenuation and directional sound.
