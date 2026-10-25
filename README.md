@@ -22,6 +22,7 @@ All code present in this project was written by me, without AI code generation o
 <img width="401" height="316" alt="ss3" src="https://github.com/user-attachments/assets/63286186-6e3e-41f0-a770-2a410becaec6" />
 <img width="401" height="316" alt="ss2" src="https://github.com/user-attachments/assets/6c85836e-ea27-42ed-a191-792aed1f9c3e" />
 <img width="401" height="316" alt="ss1" src="https://github.com/user-attachments/assets/fe2d7534-f7e1-466a-9399-553d2f54795e" />
+<img width="401" height="316" alt="ss7" src="https://github.com/user-attachments/assets/2bc2bbd6-d64a-4578-a40d-49b1bf9fdc7c" />
 
 ## How to play?
 
