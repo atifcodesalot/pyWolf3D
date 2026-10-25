@@ -59,8 +59,10 @@ class Projectile:
         self.direction = direction
         self.speed = speed
         self.pos = pos
-        self.sprites = sprites
+        self.sprites = [sp.copy(pos) for sp in sprites]
+        self.sprite_amount = len(self.sprites)
         self.spidx = 0
+        self.travel_counter = 0
 
     def current_sprite(self) -> Sprite:
         csp = self.sprites[self.spidx]
@@ -68,11 +70,19 @@ class Projectile:
         return csp
 
     def travel(self):
+        self.travel_counter = (self.travel_counter + 1) % 100
         self.pos = vec_add(self.pos, vec_mul(self.direction, self.speed))
+        if not self.travel_counter % 25:
+            self.spidx = (self.spidx + 1) % self.sprite_amount
 
     def stop(self):
         self.speed = 0
 
-    def collides_map(self, map_):
-        pjblock = map_.to_block_pos(*self.pos)
-        return map_.cell_occupied(pjblock)
+    def collides_map(self, map_ctx):
+        pjblock = map_ctx.to_block_pos(*self.pos)
+        return map_ctx.cell_occupied(pjblock)
+    
+    def collides_player(self, game_ctx):
+        pblock = game_ctx.player.get_current_block()
+        return game_ctx.wolfmap.to_block_pos(*self.pos) == pblock
+            
