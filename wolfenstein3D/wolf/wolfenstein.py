@@ -291,10 +291,12 @@ class WolfGame:
 
     def handle_projectiles(self):
         for pj in self.projectiles:
+            pj.travel()
             if pj.collides_map(self.wolfmap):
                 self.projectiles.remove(pj)
-                continue
-            pj.travel()
+            elif pj.collides_player(self):
+                self.hurt_player(20)
+                self.projectiles.remove(pj)
 
     def spawn_projectile(self, direction, speed, pos, sprites):
         new_pj = Projectile(direction, speed, pos, sprites)
@@ -478,7 +480,7 @@ class WolfGame:
                     self.interact = False
                 if event.key == pygame.K_LSHIFT:
                     self.player.running = False
-    
+
     def handle_events(self, pgevents):
         self.handle_pgevents(pgevents)
         self.handle_mouse()
@@ -655,10 +657,10 @@ class WolfGame:
 
     def game_end(self, chicken=False):
         beats = 300
-        while beats != 0:    
+        while beats != 0:
             self.renderer.render_gameover(self.root_display, chicken=chicken)
             self.clock.tick(self.framerate)
-            beats -=1
+            beats -= 1
         self.ongoing = False
         self.sound_manager.stop_music()
         del self
