@@ -150,16 +150,23 @@ class WolfGame:
         xdisp = vec_mul(BASIS[0], vec_dot(BASIS[0], disp))
         ydisp = vec_mul(BASIS[1], vec_dot(BASIS[1], disp))
 
-        xtry = m.to_block_pos(*vec_add(pos, vec_mul(xdisp, 5)))
-        if self.player.occupied_forthis(xtry):
+        adj_actors = self.player.get_adjacent_actors()
+        xtry = vec_add(pos, vec_mul(xdisp, 5))
+        xblock = m.to_block_pos(*xtry)
+        if self.wolfmap.cell_occupied(xblock) or \
+            self.player.actors_too_close(xtry, adj_actors):
             disp = vec_sub(xdisp, disp)
-        ytry = m.to_block_pos(*vec_add(pos, vec_mul(ydisp, 5)))
-        if self.player.occupied_forthis(ytry):
+        ytry = vec_add(pos, vec_mul(ydisp, 5))
+        yblock = m.to_block_pos(*ytry)
+        if self.wolfmap.cell_occupied(yblock) or \
+            self.player.actors_too_close(ytry, adj_actors):
             disp = vec_sub(ydisp, disp)
-        xytry = m.to_block_pos(*vec_add(pos, vec_mul(disp, 5)))
-        if self.player.occupied_forthis(xytry):
+        xytry = vec_add(pos, vec_mul(disp, 5))
+        xyblock = m.to_block_pos(*xytry)
+        if self.wolfmap.cell_occupied(xyblock) or \
+            self.player.actors_too_close(xytry, adj_actors):
             disp = [0, 0]
-        self.player.pos = vec_add(self.player.pos, disp)
+        self.player.translate(disp)
 
     def handle_areas(self):
         player_area = self.player.get_current_area()
@@ -204,7 +211,8 @@ class WolfGame:
             # check the player tile for secret floor
             self.end_time = time.monotonic()
             self.wolfmap.raw[fblock[1]][fblock[0]] = self.SWITCH_UP
-            self.schedule_sound_effect(SOUNDS["doors"]["LEVELDONESND.WAV"], None, 0)
+            self.schedule_sound_effect(
+                SOUNDS["doors"]["LEVELDONESND.WAV"], None, 0)
             self.floor_fin = True
 
         else:

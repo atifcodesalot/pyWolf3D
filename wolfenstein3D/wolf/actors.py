@@ -117,7 +117,7 @@ class HurtState(ActorState):
                 # shot before alerted
                 self.next = ChaseState(self.actor, 0, game_ctx)
             else:
-                self.next = self.actor.chase 
+                self.next = self.actor.chase
 
     def shapenum(self, _):
         col = self.colnum()
@@ -199,6 +199,8 @@ class AttackState(ActorState):
 
 
 class ChaseState(ActorState):
+    min_actor_dist = 8
+
     def __init__(self, actor, walk_cycle, game_ctx):
         super().__init__(actor, 1, self, 40)
 
@@ -403,7 +405,12 @@ class ChaseState(ActorState):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
 
-        if not self.waiting_door:
+        dist_to_player = euclidean_distance(
+            self.actor.pos, game_ctx.player.pos)
+        
+        can_seek = not (self.waiting_door or dist_to_player < self.min_actor_dist)
+
+        if can_seek:
             self.seek_dest()
 
 
@@ -501,7 +508,7 @@ class Actor:
         self.patrol = patrol
 
         self.current_sp = None
-        
+
         self.chase = None
 
     def tick(self, game_ctx, heartbeats):

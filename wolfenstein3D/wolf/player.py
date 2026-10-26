@@ -12,6 +12,7 @@ from math import acos, degrees
 
 
 class WolfPlayer(Observer):
+    min_dist_actors = 4
     def __init__(self, game, fov=60,
                  ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=10):
         self.game = game
@@ -63,7 +64,7 @@ class WolfPlayer(Observer):
 
     def get_current_block(self):
         return self.map.to_block_pos(*self.pos)
-    
+
     def get_current_cell(self):
         pblock = self.map.to_block_pos(*self.pos)
         return self.map.raw[pblock[1]][pblock[0]]
@@ -93,9 +94,11 @@ class WolfPlayer(Observer):
         htol = sp_sw+5
         return htol > actor.hitpos(sw) > -htol
 
-    def occupied_forthis(self, block_pos):
-        return self.map.cell_occupied(block_pos) or \
-            block_pos in self.map.actor_lookup
+    def actors_too_close(self, pos, adj_actors):
+        for act in adj_actors:
+            if euclidean_distance(pos, act.pos) < self.min_dist_actors:
+                return True
+        return False
 
     def regain_health(self, aid):
         self.health = min(self.health + aid, 100)
@@ -113,7 +116,7 @@ class WolfPlayer(Observer):
 
     def dec_ammo(self):
         self.ammo = max(self.ammo - 1, 0)
-        
+
     def best_weapon(self):
         return max(self.acquired_weapons, key=lambda w: w.value)
 
@@ -150,7 +153,7 @@ class WolfPlayer(Observer):
             [WolfWeapon.PISTOL, WolfWeapon.KNIFE, self.weapon])
         self.has_silver_key = False
         self.has_gold_key = False
-        
+
         self.running = False
 
     def _1up(self):
@@ -167,3 +170,13 @@ class WolfPlayer(Observer):
             master_surf.blit(
                 game_ctx.game_renderer.pgsurface, update_dest)
             pygame.display.flip()
+
+    def get_adjacent_actors(self):
+        adjactors = []
+        pblock = self.get_current_block()
+        for adj in ADJACENT_MATRIX:
+            adjblock = tuple(vec_add(pblock, adj))
+            act = self.map.actor_lookup.get(adjblock, None)
+            if act:
+                adjactors.append(act)
+        return adjactors
