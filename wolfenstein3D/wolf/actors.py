@@ -113,7 +113,11 @@ class HurtState(ActorState):
 
     def think(self, game_ctx):
         if type(self.next) is not ChaseState:
-            self.next = ChaseState(self.actor, 0, game_ctx)
+            if self.actor.chase is None:
+                # shot before alerted
+                self.next = ChaseState(self.actor, 0, game_ctx)
+            else:
+                self.next = self.actor.chase 
 
     def shapenum(self, _):
         col = self.colnum()
@@ -497,6 +501,8 @@ class Actor:
         self.patrol = patrol
 
         self.current_sp = None
+        
+        self.chase = None
 
     def tick(self, game_ctx, heartbeats):
         self.ticks_since_trans += heartbeats
@@ -530,7 +536,8 @@ class Actor:
         if type(self.state) is ChaseState:
             # already chasing
             return
-        self.state.next = ChaseState(self, 0, game_ctx)
+        self.chase = ChaseState(self, 0, game_ctx)
+        self.state.next = self.chase
         if alrtsnd := self.alert_sound:
             game_ctx.schedule_sound_effect(alrtsnd, origin=self.pos, _time=1)
 
