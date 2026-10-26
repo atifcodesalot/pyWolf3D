@@ -108,7 +108,7 @@ class HurtState(ActorState):
         super().__init__(actor, 2, nextstate=None, lifetime=20)
         if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
             self.lifetime = 10
-        elif self.actor.type == WolfActorType.HANS:
+        elif self.actor.is_boss:
             self.lifetime = 1
 
     def think(self, game_ctx):
@@ -192,7 +192,7 @@ class AttackState(ActorState):
             self.quit_auto()
 
     def endcallback(self, _):
-        if self.actor.type in [WolfActorType.SCHUTZSTAFFEL, WolfActorType.HANS]:
+        if self.actor.can_auto:
             diceroll = random.randint(1, 3) in [1, 2]
             if diceroll and not self.exit_auto:
                 self.go_auto()
@@ -685,7 +685,7 @@ class Actor:
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
         return tuple(vec_add(ablock, offset))
-    
+
     def front_blocked(self, game_ctx):
         front = self.get_front_block()
         return self.occupied_forthis(front, game_ctx)
@@ -761,7 +761,9 @@ class ActorRecipe:
     pace: float
 
     no_orientation: bool = False
-
+    boss: bool = False
+    
+    can_auto: bool = False
     attack_callback: Optional[Callable[[], None]] = None
 
 
@@ -807,7 +809,7 @@ ACTOR_RECIPES = {
         drop=WolfItem.AMMUNITION,
         pace=0.2
     ),
-    
+
     WolfActorType.DOG: ActorRecipe(
         sprites=SPRITES["characters"]["shepherd"],
         sprite_layout=(8, 6),
@@ -843,7 +845,8 @@ ACTOR_RECIPES = {
         range_=50,
         accuracy=1,
         drop=WolfItem.MACHINEGUN,
-        pace=0.15
+        pace=0.15,
+        can_auto=True
     ),
 
 
@@ -920,7 +923,71 @@ ACTOR_RECIPES = {
         accuracy=1,
         drop=WolfItem.GOLDKEY,
         pace=0.15,
-        no_orientation=True
+        no_orientation=True,
+        boss=True,
+        can_auto=True
+    ),
+
+
+    WolfActorType.GRETEL: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["gretel"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
+        health=1500,
+        range_=150,
+        accuracy=1,
+        drop=WolfItem.GOLDKEY,
+        pace=0.15,
+        no_orientation=True,
+        boss=True,
+        can_auto=True
+    ),
+
+    WolfActorType.SCHABBS: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["schabbs"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=2,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
+        health=1200,
+        range_=150,
+        accuracy=1,
+        drop=WolfItem.GOLDKEY,
+        pace=0.15,
+        no_orientation=True,
+        boss=True
+    ),
+
+    WolfActorType.GIFTMACHER: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["giftmacher"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=2,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
+        health=1200,
+        range_=150,
+        accuracy=1,
+        drop=WolfItem.GOLDKEY,
+        pace=0.15,
+        no_orientation=True,
+        boss=True
     ),
 
     WolfActorType.BLINKY: pacman_ghost_recipe("blinky"),
@@ -953,12 +1020,6 @@ class ActorBuilder:
     def build_sprite_offsets(self, dead_offset, hurt_offset):
         self.actor.dead_offset = dead_offset
         self.actor.hurt_offset = hurt_offset
-
-    def build_moving_sprites(self):
-        pass
-
-    def build_standing_sprites(self):
-        pass
 
     def build_sounds(self, death_sounds, attack_sound, alert_sound):
         self.actor.death_sounds = death_sounds
@@ -995,4 +1056,6 @@ class ActorBuilder:
             self.actor.orientation_idx = lambda *_, **__: 0
         if recipe.attack_callback:
             self.actor.attack_callback = recipe.attack_callback
+        self.actor.is_boss = recipe.boss
+        self.actor.can_auto = recipe.can_auto
         return self.actor
