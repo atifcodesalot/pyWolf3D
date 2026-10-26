@@ -454,11 +454,11 @@ class PatrolState(ChaseState):
             self.actor.pos, vec_mul(vec_norm(ldir), self.mov_budget))
 
     def think(self, game_ctx):
-        if not self.alerted:
+        if not self.gonna_alert:
             if self.actor.hears_player(game_ctx):
-                self.alerted = True
+                self.gonna_alert = True
             elif self.actor.sees_player(game_ctx):
-                self.alerted = True
+                self.gonna_alert = True
         if self.waiting_door:
             if self.waiting_door.is_open():
                 self.waiting_door = False
@@ -472,9 +472,8 @@ class PatrolState(ChaseState):
         # clamp to center
         self.actor.pos = self.dest_block
         #
-        if self.alerted:
-            self.actor.transition(ChaseState(
-                self.actor, 0, game_ctx), game_ctx)
+        if self.gonna_alert:
+            self.actor.alert(game_ctx, now=True)
             return
         fblock = self.actor.get_front_block()
         if fblock in game_ctx.wolfmap.doors:
@@ -486,7 +485,8 @@ class PatrolState(ChaseState):
     def act(self, game_ctx):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
-        if not self.waiting_door:
+        front = self.actor.get_front_block()
+        if not (self.waiting_door or self.actor.occupied_by_other(front)):
             self.seek_dest()
         if self.mov_budget == 0:
             self.budget_end(game_ctx)
@@ -540,12 +540,15 @@ class Actor:
         self.state = state
         self.state.start(game_ctx)
 
-    def alert(self, game_ctx):
+    def alert(self, game_ctx, now=False):
         if type(self.state) is ChaseState:
             # already chasing
             return
         self.chase = ChaseState(self, 0, game_ctx)
-        self.state.next = self.chase
+        if now:
+            self.transition(self.chase, game_ctx)
+        else:
+            self.state.next = self.chase
         if alrtsnd := self.alert_sound:
             game_ctx.schedule_sound_effect(alrtsnd, origin=self.pos, _time=1)
 
@@ -682,6 +685,10 @@ class Actor:
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
         return tuple(vec_add(ablock, offset))
+    
+    def front_blocked(self, game_ctx):
+        front = self.get_front_block()
+        return self.occupied_forthis(front, game_ctx)
 
     def virtual_block(self, dir_):
         return vec_add(self.get_current_block(), dir_)
