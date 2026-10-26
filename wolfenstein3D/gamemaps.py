@@ -105,11 +105,13 @@ def init_actor_entries():
                  patrolling,
                  (entry - mutant_start) % 4)
 
-    # an actor is "trivial" if it has no orientation,
-    # and is not a boss
+    # an actor is "trivial" if it has no orientation and spawns default
     trivial_actors_types = [WolfActorType.FAKEHITLER, 
                             WolfActorType.BLINKY, WolfActorType.PINKY,
-                            WolfActorType.INKY, WolfActorType.CLYDE]
+                            WolfActorType.INKY, WolfActorType.CLYDE,
+                            WolfActorType.FETTGESICHT, WolfActorType.SCHABBS,
+                            WolfActorType.GRETEL, WolfActorType.HANS,
+                            WolfActorType.GIFTMACHER, WolfActorType.MECHAHITLER]
 
     for act_type in trivial_actors_types:
         ACTOR_ENTRIES[act_type.value] = (act_type,
@@ -257,13 +259,9 @@ class GameMapsAdaptor:
 
     def add_actor(self, wolfmap, obj, pos):
         if obj not in ACTOR_ENTRIES:
-            if obj == 0x00D6:
-                # hans grösse boss
-                wolfmap.add_actor(WolfActorType.HANS, pos, [0, -1],
-                                  WolfDifficulty.BABY, None)
             return
+        
         _type, diff, patrol, look_i = ACTOR_ENTRIES[obj]
-
         wolfmap.add_actor(_type, pos,
                           self.actor_orientation[look_i],
                           act_diff=diff, patrol=patrol)
