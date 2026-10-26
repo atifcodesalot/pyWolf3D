@@ -103,7 +103,8 @@ ITEM_EFFECT = {
     WolfItem.TREASURECHEST: lambda p: p.get_money(),
     WolfItem.CROWN: lambda p: p.get_money(),
     WolfItem.EXTRALIFE: lambda p: p._1up(),
-    WolfItem.BLOODPOOL: lambda p: p.regain_health(5)
+    WolfItem.BLOODPOOL: lambda p: p.regain_health(5),
+    WolfItem.BLOODYREMAINS: lambda p: p.regain_health(5)
 }
 
 SOUNDS = ASSET_MANAGER.sounds
@@ -122,8 +123,8 @@ ITEM_SOUND = {
     WolfItem.TREASURECHEST: SOUNDS["pickup"]["ALBONUS3.wav"],
     WolfItem.CROWN: SOUNDS["pickup"]["ALBONUS4.wav"],
     WolfItem.EXTRALIFE: SOUNDS["pickup"]["ALBNS1UP.wav"],
-    WolfItem.BLOODYREMAINS: None,
-    WolfItem.BLOODPOOL: None
+    WolfItem.BLOODYREMAINS: SOUNDS["misc"]["SLURPIESND.WAV"],
+    WolfItem.BLOODPOOL: SOUNDS["misc"]["SLURPIESND.WAV"]
 }
 
 TREASURE_ITEMS = [
@@ -193,7 +194,7 @@ class WolfItemObj:
 
     def pickup_condition(self, player):
         if self.is_health_item:
-            if self.item is WolfItem.BLOODPOOL:
+            if self.item in [WolfItem.BLOODPOOL, WolfItem.BLOODYREMAINS]:
                 return player.health < 20
             return player.health < 100
         elif self.item is WolfItem.AMMUNITION:
