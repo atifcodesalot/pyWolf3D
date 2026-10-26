@@ -223,7 +223,7 @@ class WolfMenuRenderer:
 
             epchoice = self.wait_menu()
             if epchoice == self.current_menu.sel_count-1:
-                exit("Coward!")
+                break
 
             episode = episodes[epchoice]
             self.change_menu(self.difficulty_menu)
@@ -238,7 +238,7 @@ class WolfMenuRenderer:
 
 def main():
     # with cProfile.Profile() as pr:
-    menu_renderer = WolfMenuRenderer("Alpha")
-    menu_renderer.run()
+        menu_renderer = WolfMenuRenderer("Alpha")
+        menu_renderer.run()
 
     # pr.dump_stats("wolf.prof")
