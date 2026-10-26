@@ -151,6 +151,7 @@ class WolfMap:
 
         self.actors: dict[WolfDifficulty: list] = {}
         self.actor_lookup = {}
+        self.actor_reserve_lookup = {}
 
         for diff in WolfDifficulty:
             self.actors[diff] = []

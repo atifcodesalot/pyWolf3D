@@ -348,8 +348,7 @@ class ChaseState(ActorState):
             self.dest_block = None
             return
         if self.dest_block:
-            self.actor.unoccupy_block(
-                self.actor.wolfmap.to_block_pos(*self.dest_block))
+            self.actor.reserve_block(self.dest_block)
         ldir = self.actor.look_dir
         w = self.actor.wolfmap.wall_width
         self.mov_budget = w
@@ -373,6 +372,7 @@ class ChaseState(ActorState):
         if not self.stuck:
             if self.dest_block is not None:
                 self.actor.pos = self.dest_block
+                self.actor.unreserve_block(self.dest_block)
         #
         self.decide_dir(game_ctx)
         self.committo_dest()
@@ -407,8 +407,9 @@ class ChaseState(ActorState):
 
         dist_to_player = euclidean_distance(
             self.actor.pos, game_ctx.player.pos)
-        
-        can_seek = not (self.waiting_door or dist_to_player < self.min_actor_dist)
+
+        can_seek = not (self.waiting_door or dist_to_player <
+                        self.min_actor_dist)
 
         if can_seek:
             self.seek_dest()
@@ -579,6 +580,8 @@ class Actor:
         m = self.wolfmap
         if block_pos in m.actor_lookup:
             return m.actor_lookup[block_pos] != self
+        elif block_pos in m.actor_reserve_lookup:
+            return m.actor_reserve_lookup[block_pos] != self
         return False
 
     def occupied_forthis(self, block_pos, game_ctx):
@@ -601,6 +604,16 @@ class Actor:
             self.occupancy.remove(bpos)
         if bpos in self.wolfmap.actor_lookup:
             del self.wolfmap.actor_lookup[bpos]
+
+    def reserve_block(self, block_pos):
+        bpos = tuple(block_pos)
+        if bpos not in self.wolfmap.actor_reserve_lookup:
+            self.wolfmap.actor_reserve_lookup[bpos] = self
+
+    def unreserve_block(self, block_pos):
+        bpos = tuple(block_pos)
+        if bpos in self.wolfmap.actor_reserve_lookup:
+            del self.wolfmap.actor_reserve_lookup[bpos]
 
     def flush_occupancy(self):
         mirror = self.occupancy.copy()
@@ -761,7 +774,7 @@ def pacman_ghost_recipe(gn): return ActorRecipe(
     attack_sound=None,
     alert_sound=None,
     health=1000000000000,
-    range_=8,
+    range_=10,
     accuracy=1,
     drop=WolfItem.EXTRALIFE,
     pace=0.2,
@@ -787,6 +800,7 @@ ACTOR_RECIPES = {
         drop=WolfItem.AMMUNITION,
         pace=0.2
     ),
+    
     WolfActorType.DOG: ActorRecipe(
         sprites=SPRITES["characters"]["shepherd"],
         sprite_layout=(8, 6),
@@ -799,7 +813,7 @@ ACTOR_RECIPES = {
         attack_sound=SOUNDS["dogs"]["DOGATTACKSND.WAV"],
         alert_sound=SOUNDS["dogs"]["DOGBARKSND.WAV"],
         health=1,
-        range_=8,
+        range_=10,
         accuracy=1,
         drop=None,
         pace=0.4
