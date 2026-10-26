@@ -488,6 +488,9 @@ class PatrolState(ChaseState):
         front = self.actor.get_front_block()
         if not (self.waiting_door or self.actor.occupied_by_other(front)):
             self.seek_dest()
+        # bandaid
+        elif self.actor.type == WolfActorType.DOG:
+            self.seek_dest()
         if self.mov_budget == 0:
             self.budget_end(game_ctx)
 
