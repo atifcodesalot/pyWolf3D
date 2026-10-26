@@ -292,8 +292,8 @@ class WolfGame:
                 if self.player.has_knife():
                     ablock = self.wolfmap.to_block_pos(*act.pos)
                     pblock = self.player.get_current_block()
-                    if euclidean_distance(ablock, pblock) < 2:
-                        act.get_shot(damage=75, game_ctx=self)
+                    if euclidean_distance(ablock, pblock) <= 2:
+                        act.get_shot(damage=10, game_ctx=self)
                 else:
                     damage = self.calc_player_dmg(act)
                     act.get_shot(damage, self)
