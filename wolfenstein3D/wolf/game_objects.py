@@ -220,7 +220,12 @@ class WolfActorType(Enum):
     SCHUTZSTAFFEL = 126
     DOG = 134
     FAKEHITLER = 160
+    MECHAHITLER = 178
+    FETTGESICHT = 179
+    SCHABBS = 196
+    GRETEL = 197
     HANS = 214
+    GIFTMACHER = 215
     MUTANT = 216
 
     BLINKY = 224
