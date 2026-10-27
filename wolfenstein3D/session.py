@@ -99,11 +99,11 @@ class WolfMenuRenderer:
             self.render(
                 loading=f"shareware map {i} from {self.loader.maps_path}")
             pygame.display.flip()
-            time.sleep(0.1)
+            time.sleep(0.02)
             i += 1
 
         if not self.loaded_music:
-            self.render(loading="now synthesizing shareware music!")
+            self.render(loading="now synthesizing shareware music")
             pygame.display.flip()
             self.loader.dump_shareware_music()
             ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
@@ -117,7 +117,7 @@ class WolfMenuRenderer:
             self.render(
                 loading="Could not find GAMEMAPS.WL6 or MAPHEAD.WL6 files, trying to find them automatically.")
             pygame.display.flip()
-            time.sleep(2)
+            time.sleep(1)
             try:
                 helper = WolfInstallationFinder()
                 if not helper.find_installation():
@@ -141,7 +141,7 @@ class WolfMenuRenderer:
             i += 1
 
         if not self.loaded_music:
-            self.render(loading="now synthesizing wl6 music!")
+            self.render(loading="now synthesizing wl6 music")
             pygame.display.flip()
             self.loader.dump_wl6_music()
             ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
