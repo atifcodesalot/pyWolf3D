@@ -100,23 +100,13 @@ class WolfMenuRenderer:
             pygame.display.flip()
             time.sleep(0.1)
             i += 1
-
-        shareware_jukebox = {
-            0: "level1_5.ogg",
-            1: "level2_6.ogg",
-            2: "level3_7.ogg",
-            3: "level4_8.ogg",
-            4: "level1_5.ogg",
-            5: "level2_6.ogg",
-            6: "level3_7.ogg",
-            7: "level4_8.ogg",
-            8: None,
-            9: "secret.ogg"
-        }
+            
+        self.loader.dump_shareware_music()
+        ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
         return WolfEpisode(
-            shareware_maps, shareware_jukebox,
-            "Episode 1 Escape from Wolfenstein, shareware version")
+            shareware_maps,
+            "Episode 1 Escape from Wolfenstein, shareware version", 0, shareware=True)
 
     def load_wl6_episodes(self):
         if not self.loader.wl6_maps_present():
@@ -145,11 +135,9 @@ class WolfMenuRenderer:
             pygame.display.flip()
             time.sleep(0.01)
             i += 1
-
-        # placeholder until music assets are completed
-        jukebox = {
-            0: "level1_5.ogg"
-        }
+            
+        self.loader.dump_wl6_music()
+        ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
         epnames = [
             "Escape from Wolfenstein",
@@ -161,8 +149,8 @@ class WolfMenuRenderer:
         ]
 
         wl6_episodes = [WolfEpisode(
-            wl6_maps[i*10: (i+1)*10], jukebox,
-            f"Episode {i+1} {epnames[i]}") for i in range(6)]
+            wl6_maps[i*10: (i+1)*10], 
+            f"Episode {i+1} {epnames[i]}", i) for i in range(6)]
         return wl6_episodes
 
     def render(self, loading=None):

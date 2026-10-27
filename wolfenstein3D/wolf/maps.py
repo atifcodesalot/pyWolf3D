@@ -4,6 +4,7 @@ from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import *
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.actors import ACTOR_RECIPES, ActorBuilder
+from wolfenstein3D.wolf.sound import LEVEL_MUSIC
 from copy import deepcopy
 from enum import Enum
 
@@ -137,14 +138,14 @@ class WolfMap:
     HORIZ_DOOR_INDICES = [57, 61, 63]
 
     def __init__(self, difficulty: WolfDifficulty, nextmap, size=(64, 64), array=None,
-                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], map_id=None):
+                 wall_width=20, init_pos=[0, 0], init_look_dir=[1, 0], _id=None):
         self.difficulty = difficulty
         self.nextmap = nextmap
         self.size = size
         self.wall_width = wall_width
         self.init_pos = list(init_pos)
         self.init_look = list(init_look_dir)
-        self.map_id = map_id
+        self._id = _id
 
         self.sprites: list[Sprite] = []
         self.sprite_lookup = {}
@@ -279,7 +280,7 @@ class WolfMap:
 
     def to_block_pos(self, x, y):
         return int(x // self.wall_width), int(y // self.wall_width)
-    
+
     def to_real_pos(self, bx, by):
         w = self.wall_width
         return (bx + 0.5) * w, (by + 0.5) * w
@@ -355,12 +356,14 @@ class WolfMap:
 
 
 class WolfEpisode:
-    def __init__(self, maps: list[WolfMap], jukebox: list, name):
+    def __init__(self, maps: list[WolfMap], name, _id, shareware=False):
         self.maps = maps
         self.map_amount = len(self.maps)
-        self.jukebox = jukebox
         self.name = name
+        self._id = _id
+        self.shareware = shareware
         self.link()
+        self.init_jukebox()
 
     def get_music(self, level_i):
         return self.jukebox[level_i]
@@ -376,9 +379,14 @@ class WolfEpisode:
 
     def link(self):
         for i, map_ in enumerate(self.maps):
-            map_.map_id = i
+            map_.episode = self
+            map_._id = self._id * 10 + i
             if i + 1 == self.map_amount:
                 break
             map_.nextmap = self.maps[i + 1]
         # link the secret's next to m2
         self[-1].nextmap = self[1]
+
+    def init_jukebox(self):
+        self.jukebox = dict({
+            (_map._id, LEVEL_MUSIC[_map._id]) for _map in self.maps})

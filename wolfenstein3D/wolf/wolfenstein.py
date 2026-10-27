@@ -106,7 +106,8 @@ class WolfGame:
         self.actors = self.wolfmap.get_actors()
 
         music = self.get_music()
-        self.sound_manager.play_music(music)
+        self.sound_manager.play_music(
+            music, _dir="shareware" if self.episode.shareware else "originals")
 
     def begin_episode(self, lvl_offset):
         self.wolfmap = self.episode[lvl_offset]
@@ -154,17 +155,17 @@ class WolfGame:
         xtry = vec_add(pos, vec_mul(xdisp, 5))
         xblock = m.to_block_pos(*xtry)
         if self.wolfmap.cell_occupied(xblock) or \
-            self.player.actors_too_close(xtry, adj_actors):
+                self.player.actors_too_close(xtry, adj_actors):
             disp = vec_sub(xdisp, disp)
         ytry = vec_add(pos, vec_mul(ydisp, 5))
         yblock = m.to_block_pos(*ytry)
         if self.wolfmap.cell_occupied(yblock) or \
-            self.player.actors_too_close(ytry, adj_actors):
+                self.player.actors_too_close(ytry, adj_actors):
             disp = vec_sub(ydisp, disp)
         xytry = vec_add(pos, vec_mul(disp, 5))
         xyblock = m.to_block_pos(*xytry)
         if self.wolfmap.cell_occupied(xyblock) or \
-            self.player.actors_too_close(xytry, adj_actors):
+                self.player.actors_too_close(xytry, adj_actors):
             disp = [0, 0]
         self.player.translate(disp)
 
@@ -313,8 +314,6 @@ class WolfGame:
                     self.schedule_sound_effect(pj.explosion_snd, pj.pos, 1)
                 if cp:
                     self.hurt_player(20)
-                
-                
 
     def spawn_projectile(self, dir_, speed, pos, projectile: Projectile):
         projectile.update_direction(dir_)
@@ -350,7 +349,7 @@ class WolfGame:
         ablock = self.wolfmap.to_block_pos(*actor.pos)
         d = euclidean_distance(pblock, ablock)
         if actor.type is WolfActorType.SCHUTZSTAFFEL \
-            or actor.is_boss:
+                or actor.is_boss:
             d *= 2/3
         chance = 0x100 - (0x10 // (1 + self.player.running.real)) * d
         diceroll = random.randint(0, 256)
@@ -576,7 +575,7 @@ class WolfGame:
         self.sound_manager.handle_sound(self)
 
     def get_music(self):
-        mapid = self.wolfmap.map_id
+        mapid = self.wolfmap._id
         music = self.jukebox.get(mapid, None)
         if music is not None:
             return music
@@ -672,7 +671,8 @@ class WolfGame:
         self.game_renderer.unfizzle(
             self.root_display, update_dest=self.renderer.game_off)
         music = self.get_music()
-        self.sound_manager.play_music(music)
+        self.sound_manager.play_music(
+            music, _dir="originals")
         pygame.event.clear()
         self.start_timer()
 

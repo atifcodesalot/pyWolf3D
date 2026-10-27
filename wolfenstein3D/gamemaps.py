@@ -4,6 +4,8 @@ from wolfenstein3D.wolf.actors import *
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.game_objects import *
 from wolfenstein3D.wolf import wolflogger
+import pyopl
+import wave
 import os
 
 SPRITES = ASSET_MANAGER.sprites
@@ -106,7 +108,7 @@ def init_actor_entries():
                  (entry - mutant_start) % 4)
 
     # an actor is "trivial" if it has no orientation and spawns default
-    trivial_actors_types = [WolfActorType.FAKEHITLER, 
+    trivial_actors_types = [WolfActorType.FAKEHITLER,
                             WolfActorType.BLINKY, WolfActorType.PINKY,
                             WolfActorType.INKY, WolfActorType.CLYDE,
                             WolfActorType.FETTGESICHT, WolfActorType.SCHABBS,
@@ -121,7 +123,6 @@ def init_actor_entries():
 
 
 init_actor_entries()
-
 
 
 def get_n_bytes_LI(start, n, data: bytearray):
@@ -260,7 +261,7 @@ class GameMapsAdaptor:
     def add_actor(self, wolfmap, obj, pos):
         if obj not in ACTOR_ENTRIES:
             return
-        
+
         _type, diff, patrol, look_i = ACTOR_ENTRIES[obj]
         wolfmap.add_actor(_type, pos,
                           self.actor_orientation[look_i],
@@ -296,7 +297,7 @@ class GameMapsAdaptor:
 
         wolfmap = WolfMap(array=walls, wall_width=8,
                           difficulty=WolfDifficulty.DEATHINCARNATE,
-                          nextmap=None, map_id=level_i)
+                          nextmap=None)
         ww = wolfmap.wall_width
 
         # add sprites, items, pushwalls, doors
@@ -331,14 +332,92 @@ class GameMapsAdaptor:
 MAPS_PATH = os.path.join(ASSET_MANAGER.assets_path, "maps")
 
 
+class GameMapsMusicLoader:
+    def __init__(self, audiot_path, audiohed_path, track_amount):
+        self.audiot_file = open(audiot_path, "rb")
+        self.audiohed_file = open(audiohed_path, "rb")
+        self.track_amount = track_amount
+        self.headers = bytearray(self.audiohed_file.read())
+        self.data = bytearray(self.audiot_file.read())
+        self.opl = pyopl.opl(44100, 2, 1)
+        self.parse()
+
+    def get_music_offsets(self):
+        self.music_offsets = []
+        start = 261*4
+        for i in range(self.track_amount):
+            offset = get_n_bytes_LI(start + i*4, 4, self.headers)
+            self.music_offsets.append(offset)
+
+    def get_track(self, track_idx):
+        offset = self.music_offsets[track_idx]
+        tracklen = get_n_bytes_LI(offset, 2, self.data)
+        track_data = self.data[offset + 2: offset + 2 + tracklen]
+        return track_data
+
+    def get_music(self):
+        self.tracks = []
+        for i in range(self.track_amount):
+            track = self.get_track(i)
+            self.tracks.append(self.get_sound(track))
+
+    def get_samples(self, delay) -> bytearray:
+        samples = bytearray()
+        calls = delay // 512
+        remainder = delay % 512
+        for _ in range(calls):
+            temp = bytearray(1024)
+            self.opl.getSamples(temp)
+            samples.extend(temp)
+        temp = bytearray(remainder*2)
+        samples.extend(temp)
+        return samples
+
+    def get_sound(self, raw) -> pygame.mixer.Sound:
+        IMFTICK = 63
+        samples = bytearray()
+        for i in range(len(raw)//4):
+            ins = raw[i*4: (i+1)*4]
+            # little endian
+            self.opl.writeReg(ins[0], ins[1])
+            delay = get_n_bytes_LI(2, 2, ins)
+            if delay > 0:
+                samples.extend(self.get_samples(delay * IMFTICK))
+
+        return pygame.mixer.Sound(samples)
+
+    def parse(self):
+        self.get_music_offsets()
+        self.get_music()
+
+    def dump_WAV(self, path):
+        sndpath = ASSET_MANAGER.sound_path
+        muspath = os.path.join(sndpath, "music")
+        savepath = os.path.join(muspath, path)
+        if not os.path.exists(muspath):
+            os.mkdir(muspath)
+        if not os.path.exists(savepath):
+            os.mkdir(savepath)
+        for i, track in enumerate(self.tracks):
+            filepath = os.path.join(savepath, f"track{i}.wav")
+            if os.path.exists(filepath) or not track.get_raw():
+                continue
+            sfile = wave.open(filepath, 'w')
+            sfile.setframerate(44100)
+            sfile.setnchannels(1)
+            sfile.setsampwidth(2)
+            sfile.writeframesraw(track.get_raw())
+            sfile.close()
+
+
 class GameMapsLoader:
     VALID_EXT = [".wl1", ".wl6"]
 
     def __init__(self, maps_path=MAPS_PATH):
         self.maps_path = maps_path
-        self.init_map_filenames()
+        self.init_map_filepaths()
 
-    def init_map_filenames(self):
+    def init_map_filepaths(self):
         self.map_files = []
         for entry in os.scandir(self.maps_path):
             for ext in self.VALID_EXT:
@@ -361,6 +440,26 @@ class GameMapsLoader:
 
         maphead.close()
         maptemp.close()
+
+    def dump_shareware_music(self):
+        shareware_audio = [
+            fn for fn in self.map_files if fn.lower().endswith("audiot.wl1")][0]
+        shareware_audiohed = [
+            fn for fn in self.map_files if fn.lower().endswith("audiohed.wl1")][0]
+
+        self.shareware_music_loader = GameMapsMusicLoader(
+            shareware_audio, shareware_audiohed, track_amount=10)
+        self.shareware_music_loader.dump_WAV("shareware")
+
+    def dump_wl6_music(self):
+        wl6_audio = [
+            fn for fn in self.map_files if fn.lower().endswith("audiot.wl6")][0]
+        wl6_audiohed = [
+            fn for fn in self.map_files if fn.lower().endswith("audiohed.wl6")][0]
+
+        self.shareware_music_loader = GameMapsMusicLoader(
+            wl6_audio, wl6_audiohed, track_amount=27)
+        self.shareware_music_loader.dump_WAV("originals")
 
     def wl6_maps_present(self):
         low_files = [os.path.basename(fn.lower()) for fn in self.map_files]

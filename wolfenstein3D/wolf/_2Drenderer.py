@@ -92,7 +92,8 @@ class Wolf2DRenderer:
         self.hudsurf.blit(face, self.hud_faces_off)
         weap = self.hud_weapons[player_ctx.weapon.value]
         self.hudsurf.blit(weap, self.hud_weapon_off)
-        self.draw_number(player_ctx.map.map_id + 1, self.hud_floor_off, 2)
+        self.draw_number(player_ctx.map._id + 1 -
+                         player_ctx.map.episode._id * 10, self.hud_floor_off, 2)
         self.draw_number(player_ctx.score, self.hud_score_off, 5)
         self.draw_number(player_ctx.health, self.hud_health_off, 3)
         self.draw_number(player_ctx.ammo, self.hud_ammo_off, 2)
@@ -182,7 +183,7 @@ class Wolf2DRenderer:
         stats = [ctimesurf, killsurf, secretsurf]
 
         floorsurf = AM.biggerfont.render(
-            f"FLOOR {wolfmap.map_id + 1} COMPLETED", True, color)
+            f"FLOOR {wolfmap._id + 1 - wolfmap.episode._id * 10} COMPLETED", True, color)
         self.pgsurf.fill(self.bgcolor)
         self.pgsurf.blit(floorsurf, (stats_off[0], stats_off[1] - 100))
         for i, sstart in enumerate(stat_start):

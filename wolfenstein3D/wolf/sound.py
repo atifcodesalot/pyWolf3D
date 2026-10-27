@@ -4,6 +4,40 @@ from wolfenstein3D.wolf import pygame
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from math import pow, pi, atan2
 from dataclasses import dataclass
+from os import path
+
+
+LEVEL_MUSIC = {
+    # Episode 1
+    0: "track3.wav",   1: "track11.wav",  2: "track9.wav",   3: "track12.wav",
+    4: "track3.wav",   5: "track11.wav",  6: "track9.wav",   7: "track12.wav",
+    8: "track2.wav",   9: "track0.wav",
+
+    # Episode 2
+    10: "track8.wav",  11: "track18.wav", 12: "track17.wav", 13: "track4.wav",
+    14: "track8.wav",  15: "track18.wav", 16: "track4.wav",  17: "track17.wav",
+    18: "track2.wav",  19: "track1.wav",
+
+    # Episode 3
+    20: "track6.wav",  21: "track20.wav", 22: "track22.wav", 23: "track21.wav",
+    24: "track6.wav",  25: "track20.wav", 26: "track22.wav", 27: "track21.wav",
+    28: "track19.wav", 29: "track26.wav",
+
+    # Episode 4
+    30: "track3.wav",  31: "track11.wav", 32: "track9.wav",  33: "track12.wav",
+    34: "track3.wav",  35: "track11.wav", 36: "track9.wav",  37: "track12.wav",
+    38: "track2.wav",  39: "track0.wav",
+
+    # Episode 5
+    40: "track8.wav",  41: "track18.wav", 42: "track17.wav", 43: "track4.wav",
+    44: "track8.wav",  45: "track18.wav", 46: "track4.wav",  47: "track17.wav",
+    48: "track2.wav",  49: "track1.wav",
+
+    # Episode 6
+    50: "track6.wav",  51: "track20.wav", 52: "track22.wav", 53: "track21.wav",
+    54: "track6.wav",  55: "track20.wav", 56: "track22.wav", 57: "track21.wav",
+    58: "track19.wav", 59: "track26.wav",
+}
 
 
 # increase this value as you wish
@@ -34,7 +68,7 @@ class WolfSoundManager:
         (0.86, 0.5)
     ]
 
-    def __init__(self, master, music_vol=0.3):
+    def __init__(self, master, music_vol=1):
         self.master = master
         self.music_vol = self.cap_volume(music_vol)
         self.sndeff_queue = {}
@@ -130,8 +164,9 @@ class WolfSoundManager:
         self.playing_effects.append(sndeff)
 
     # music related methods start here
-    def play_music(self, piece):
-        pygame.mixer.music.load(ASSET_MANAGER.sounds["music"][piece])
+    def play_music(self, musicfn, _dir="shareware"):
+        pygame.mixer.music.load(
+            path.join(ASSET_MANAGER.sound_path, "music", _dir, musicfn))
         pygame.mixer.music.set_volume(self.music_vol)
         pygame.mixer.music.play(loops=-1)
 

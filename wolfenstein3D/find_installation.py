@@ -37,10 +37,14 @@ class WolfInstallationFinder:
             abs_gamefiles_path, "GAMEMAPS.WL6")
         maphead6 = os.path.join(
             abs_gamefiles_path, "MAPHEAD.WL6")
+        audiot6 = os.path.join(
+                    abs_gamefiles_path, "AUDIOT.WL6")
+        audiohed6 = os.path.join(
+                            abs_gamefiles_path, "AUDIOHED.WL6")
 
         if not (os.path.exists(gamemaps6) or os.path.exists(maphead6)):
             return False
-        return gamemaps6, maphead6
+        return gamemaps6, maphead6, audiot6, audiohed6
 
     def get_steam_path(self):
         self.steam_path = getattr(self, f"get_steam_path_{self.sysname}")()
