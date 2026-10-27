@@ -1,5 +1,6 @@
 
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
+from wolfenstein3D.raycaster.sprites import Projectile
 from enum import Enum
 
 
@@ -214,11 +215,29 @@ class WolfItemObj:
         game_ctx.game_renderer.begin_glow(glow, 22)
 
 
+SPRITES = ASSET_MANAGER.sprites
+
+
+def PJ_FIREBALL(): return Projectile(
+    (0, 0), None, None, SPRITES["projectiles"]["fireballs"])
+
+
+def PJ_SYRINGE(): return Projectile(
+    (0, 0), None, None, SPRITES["projectiles"]["syringes"])
+
+
+def PJ_ROCKET(): return Projectile(
+    (0, 0), None, None, SPRITES["projectiles"]["rockets"],
+    sprite_per_ori=1, no_orientation=False, 
+    explosion_sprites=SPRITES["projectiles"]["explosion"])
+
+
 class WolfActorType(Enum):
     GUARD = 108
     OFFICER = 116
     SCHUTZSTAFFEL = 126
     DOG = 134
+
     FAKEHITLER = 160
     MECHAHITLER = 178
     FETTGESICHT = 179
