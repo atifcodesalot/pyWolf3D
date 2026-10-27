@@ -103,7 +103,9 @@ class WolfMenuRenderer:
             i += 1
 
         if not self.loaded_music:
-            self.loader.dump_wl6_music()
+            self.render(loading="now synthesizing shareware music!")
+            pygame.display.flip()
+            self.loader.dump_shareware_music()
             ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
         return WolfEpisode(
@@ -132,7 +134,6 @@ class WolfMenuRenderer:
                 wolfmap = next(mapgen)
                 wl6_maps.append(wolfmap)
             except StopIteration:
-                self.loading = False
                 break
             self.render(loading=f"map {i} from {self.loader.maps_path}")
             pygame.display.flip()
@@ -140,6 +141,8 @@ class WolfMenuRenderer:
             i += 1
 
         if not self.loaded_music:
+            self.render(loading="now synthesizing wl6 music!")
+            pygame.display.flip()
             self.loader.dump_wl6_music()
             ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
