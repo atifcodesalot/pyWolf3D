@@ -300,16 +300,23 @@ class WolfGame:
 
     def handle_projectiles(self):
         for pj in self.projectiles:
-            pj.travel()
+            if pj.exploding:
+                if pj.explode():
+                    self.projectiles.remove(pj)
+                continue
+            pj.travel(self)
             if pj.collides_map(self.wolfmap):
-                self.projectiles.remove(pj)
+                pj.exploding = True
             elif pj.collides_player(self):
                 self.hurt_player(20)
-                self.projectiles.remove(pj)
+                pj.exploding = True
+                
 
-    def spawn_projectile(self, direction, speed, pos, sprites):
-        new_pj = Projectile(direction, speed, pos, sprites)
-        self.projectiles.append(new_pj)
+    def spawn_projectile(self, dir_, speed, pos, projectile: Projectile):
+        projectile.update_direction(dir_)
+        projectile.speed = speed
+        projectile.pos = pos
+        self.projectiles.append(projectile)
 
     def calc_player_dmg(self, actor: Actor):
         pblock = self.player.get_current_block()
