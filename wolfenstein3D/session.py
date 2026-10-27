@@ -39,7 +39,8 @@ class WolfMenuRenderer:
         self.loader = GameMapsLoader()
 
     def render_loading_screen(self, entity):
-        text_surf = FONT.render(f"[LOADING] {entity}...", True, (255, 255, 255))
+        text_surf = FONT.render(
+            f"[LOADING] {entity}...", True, (255, 255, 255))
         self.screen.blit(text_surf, (400 - text_surf.get_width() //
                          2, 400 - text_surf.get_height() // 2))
 
@@ -100,7 +101,7 @@ class WolfMenuRenderer:
             pygame.display.flip()
             time.sleep(0.1)
             i += 1
-            
+
         self.loader.dump_shareware_music()
         ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
@@ -110,7 +111,8 @@ class WolfMenuRenderer:
 
     def load_wl6_episodes(self):
         if not self.loader.wl6_maps_present():
-            self.render(loading="Could not find GAMEMAPS.WL6 or MAPHEAD.WL6 files, trying to find them automatically.")
+            self.render(
+                loading="Could not find GAMEMAPS.WL6 or MAPHEAD.WL6 files, trying to find them automatically.")
             pygame.display.flip()
             time.sleep(2)
             try:
@@ -118,7 +120,7 @@ class WolfMenuRenderer:
                 if not helper.find_installation():
                     return
                 else:
-                    self.loader.init_map_filenames()
+                    self.loader.init_map_filepaths()
             except:
                 return
         wl6_maps = []
@@ -135,7 +137,7 @@ class WolfMenuRenderer:
             pygame.display.flip()
             time.sleep(0.01)
             i += 1
-            
+
         self.loader.dump_wl6_music()
         ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
@@ -149,7 +151,7 @@ class WolfMenuRenderer:
         ]
 
         wl6_episodes = [WolfEpisode(
-            wl6_maps[i*10: (i+1)*10], 
+            wl6_maps[i*10: (i+1)*10],
             f"Episode {i+1} {epnames[i]}", i) for i in range(6)]
         return wl6_episodes
 
@@ -197,10 +199,11 @@ class WolfMenuRenderer:
             if wl6_episodes:
                 episodes.extend(wl6_episodes)
             else:
-                self.render("Could not locate original 6 episodes in your maps folder.")
+                self.render(
+                    "Could not locate original 6 episodes in your maps folder.")
                 pygame.display.flip()
                 time.sleep(2)
-            
+
             self.loading = False
 
             episode_selections = [
@@ -226,7 +229,7 @@ class WolfMenuRenderer:
 
 def main():
     # with cProfile.Profile() as pr:
-        menu_renderer = WolfMenuRenderer("Alpha")
-        menu_renderer.run()
+    menu_renderer = WolfMenuRenderer("Alpha")
+    menu_renderer.run()
 
     # pr.dump_stats("wolf.prof")
