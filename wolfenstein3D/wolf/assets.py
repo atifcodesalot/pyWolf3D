@@ -194,7 +194,7 @@ class WolfAssetManager:
         self.sprites["characters"]["boss"]["gretel"] = gretel_adapted
         schabbs_adapted = self.adapt_character_sprites(
             move_frames=schabbs_sprites[:4], move_frame_amount=4,
-            death_frames=schabbs_sprites[8:11],
+            death_frames=schabbs_sprites[8:12],
             attack_frames=schabbs_sprites[4: 7], layout=[4, 7])
         self.sprites["characters"]["boss"]["schabbs"] = schabbs_adapted
         
@@ -202,11 +202,12 @@ class WolfAssetManager:
 
         giftmacher_adapted = self.adapt_character_sprites(
             move_frames=giftmacher_sprites[:4], move_frame_amount=4,
-            death_frames=giftmacher_sprites[8:11],
+            death_frames=giftmacher_sprites[8:12],
             attack_frames=giftmacher_sprites[4: 7], layout=[4, 7])
         self.sprites["characters"]["boss"]["giftmacher"] = giftmacher_adapted
         
-        self.sprites["projectiles"]["rockets"] = giftmacher_sprites[12: 27]
+        self.sprites["projectiles"]["rockets"] = giftmacher_sprites[12: 20]
+        self.sprites["projectiles"]["explosion"] = giftmacher_sprites[24: 27]
 
     def init_character_sprites(self):
         self.sprites["characters"] = {}
