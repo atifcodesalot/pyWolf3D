@@ -160,6 +160,55 @@ class WolfAssetManager:
 
         return adapted
 
+    def init_boss_sprites(self):
+        self.sprites["characters"]["boss"] = {}
+        # init hans grösse
+        hans_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', 'boss', 'hansgrösse.png'))
+        hans_sprites = self.texmap_parse(hans_sheet,
+                                         1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        gretel_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', 'boss', 'gretelgrösse.png'))
+        gretel_sprites = self.texmap_parse(gretel_sheet,
+                                           1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        schabbs_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', 'boss', 'drschabbs.png'))
+        schabbs_sprites = self.texmap_parse(schabbs_sheet,
+                                            1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        giftmacher_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', 'boss', 'giftmacher.png'))
+        giftmacher_sprites = self.texmap_parse(giftmacher_sheet,
+                                               1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+
+        # adapt below
+
+        hans_adapted = self.adapt_character_sprites(
+            move_frames=hans_sprites[:4], move_frame_amount=4,
+            death_frames=hans_sprites[8:12],
+            attack_frames=hans_sprites[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["hans"] = hans_adapted
+        gretel_adapted = self.adapt_character_sprites(
+            move_frames=gretel_sprites[:4], move_frame_amount=4,
+            death_frames=gretel_sprites[8:12],
+            attack_frames=gretel_sprites[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["gretel"] = gretel_adapted
+        schabbs_adapted = self.adapt_character_sprites(
+            move_frames=schabbs_sprites[:4], move_frame_amount=4,
+            death_frames=schabbs_sprites[8:12],
+            attack_frames=schabbs_sprites[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["schabbs"] = schabbs_adapted
+        
+        self.sprites["projectiles"]["syringes"] = schabbs_sprites[12:]
+
+        giftmacher_adapted = self.adapt_character_sprites(
+            move_frames=giftmacher_sprites[:4], move_frame_amount=4,
+            death_frames=giftmacher_sprites[8:12],
+            attack_frames=giftmacher_sprites[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["giftmacher"] = giftmacher_adapted
+        
+        self.sprites["projectiles"]["rockets"] = giftmacher_sprites[12: 20]
+        self.sprites["projectiles"]["explosion"] = giftmacher_sprites[24: 27]
+
     def init_character_sprites(self):
         self.sprites["characters"] = {}
         self.init_character_sprite(
@@ -176,12 +225,12 @@ class WolfAssetManager:
             'pacman.png', 'pacman-ghosts', 64, 0, 0, 0, 64, 64, Sprite, 0, 0)
         self.init_character_sprite(
             'fakehitler.png', 'fakehitler', 1, 0, 1, 0, 64, 64, Sprite, 0, 0)
-        
+
         hs = list(self.sprites["characters"]["fakehitler"].values())
         self.sprites["characters"]["fakehitler"] = self.adapt_character_sprites(
-                move_frames=hs[:3], move_frame_amount=3,
-                death_frames=hs[7:13],
-                attack_frames=hs[3:5], layout=[6,6])
+            move_frames=hs[:3], move_frame_amount=3,
+            death_frames=hs[7:13],
+            attack_frames=hs[3:5], layout=[6, 6])
         self.sprites["projectiles"] = {}
         self.sprites["projectiles"]["fireballs"] = hs[5:7]
 
@@ -195,18 +244,7 @@ class WolfAssetManager:
                 attack_frames=ps[i*2:(i+1)*2], layout=[2, 5])
 
         # init bosses here
-        self.sprites["characters"]["boss"] = {}
-        # init hans grösse
-        hans_sheet = Image.open(os.path.join(
-            self.sprite_path, 'characters', 'boss', 'hansgrösse.png'))
-        hans_sprites = self.texmap_parse(hans_sheet,
-                                         1, 1, 1, 1, 64, 64, Sprite, 1, 1)
-
-        hans_sprites = self.adapt_character_sprites(
-            move_frames=hans_sprites[:4], move_frame_amount=4,
-            death_frames=hans_sprites[8:12],
-            attack_frames=hans_sprites[4: 7], layout=[4, 7])
-        self.sprites["characters"]["boss"]["hans"] = hans_sprites
+        self.init_boss_sprites()
 
     def init_sprites(self):
         self.sprites = {}

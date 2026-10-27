@@ -2,7 +2,8 @@
 
 from wolfenstein3D.wolf.assets import ASSET_MANAGER, Sprite
 from wolfenstein3D.raycaster.aux_math import *
-from wolfenstein3D.wolf.game_objects import WolfItem, WolfActorType
+from wolfenstein3D.wolf.game_objects import (
+    WolfItem, WolfActorType, PJ_FIREBALL, PJ_SYRINGE, PJ_ROCKET)
 from wolfenstein3D.wolf import pygame, wolflogger
 
 from math import pi, atan2
@@ -108,7 +109,7 @@ class HurtState(ActorState):
         super().__init__(actor, 2, nextstate=None, lifetime=20)
         if self.actor.type == WolfActorType.SCHUTZSTAFFEL:
             self.lifetime = 10
-        elif self.actor.type == WolfActorType.HANS:
+        elif self.actor.is_boss:
             self.lifetime = 1
 
     def think(self, game_ctx):
@@ -129,6 +130,8 @@ class AttackState(ActorState):
         self.frame_lifetime = frame_lifetime
         lifetime = frame_lifetime * actor.attack_frames
         super().__init__(actor, 3, nextstate=None, lifetime=lifetime)
+        if self.actor.type is WolfActorType.SCHABBS:
+            self.lifetime *= 2
         self.hb_perframe = self.lifetime // actor.attack_frames
         self.heartbeats = 0
         self.auto = False
@@ -169,7 +172,8 @@ class AttackState(ActorState):
         dist //= game_ctx.wolfmap.wall_width
         hitprob = int(dist)
         hitprob = 1 if hitprob == 0 else hitprob
-        if self.actor.type is WolfActorType.FAKEHITLER:
+        if self.actor.type in [WolfActorType.FAKEHITLER, 
+                               WolfActorType.SCHABBS, WolfActorType.GIFTMACHER]:
             if self.actor.sees_player(game_ctx):
                 self.attack(game_ctx)
         elif random.randint(1, hitprob) in range(1, 3):
@@ -192,7 +196,7 @@ class AttackState(ActorState):
             self.quit_auto()
 
     def endcallback(self, _):
-        if self.actor.type in [WolfActorType.SCHUTZSTAFFEL, WolfActorType.HANS]:
+        if self.actor.can_auto:
             diceroll = random.randint(1, 3) in [1, 2]
             if diceroll and not self.exit_auto:
                 self.go_auto()
@@ -557,9 +561,9 @@ class Actor:
 
     def to_this_space(self, pos):
         to_self = vec_sub(pos, self.pos)
-        obs_space = (vec_dot(to_self, self.left),
-                     vec_dot(to_self, self.look_dir))
-        return obs_space
+        myspace = (vec_dot(to_self, self.left),
+                   vec_dot(to_self, self.look_dir))
+        return myspace
 
     def get_current_block(self):
         return self.wolfmap.to_block_pos(*self.pos)
@@ -688,7 +692,7 @@ class Actor:
         vertical = self.look_dir.index(mag)
         offset[vertical] += sign(mag)
         return tuple(vec_add(ablock, offset))
-    
+
     def front_blocked(self, game_ctx):
         front = self.get_front_block()
         return self.occupied_forthis(front, game_ctx)
@@ -738,9 +742,9 @@ class Actor:
             self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
 
-    def throw_projectile(self, speed, sprites, game_ctx):
+    def throw_projectile(self, projectile, speed, game_ctx):
         pj_dir = vec_norm(vec_sub(self.pos, game_ctx.player.pos))
-        game_ctx.spawn_projectile(pj_dir, speed, self.pos, sprites)
+        game_ctx.spawn_projectile(pj_dir, speed, self.pos, projectile)
 
 
 @dataclass
@@ -764,7 +768,9 @@ class ActorRecipe:
     pace: float
 
     no_orientation: bool = False
+    boss: bool = False
 
+    can_auto: bool = False
     attack_callback: Optional[Callable[[], None]] = None
 
 
@@ -810,7 +816,7 @@ ACTOR_RECIPES = {
         drop=WolfItem.AMMUNITION,
         pace=0.2
     ),
-    
+
     WolfActorType.DOG: ActorRecipe(
         sprites=SPRITES["characters"]["shepherd"],
         sprite_layout=(8, 6),
@@ -846,7 +852,8 @@ ACTOR_RECIPES = {
         range_=50,
         accuracy=1,
         drop=WolfItem.MACHINEGUN,
-        pace=0.15
+        pace=0.15,
+        can_auto=True
     ),
 
 
@@ -904,7 +911,7 @@ ACTOR_RECIPES = {
         pace=0.35,
         no_orientation=True,
         attack_callback=lambda self, game_ctx: self.throw_projectile(
-            0.5, SPRITES["projectiles"]["fireballs"], game_ctx)
+            PJ_FIREBALL(), 0.5, game_ctx)
     ),
 
     WolfActorType.HANS: ActorRecipe(
@@ -923,7 +930,75 @@ ACTOR_RECIPES = {
         accuracy=1,
         drop=WolfItem.GOLDKEY,
         pace=0.15,
-        no_orientation=True
+        no_orientation=True,
+        boss=True,
+        can_auto=True
+    ),
+
+
+    WolfActorType.GRETEL: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["gretel"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["gretel"]["KEINSND.WAV"]],
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["gretel"]["MEINSND.WAV"],
+        health=1200,
+        range_=150,
+        accuracy=1,
+        drop=WolfItem.GOLDKEY,
+        pace=0.15,
+        no_orientation=True,
+        boss=True,
+        can_auto=True
+    ),
+
+    WolfActorType.SCHABBS: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["schabbs"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=2,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["schabbs"]["MEINGOTTSND.WAV"]],
+        attack_sound=None,
+        alert_sound=SOUNDS["schabbs"]["SCHABBSHASND.WAV"],
+        health=1000,
+        range_=150,
+        accuracy=1,
+        drop=None,
+        pace=0.15,
+        no_orientation=True,
+        boss=True,
+        attack_callback=lambda self, game_ctx: self.throw_projectile(
+            PJ_SYRINGE(), 1, game_ctx)
+    ),
+
+    WolfActorType.GIFTMACHER: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["giftmacher"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=2,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["giftmacher"]["DONNERSND.WAV"]],
+        attack_sound=SOUNDS["boss"]["MISSILEFIRESND.WAV"],
+        alert_sound=SOUNDS["giftmacher"]["EINESND.WAV"],
+        health=1200,
+        range_=150,
+        accuracy=1,
+        drop=None,
+        pace=0.15,
+        no_orientation=True,
+        boss=True,
+        attack_callback=lambda self, game_ctx: self.throw_projectile(
+            PJ_ROCKET(), 0.8, game_ctx)
     ),
 
     WolfActorType.BLINKY: pacman_ghost_recipe("blinky"),
@@ -956,12 +1031,6 @@ class ActorBuilder:
     def build_sprite_offsets(self, dead_offset, hurt_offset):
         self.actor.dead_offset = dead_offset
         self.actor.hurt_offset = hurt_offset
-
-    def build_moving_sprites(self):
-        pass
-
-    def build_standing_sprites(self):
-        pass
 
     def build_sounds(self, death_sounds, attack_sound, alert_sound):
         self.actor.death_sounds = death_sounds
@@ -998,4 +1067,6 @@ class ActorBuilder:
             self.actor.orientation_idx = lambda *_, **__: 0
         if recipe.attack_callback:
             self.actor.attack_callback = recipe.attack_callback
+        self.actor.is_boss = recipe.boss
+        self.actor.can_auto = recipe.can_auto
         return self.actor

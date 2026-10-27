@@ -1,5 +1,6 @@
 
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
+from wolfenstein3D.raycaster.sprites import Projectile
 from enum import Enum
 
 
@@ -103,7 +104,8 @@ ITEM_EFFECT = {
     WolfItem.TREASURECHEST: lambda p: p.get_money(),
     WolfItem.CROWN: lambda p: p.get_money(),
     WolfItem.EXTRALIFE: lambda p: p._1up(),
-    WolfItem.BLOODPOOL: lambda p: p.regain_health(5)
+    WolfItem.BLOODPOOL: lambda p: p.regain_health(5),
+    WolfItem.BLOODYREMAINS: lambda p: p.regain_health(5)
 }
 
 SOUNDS = ASSET_MANAGER.sounds
@@ -122,8 +124,8 @@ ITEM_SOUND = {
     WolfItem.TREASURECHEST: SOUNDS["pickup"]["ALBONUS3.wav"],
     WolfItem.CROWN: SOUNDS["pickup"]["ALBONUS4.wav"],
     WolfItem.EXTRALIFE: SOUNDS["pickup"]["ALBNS1UP.wav"],
-    WolfItem.BLOODYREMAINS: None,
-    WolfItem.BLOODPOOL: None
+    WolfItem.BLOODYREMAINS: SOUNDS["misc"]["SLURPIESND.WAV"],
+    WolfItem.BLOODPOOL: SOUNDS["misc"]["SLURPIESND.WAV"]
 }
 
 TREASURE_ITEMS = [
@@ -193,7 +195,7 @@ class WolfItemObj:
 
     def pickup_condition(self, player):
         if self.is_health_item:
-            if self.item is WolfItem.BLOODPOOL:
+            if self.item in [WolfItem.BLOODPOOL, WolfItem.BLOODYREMAINS]:
                 return player.health < 20
             return player.health < 100
         elif self.item is WolfItem.AMMUNITION:
@@ -213,13 +215,37 @@ class WolfItemObj:
         game_ctx.game_renderer.begin_glow(glow, 22)
 
 
+SPRITES = ASSET_MANAGER.sprites
+
+
+def PJ_FIREBALL(): return Projectile(
+    (0, 0), None, None, SPRITES["projectiles"]["fireballs"])
+
+
+def PJ_SYRINGE(): return Projectile(
+    (0, 0), None, None, SPRITES["projectiles"]["syringes"])
+
+
+def PJ_ROCKET(): return Projectile(
+    (0, 0), None, None, SPRITES["projectiles"]["rockets"],
+    sprite_per_ori=1, no_orientation=False, 
+    explosion_sprites=SPRITES["projectiles"]["explosion"],
+    explosion_snd=SOUNDS["boss"]["MISSILEEXPSND.WAV"])
+
+
 class WolfActorType(Enum):
     GUARD = 108
     OFFICER = 116
     SCHUTZSTAFFEL = 126
     DOG = 134
+
     FAKEHITLER = 160
+    MECHAHITLER = 178
+    FETTGESICHT = 179
+    SCHABBS = 196
+    GRETEL = 197
     HANS = 214
+    GIFTMACHER = 215
     MUTANT = 216
 
     BLINKY = 224
