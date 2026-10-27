@@ -105,8 +105,9 @@ The sound propagation is done via the preprocessed area tiles.
 Some of the sound effects (and music), like treasure pickup, were actually synthesized during runtime
 in the original, this version uses .wav files for all sound effects.
 
+#### Music
 Music are actually synthesized during runtime using a OPL emulator using `AUIDOT` and `AUIDOHED` files!
-The justification is that I can't just redistribute the non-shareware music this repo, which is under copyright law.
+The justification is that I can't just redistribute the non-shareware music with this repo, which is under copyright law.
 So you drop the files that you already got and the music files are created on the fly!
 
 ## Credits
