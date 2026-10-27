@@ -229,7 +229,8 @@ def PJ_SYRINGE(): return Projectile(
 def PJ_ROCKET(): return Projectile(
     (0, 0), None, None, SPRITES["projectiles"]["rockets"],
     sprite_per_ori=1, no_orientation=False, 
-    explosion_sprites=SPRITES["projectiles"]["explosion"])
+    explosion_sprites=SPRITES["projectiles"]["explosion"],
+    explosion_snd=SOUNDS["boss"]["MISSILEEXPSND.WAV"])
 
 
 class WolfActorType(Enum):

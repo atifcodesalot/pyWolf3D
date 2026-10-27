@@ -57,7 +57,8 @@ class Sprite(Texture):
 
 class Projectile:
     def __init__(self, direction, speed, pos, sprites: list[Sprite],
-                 no_orientation=True, sprite_per_ori=None, explosion_sprites=None):
+                 no_orientation=True, sprite_per_ori=None, explosion_sprites=None,
+                 explosion_snd=None):
         self.dir = direction
         self.left = [-self.dir[1], self.dir[0]]
         self.speed = speed
@@ -83,6 +84,7 @@ class Projectile:
         if explosion_sprites:
             self.explosion_amount = len(explosion_sprites)
             self.explosion_counter = 0
+        self.explosion_snd = explosion_snd
 
     def update_direction(self, newdir):
         self.dir = newdir

@@ -305,11 +305,15 @@ class WolfGame:
                     self.projectiles.remove(pj)
                 continue
             pj.travel(self)
-            if pj.collides_map(self.wolfmap):
+            cm = pj.collides_map(self.wolfmap)
+            cp = pj.collides_player(self)
+            if cp or cm:
                 pj.exploding = True
-            elif pj.collides_player(self):
-                self.hurt_player(20)
-                pj.exploding = True
+                if pj.explosion_snd:
+                    self.schedule_sound_effect(pj.explosion_snd, pj.pos, 1)
+                if cp:
+                    self.hurt_player(20)
+                
                 
 
     def spawn_projectile(self, dir_, speed, pos, projectile: Projectile):
@@ -345,7 +349,8 @@ class WolfGame:
         pblock = self.player.get_current_block()
         ablock = self.wolfmap.to_block_pos(*actor.pos)
         d = euclidean_distance(pblock, ablock)
-        if actor.type in [WolfActorType.HANS, WolfActorType.SCHUTZSTAFFEL]:
+        if actor.type is WolfActorType.SCHUTZSTAFFEL \
+            or actor.is_boss:
             d *= 2/3
         chance = 0x100 - (0x10 // (1 + self.player.running.real)) * d
         diceroll = random.randint(0, 256)
@@ -597,7 +602,7 @@ class WolfGame:
             self.floor_start()
         elif self.floor_fin:
             self.floor_end()
-        elif self.player.is_dead():
+        elif False:
             self.life_end()
 
     def floor_end(self):
