@@ -2,7 +2,8 @@
 
 from wolfenstein3D.wolf.assets import ASSET_MANAGER, Sprite
 from wolfenstein3D.raycaster.aux_math import *
-from wolfenstein3D.wolf.game_objects import WolfItem, WolfActorType
+from wolfenstein3D.wolf.game_objects import (
+    WolfItem, WolfActorType, PJ_FIREBALL, PJ_SYRINGE, PJ_ROCKET)
 from wolfenstein3D.wolf import pygame, wolflogger
 
 from math import pi, atan2
@@ -169,7 +170,8 @@ class AttackState(ActorState):
         dist //= game_ctx.wolfmap.wall_width
         hitprob = int(dist)
         hitprob = 1 if hitprob == 0 else hitprob
-        if self.actor.type is WolfActorType.FAKEHITLER:
+        if self.actor.type in [WolfActorType.FAKEHITLER, 
+                               WolfActorType.SCHABBS, WolfActorType.GIFTMACHER]:
             if self.actor.sees_player(game_ctx):
                 self.attack(game_ctx)
         elif random.randint(1, hitprob) in range(1, 3):
@@ -554,9 +556,9 @@ class Actor:
 
     def to_this_space(self, pos):
         to_self = vec_sub(pos, self.pos)
-        obs_space = (vec_dot(to_self, self.left),
-                     vec_dot(to_self, self.look_dir))
-        return obs_space
+        myspace = (vec_dot(to_self, self.left),
+                   vec_dot(to_self, self.look_dir))
+        return myspace
 
     def get_current_block(self):
         return self.wolfmap.to_block_pos(*self.pos)
@@ -735,9 +737,9 @@ class Actor:
             self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
 
-    def throw_projectile(self, speed, sprites, game_ctx):
+    def throw_projectile(self, projectile, speed, game_ctx):
         pj_dir = vec_norm(vec_sub(self.pos, game_ctx.player.pos))
-        game_ctx.spawn_projectile(pj_dir, speed, self.pos, sprites)
+        game_ctx.spawn_projectile(pj_dir, speed, self.pos, projectile)
 
 
 @dataclass
@@ -762,7 +764,7 @@ class ActorRecipe:
 
     no_orientation: bool = False
     boss: bool = False
-    
+
     can_auto: bool = False
     attack_callback: Optional[Callable[[], None]] = None
 
@@ -904,7 +906,7 @@ ACTOR_RECIPES = {
         pace=0.35,
         no_orientation=True,
         attack_callback=lambda self, game_ctx: self.throw_projectile(
-            0.5, SPRITES["projectiles"]["fireballs"], game_ctx)
+            PJ_FIREBALL(), 0.5, game_ctx)
     ),
 
     WolfActorType.HANS: ActorRecipe(
@@ -918,7 +920,7 @@ ACTOR_RECIPES = {
         death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
         alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
-        health=1200,
+        health=12,
         range_=150,
         accuracy=1,
         drop=WolfItem.GOLDKEY,
@@ -961,13 +963,15 @@ ACTOR_RECIPES = {
         death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
         alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
-        health=1200,
+        health=12,
         range_=150,
         accuracy=1,
         drop=WolfItem.GOLDKEY,
         pace=0.15,
         no_orientation=True,
-        boss=True
+        boss=True,
+        attack_callback=lambda self, game_ctx: self.throw_projectile(
+            PJ_SYRINGE(), 1, game_ctx)
     ),
 
     WolfActorType.GIFTMACHER: ActorRecipe(
@@ -981,13 +985,15 @@ ACTOR_RECIPES = {
         death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
         alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
-        health=1200,
+        health=12,
         range_=150,
         accuracy=1,
         drop=WolfItem.GOLDKEY,
         pace=0.15,
         no_orientation=True,
-        boss=True
+        boss=True,
+        attack_callback=lambda self, game_ctx: self.throw_projectile(
+            PJ_ROCKET(), 0.8, game_ctx)
     ),
 
     WolfActorType.BLINKY: pacman_ghost_recipe("blinky"),
