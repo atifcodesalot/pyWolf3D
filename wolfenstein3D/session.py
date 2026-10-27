@@ -102,8 +102,9 @@ class WolfMenuRenderer:
             time.sleep(0.1)
             i += 1
 
-        self.loader.dump_shareware_music()
-        ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
+        if not self.loaded_music:
+            self.loader.dump_wl6_music()
+            ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
         return WolfEpisode(
             shareware_maps,
@@ -138,8 +139,9 @@ class WolfMenuRenderer:
             time.sleep(0.01)
             i += 1
 
-        self.loader.dump_wl6_music()
-        ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
+        if not self.loaded_music:
+            self.loader.dump_wl6_music()
+            ASSET_MANAGER.init_sounds(root=ASSET_MANAGER.sound_path, depth=1)
 
         epnames = [
             "Escape from Wolfenstein",
@@ -190,6 +192,7 @@ class WolfMenuRenderer:
                     return self.player_selection
 
     def run(self):
+        self.loaded_music = False
         while True:
             self.loading = True
             episodes = []
@@ -205,6 +208,7 @@ class WolfMenuRenderer:
                 time.sleep(2)
 
             self.loading = False
+            self.loaded_music = True
 
             episode_selections = [
                 ep.name for ep in episodes] + ["CHICKEN OUT",]
