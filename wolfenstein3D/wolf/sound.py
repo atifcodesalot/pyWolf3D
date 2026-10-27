@@ -39,6 +39,13 @@ LEVEL_MUSIC = {
     58: "track19.wav", 59: "track26.wav",
 }
 
+LEVEL_MUSIC_SHAREWARE = {
+    
+    0: "track3.wav",   1: "track3.wav",  2: "track9.wav",   3: "track9.wav",
+    4: "track3.wav",   5: "track9.wav",  6: "track9.wav",   7: "track7.wav",
+    8: "track2.wav",   9: "track0.wav",
+}
+
 
 # increase this value as you wish
 CHANNEL_AMOUNT = 32

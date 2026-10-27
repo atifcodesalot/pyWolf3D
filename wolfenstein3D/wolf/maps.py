@@ -4,7 +4,7 @@ from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import *
 from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.wolf.actors import ACTOR_RECIPES, ActorBuilder
-from wolfenstein3D.wolf.sound import LEVEL_MUSIC
+from wolfenstein3D.wolf.sound import LEVEL_MUSIC, LEVEL_MUSIC_SHAREWARE
 from copy import deepcopy
 from enum import Enum
 
@@ -388,5 +388,6 @@ class WolfEpisode:
         self[-1].nextmap = self[1]
 
     def init_jukebox(self):
+        musdict = LEVEL_MUSIC_SHAREWARE if self.shareware else LEVEL_MUSIC
         self.jukebox = dict({
-            (_map._id, LEVEL_MUSIC[_map._id]) for _map in self.maps})
+            (_map._id, musdict[_map._id]) for _map in self.maps})
