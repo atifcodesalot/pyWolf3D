@@ -6,6 +6,9 @@
 *.wl6
 *.WL6
 
+# ignore dynamically generated music folder
+music/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
