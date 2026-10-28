@@ -71,8 +71,8 @@ python3 -m wolfenstein3D
 
 ### Original Maps
 
-You can now play all 6 episodes, but they aren't quite complete: two of the bosses aren't there! (but will be completed in the near future).
-If want to play the other 5 episodes, you will need to drop the game files: `GAMEMAPS.WL6`, `MAPHEAD.WL6`, `AUIDOT.WL6` and `AUIDOHED.WL6` from your purchased installation into the `./wolfenstein3D/assets/maps` folder, I also wrote a simple script to
+You can now play all 6 episodes, but they complete, except mecha hitler boss, (but will be completed in the near future).
+If want to play all of the episodes, you will need to drop the game files: `GAMEMAPS.WL6`, `MAPHEAD.WL6`, `AUIDOT.WL6` and `AUIDOHED.WL6` from your purchased installation into the `./wolfenstein3D/assets/maps` folder, I also wrote a simple script to
 detect it automatically if you have a steam installation of the game.
 
 ## Info on the project
