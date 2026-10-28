@@ -339,6 +339,9 @@ class WolfMap:
 
     @staticmethod
     def get_percentage(nom, denom):
+        if denom == 0:
+            # guard against zero
+            return 0
         return round((nom / denom)*100)
 
     def get_kill_percentage(self):
