@@ -747,6 +747,7 @@ class Actor:
         self.state = GuardingState(
             self) if not self.patrol else PatrolState(self, map_ctx)
         self.ticks_since_trans = 0
+        self.chase = None
 
     def throw_projectile(self, projectile, speed, game_ctx):
         pj_dir = vec_norm(vec_sub(self.pos, game_ctx.player.pos))
