@@ -673,7 +673,7 @@ class WolfGame:
             self.root_display, update_dest=self.renderer.game_off)
         music = self.get_music()
         self.sound_manager.play_music(
-            music, _dir="originals")
+            music, _dir="shareware" if self.episode.shareware else "originals")
         pygame.event.clear()
         self.start_timer()
 
