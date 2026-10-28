@@ -89,7 +89,8 @@ class DyingState(ActorState):
     def start(self, gamectx):
         if snds := self.actor.death_sounds:
             deathsnd: pygame.mixer.Sound = random.choice(snds)
-            gamectx.schedule_sound_effect(deathsnd, self.actor.pos, 3)
+            origin = None if self.actor.is_boss else self.actor.pos
+            gamectx.schedule_sound_effect(deathsnd, origin, 3)
 
     def act(self, _):
         self.heartbeats += 1
@@ -154,9 +155,10 @@ class AttackState(ActorState):
         col = self.colnum()
         return col + (self.heartbeats // self.hb_perframe) + self.auto.real
 
-    def attack(self, game_ctx):
+    def attack(self, game_ctx, second=False):
+        fettgesicht_second = self.actor.type is WolfActorType.FETTGESICHT and second
         callback = getattr(self.actor, "attack_callback", None)
-        if callable(callback):
+        if callable(callback) and not fettgesicht_second:
             return callback(self.actor, game_ctx)
 
         damage = game_ctx.calc_actor_dmg(self.actor)
@@ -165,28 +167,31 @@ class AttackState(ActorState):
             # killed the player
             game_ctx.player_slayer = self.actor
 
-    def try_attacking(self, game_ctx):
-        if snd := self.actor.attack_sound:
+    def try_attacking(self, game_ctx, second=False):
+        if self.actor.type is WolfActorType.FETTGESICHT and second:
+            snd = SOUNDS["boss"]["BOSSFIRESND.WAV"]
+            game_ctx.schedule_sound_effect(snd, self.actor.pos, 0)
+        elif snd := self.actor.attack_sound:
             game_ctx.schedule_sound_effect(snd, self.actor.pos, 0)
         dist = euclidean_distance(self.actor.pos, game_ctx.player.pos)
         dist //= game_ctx.wolfmap.wall_width
         hitprob = int(dist)
         hitprob = 1 if hitprob == 0 else hitprob
-        if self.actor.type in [WolfActorType.FAKEHITLER, 
+        if self.actor.type in [WolfActorType.FAKEHITLER, WolfActorType.FETTGESICHT,
                                WolfActorType.SCHABBS, WolfActorType.GIFTMACHER]:
             if self.actor.sees_player(game_ctx):
-                self.attack(game_ctx)
+                self.attack(game_ctx, second=second)
         elif random.randint(1, hitprob) in range(1, 3):
             if self.actor.sees_player(game_ctx):
-                self.attack(game_ctx)
+                self.attack(game_ctx, second=second)
 
     def act(self, game_ctx):
         if self.heartbeats + 2 == self.lifetime:
             self.try_attacking(game_ctx)
         elif self.heartbeats == self.frame_lifetime \
-                and self.actor.type is WolfActorType.MUTANT:
-            # mutants attack twice
-            self.try_attacking(game_ctx)
+                and self.actor.attacks_twice:
+            # mutants and fettgesicht attack twice
+            self.try_attacking(game_ctx, second=True)
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
 
     def think(self, game_ctx):
@@ -557,7 +562,8 @@ class Actor:
         else:
             self.state.next = self.chase
         if alrtsnd := self.alert_sound:
-            game_ctx.schedule_sound_effect(alrtsnd, origin=self.pos, _time=1)
+            origin = None if self.is_boss else self.pos
+            game_ctx.schedule_sound_effect(alrtsnd, origin=origin, _time=1)
 
     def to_this_space(self, pos):
         to_self = vec_sub(pos, self.pos)
@@ -771,6 +777,7 @@ class ActorRecipe:
     boss: bool = False
 
     can_auto: bool = False
+    attacks_twice: bool = False
     attack_callback: Optional[Callable[[], None]] = None
 
 
@@ -890,7 +897,8 @@ ACTOR_RECIPES = {
         range_=150,
         accuracy=1,
         drop=WolfItem.AMMUNITION,
-        pace=0.35
+        pace=0.35,
+        attacks_twice=True
     ),
 
     WolfActorType.FAKEHITLER: ActorRecipe(
@@ -1001,6 +1009,29 @@ ACTOR_RECIPES = {
             PJ_ROCKET(), 0.8, game_ctx)
     ),
 
+    WolfActorType.FETTGESICHT: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["fettgesicht"],
+        sprite_layout=(4, 7),
+        death_frames=4,
+        move_frames=4,
+        attack_frames=4,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["giftmacher"]["DONNERSND.WAV"]],
+        attack_sound=SOUNDS["boss"]["MISSILEFIRESND.WAV"],
+        alert_sound=SOUNDS["giftmacher"]["EINESND.WAV"],
+        health=1200,
+        range_=150,
+        accuracy=1,
+        drop=None,
+        pace=0.15,
+        no_orientation=True,
+        boss=True,
+        attacks_twice=True,
+        attack_callback=lambda self, game_ctx: self.throw_projectile(
+            PJ_ROCKET(), 0.8, game_ctx)
+    ),
+
     WolfActorType.BLINKY: pacman_ghost_recipe("blinky"),
     WolfActorType.PINKY: pacman_ghost_recipe("pinky"),
     WolfActorType.INKY: pacman_ghost_recipe("inky"),
@@ -1069,4 +1100,5 @@ class ActorBuilder:
             self.actor.attack_callback = recipe.attack_callback
         self.actor.is_boss = recipe.boss
         self.actor.can_auto = recipe.can_auto
+        self.actor.attacks_twice = recipe.attacks_twice
         return self.actor
