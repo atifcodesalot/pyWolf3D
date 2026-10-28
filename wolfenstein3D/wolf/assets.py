@@ -179,6 +179,10 @@ class WolfAssetManager:
             self.sprite_path, 'characters', 'boss', 'giftmacher.png'))
         giftmacher_sprites = self.texmap_parse(giftmacher_sheet,
                                                1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        fettgesicht_sheet = Image.open(os.path.join(
+            self.sprite_path, 'characters', 'boss', 'fettgesicht.png'))
+        fettgesicht_sprites = self.texmap_parse(fettgesicht_sheet,
+                                                1, 1, 1, 1, 64, 64, Sprite, 1, 1)
 
         # adapt below
 
@@ -197,7 +201,7 @@ class WolfAssetManager:
             death_frames=schabbs_sprites[8:12],
             attack_frames=schabbs_sprites[4: 7], layout=[4, 7])
         self.sprites["characters"]["boss"]["schabbs"] = schabbs_adapted
-        
+
         self.sprites["projectiles"]["syringes"] = schabbs_sprites[12:]
 
         giftmacher_adapted = self.adapt_character_sprites(
@@ -205,9 +209,15 @@ class WolfAssetManager:
             death_frames=giftmacher_sprites[8:12],
             attack_frames=giftmacher_sprites[4: 7], layout=[4, 7])
         self.sprites["characters"]["boss"]["giftmacher"] = giftmacher_adapted
-        
+
         self.sprites["projectiles"]["rockets"] = giftmacher_sprites[12: 20]
         self.sprites["projectiles"]["explosion"] = giftmacher_sprites[24: 27]
+        
+        fettgesicht_adapted = self.adapt_character_sprites(
+                    move_frames=fettgesicht_sprites[:4], move_frame_amount=4,
+                    death_frames=fettgesicht_sprites[8:12],
+                    attack_frames=fettgesicht_sprites[4: 8], layout=[4, 7])
+        self.sprites["characters"]["boss"]["fettgesicht"] = fettgesicht_adapted
 
     def init_character_sprites(self):
         self.sprites["characters"] = {}
