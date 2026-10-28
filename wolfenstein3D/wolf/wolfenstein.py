@@ -210,7 +210,6 @@ class WolfGame:
 
         elif self.wolfmap.cell_is_elevator(fcell):
             # check the player tile for secret floor
-            self.end_time = time.monotonic()
             self.wolfmap.raw[fblock[1]][fblock[0]] = self.SWITCH_UP
             self.schedule_sound_effect(
                 SOUNDS["doors"]["LEVELDONESND.WAV"], None, 0)
@@ -606,6 +605,7 @@ class WolfGame:
 
     def floor_end(self):
         # in seconds
+        self.end_time = time.monotonic()
         completion_time = self.end_time - self.start_time
         end_duration = 0
         self.render_all()
@@ -619,7 +619,8 @@ class WolfGame:
         # if it is 107, go to the secret level
         # the shareware version checks if the player block x is 10
         pblock = self.player.get_current_block()
-        if pblock[0] == 10:
+        pcell = self.player.get_current_cell()
+        if pblock[0] == 10 or pcell == self.SECRET_TILE:
             self.wolfmap = self.episode[-1]
         else:
             self.wolfmap = self.wolfmap.nextmap
