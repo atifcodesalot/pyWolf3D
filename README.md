@@ -1,6 +1,10 @@
 # pyWolf3D
 
-https://github.com/user-attachments/assets/08ba57ab-13c0-46ac-b9da-38720674c9ba
+
+https://github.com/user-attachments/assets/8f8b9bce-8b39-4466-87e9-77726cfd09f6
+
+
+
 
 Please excuse my mouse sounds in the demo :sweat_smile:
 
