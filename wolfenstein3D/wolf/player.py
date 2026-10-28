@@ -157,7 +157,8 @@ class WolfPlayer(Observer):
         self.running = False
 
     def _1up(self):
-        self.lives = (self.lives + 1) % 10
+        # cap to 9
+        self.lives = min(self.lives + 1, 9)
 
     def turn_to_killer(self, game_ctx, killer: Actor, master_surf, update_dest):
         to_killer = vec_norm(vec_sub(self.pos, killer.pos))
