@@ -21,7 +21,7 @@ class Observer:
         self.update_directions()
 
     def update_directions(self):
-        self.directions.clear()
+        self.directions = []
         left_ray = rotate_vector_angle(
             self.look_dir, self.fov / -2).tolist()
         da = self.gap
@@ -42,6 +42,11 @@ class Observer:
 
     def translate(self, tvec):
         self.pos = vec_add(self.pos, tvec)
+        
+    def update_ray_count(self, new_count):
+        self.ray_count = new_count
+        self.gap = self.fov / (self.ray_count - 1)
+        self.update_directions()
 
 SIDEDOOR = 58
 
