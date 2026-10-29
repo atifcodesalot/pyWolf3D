@@ -13,34 +13,201 @@ import cProfile
 class WolfMenu:
     label: str
     selections: list[str]
+    callbacks: list
     sel_count: int
+    font: pygame.font.Font
+
+
+class WolfMenuNode:
+    def __init__(self, menu: WolfMenu, parent, children):
+        self.menu = menu
+        self.parent = parent
+        self.children = children
+
+    def add_back_selection(self):
+        exitstr = "Exit" if self.is_root() else "Back"
+        if exitstr in self.menu.selections:
+            return
+        self.menu.selections.append(exitstr)
+
+        def goback(sesctl, _):
+            if self.is_root():
+                exit("Chicken!")
+            else:
+                sesctl.menu_handler.transition_node(self.parent)
+
+        self.menu.callbacks.append(goback)
+
+        self.menu.sel_count += 1
+
+    def is_root(self):
+        return self.parent is None
+
+    def is_leaf(self):
+        return not any(self.children)
+
+
+@dataclass
+class WolfMenuTree:
+    root: WolfMenuNode
 
 
 FONT = ASSET_MANAGER.font
 
 
-class WolfMenuRenderer:
+class WolfMenuHandler:
+    def __init__(self, session_control, tree: WolfMenuTree, font=FONT):
+        self.sesctl = session_control
+        self.tree = tree
+        self.display = self.sesctl.screen
+        self.scw, self.sch = self.display.get_size()
+        self.font = font
+
+        self.current = tree.root
+        self.playersel = 0
+
+    def render_selections(self, selections: list[str], yoff=0, xoff=0):
+        rendered_surfs = [self.font.render(
+            sel, True, (255, 255, 255), True if i == self.playersel else None)
+            for i, sel in enumerate(selections)]
+        selw = max(rendered_surfs, key=lambda s: s.get_width()).get_width()
+        selh = sum(s.get_height() for s in rendered_surfs)
+        selsurf_offset = [(self.scw - selw) // 2 + xoff,
+                          (self.sch - selh) // 2 + yoff]
+        selection_rect = pygame.Rect(
+            *vec_sub((5, 5), selsurf_offset), *vec_mul((selw, selh), 1.1))
+        pygame.draw.rect(self.display, (0, 0, 0), selection_rect, width=2)
+        for surf in rendered_surfs:
+            self.display.blit(surf, selsurf_offset)
+            selsurf_offset[1] += surf.get_height()
+
+    def render_label(self, label: str, labelpos=None):
+        if labelpos is None:
+            labelpos = (self.scw - self.font.size(label)
+                        [0]) // 2, self.sch // 4
+        label_surf = self.font.render(label, True, (200, 200, 200))
+        self.display.blit(label_surf, labelpos)
+
+    def render_menu(self):
+        self.display.fill(self.sesctl.BG_COLOR)
+        self.font = self.current.menu.font
+        self.render_label(self.current.menu.label)
+        self.render_selections(self.current.menu.selections)
+        self.sesctl.render(clear=False)
+
+    def transition_node(self, node):
+        self.playersel = 0
+        self.current = node
+
+    def handle_input(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.playersel = max(0, self.playersel - 1)
+                elif event.key == pygame.K_DOWN:
+                    self.playersel = min(
+                        self.current.menu.sel_count-1, self.playersel + 1)
+                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    return self.playersel
+
+    def wait_menu(self):
+        choice = None
+        while choice is None:
+            self.render_menu()
+            choice = self.handle_input()
+            pygame.display.flip()
+        callback = self.current.menu.callbacks[choice]
+        if not callable(callback):
+            self.transition_node(self.current.children[choice])
+        else:
+            ready_to_play = False
+            if self.current.is_leaf() and \
+                    self.playersel != self.current.menu.sel_count-1:
+                # game ready to build
+                ready_to_play = True
+            callback(self.sesctl, self.playersel)
+
+            return ready_to_play
+
+    def start(self):
+        while True:
+            if self.wait_menu():
+                break
+
+
+class WolfSessionController:
     BG_COLOR = "#890000"
 
     def __init__(self, version):
         self.version = version
         self.screen = pygame.display.set_mode((800, 600))
-        self.scw, self.sch = self.screen.get_size()
-        self.player_selection = 0
+
+        self.main_menu = WolfMenu("pyWolf3D",
+                                  ["Play",
+                                   "Options"],
+                                  [None, None],
+                                  2,
+                                  ASSET_MANAGER.biggerfont)
 
         self.difficulty_menu = WolfMenu("How tough are you?",
                                         ["Can I play, Daddy?",
                                          "Don't hurt me.",
                                          "Bring 'em on!",
                                          "I am Death incarnate! (And a pygame developer)"],
-                                        4)
+                                        [lambda sesctl,
+                                            sel: sesctl.set_difficulty(sel)] * 4,
+                                        4,
+                                        FONT)
 
-        self.current_menu = self.difficulty_menu
         self.loader = GameMapsLoader()
+
+    def build_episode_node(self):
+        def epsel_callback(sesctl, sel):
+            sesctl.set_episode(sel)
+            sesctl.menu_handler.transition_node(self.node_diff)
+
+        self.episode_menu = WolfMenu("Which Episode to play?",
+                                     selections=[
+                                         ep.name for ep in self.episodes],
+                                     callbacks=[epsel_callback] *
+                                     len(self.episodes),
+                                     sel_count=len(self.episodes),
+                                     font=FONT)
+        self.node_ep = WolfMenuNode(
+            self.episode_menu, None, [self.node_diff] * 4)
+        
+    def build_options_subtree(self):
+        self.options_menu = WolfMenu("Options", [], [], 0, FONT)
+        self.node_opts = WolfMenuNode(self.options_menu, None, [])
+
+    def build_menu_tree(self) -> WolfMenuTree:
+        self.node_diff = WolfMenuNode(self.difficulty_menu, None, [None,]*4)
+        self.build_episode_node()
+        self.build_options_subtree()
+        self.node_diff.parent = self.node_ep
+        self.root = WolfMenuNode(self.main_menu, None, [self.node_ep, self.node_opts])
+        self.node_ep.parent = self.root
+        self.node_opts.parent = self.root
+
+        self.root.add_back_selection()
+        self.node_ep.add_back_selection()
+        self.node_diff.add_back_selection()
+        self.node_opts.add_back_selection()
+        self.menu_handler = WolfMenuHandler(self, WolfMenuTree(self.root))
+
+    def set_difficulty(self, diffsel):
+        self.difficulty = WolfDifficulty(diffsel)
+
+    def set_episode(self, episode_idx):
+        if getattr(self, "episodes", None) is None:
+            return
+        self.episode = self.episodes[episode_idx]
 
     def render_loading_screen(self, entity):
         text_surf = FONT.render(
-            f"[LOADING] {entity}...", True, (255, 255, 255))
+            f"[LOADING] {entity}...", True, (128, 128, 128))
         self.screen.blit(text_surf, (400 - text_surf.get_width() //
                          2, 400 - text_surf.get_height() // 2))
 
@@ -55,31 +222,6 @@ class WolfMenuRenderer:
             self.screen.blit(text_surf, (400 - text_surf.get_width() //
                              2, y_offset - text_surf.get_height() // 2))
             y_offset += text_surf.get_height() + 5
-
-    def change_menu(self, menu: WolfMenu):
-        self.player_selection = 0
-        self.current_menu = menu
-
-    def render_label(self, label: str, labelpos=None):
-        if labelpos is None:
-            labelpos = (self.scw - FONT.size(label)[0]) // 2, self.sch // 6
-        label_surf = FONT.render(label, True, (255, 255, 255))
-        self.screen.blit(label_surf, labelpos)
-
-    def render_selections(self, selections: list[str], yoff=0, xoff=0):
-        rendered_surfs = [FONT.render(
-            sel, True, (255, 255, 255), True if i == self.player_selection else None)
-            for i, sel in enumerate(selections)]
-        selw = max(rendered_surfs, key=lambda s: s.get_width()).get_width()
-        selh = sum(s.get_height() for s in rendered_surfs)
-        selsurf_offset = [(self.scw - selw) // 2 + xoff,
-                          (self.sch - selh) // 2 + yoff]
-        selection_rect = pygame.Rect(
-            *vec_sub((5, 5), selsurf_offset), *vec_mul((selw, selh), 1.1))
-        pygame.draw.rect(self.screen, (0, 0, 0), selection_rect, width=2)
-        for surf in rendered_surfs:
-            self.screen.blit(surf, selsurf_offset)
-            selsurf_offset[1] += surf.get_height()
 
     def render_version(self):
         version_surf = FONT.render(
@@ -160,83 +302,57 @@ class WolfMenuRenderer:
             f"Episode {i+1} {epnames[i]}", i) for i in range(6)]
         return wl6_episodes
 
-    def render(self, loading=None):
-        self.screen.fill(self.BG_COLOR)
+    def render(self, loading=None, clear=True):
+        if clear:
+            self.screen.fill(self.BG_COLOR)
         self.render_version()
         self.render_control_instructions()
         if self.loading:
             return self.render_loading_screen(loading)
 
-        self.render_menu()
-
-    def render_menu(self):
-        self.render_label(self.current_menu.label)
-        self.render_selections(self.current_menu.selections)
-
-    def wait_menu(self):
-        choice = None
-        while choice is None:
-            self.render()
-            choice = self.handle_input()
+    def load_all(self):
+        self.loading = True
+        self.episodes = []
+        shareware_episode = self.load_shareware_episode()
+        self.episodes.append(shareware_episode)
+        self.wl6_episodes = self.load_wl6_episodes()
+        if self.wl6_episodes:
+            self.episodes.extend(self.wl6_episodes)
+        else:
+            self.render(
+                "Could not locate original 6 episodes in your maps folder.")
             pygame.display.flip()
-        return choice
+            time.sleep(2)
 
-    def handle_input(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    self.player_selection = max(0, self.player_selection - 1)
-                elif event.key == pygame.K_DOWN:
-                    self.player_selection = min(
-                        self.current_menu.sel_count-1, self.player_selection + 1)
-                elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    return self.player_selection
+        self.loading = False
+        self.loaded_music = True
+
+    def build_game(self):
+        wolflogger.info(
+            f"Game starting with episode {self.episode.name} and difficulty {self.difficulty}")
+        self.game = WolfGame(
+            self.episode, self.difficulty,
+            self.screen, sound_off=False, framerate=75)
+
+    def start_game(self):
+        if getattr(self, "game", None) is None:
+            return
+        self.game.mainloop()
 
     def run(self):
         self.loaded_music = False
         while True:
-            self.loading = True
-            episodes = []
-            shareware_episode = self.load_shareware_episode()
-            episodes.append(shareware_episode)
-            wl6_episodes = self.load_wl6_episodes()
-            if wl6_episodes:
-                episodes.extend(wl6_episodes)
-            else:
-                self.render(
-                    "Could not locate original 6 episodes in your maps folder.")
-                pygame.display.flip()
-                time.sleep(2)
+            self.load_all()
+            self.build_menu_tree()
+            self.menu_handler.start()
 
-            self.loading = False
-            self.loaded_music = True
-
-            episode_selections = [
-                ep.name for ep in episodes] + ["CHICKEN OUT",]
-
-            self.change_menu(WolfMenu("Choose an episode to play or chicken out (quit)!",
-                                      selections=episode_selections, sel_count=len(episodes) + 1))
-
-            epchoice = self.wait_menu()
-            if epchoice == self.current_menu.sel_count-1:
-                break
-
-            episode = episodes[epchoice]
-            self.change_menu(self.difficulty_menu)
-            diffchoice = self.wait_menu()
-
-            game = WolfGame(
-                episode, WolfDifficulty(diffchoice),
-                self.screen, sound_off=False, framerate=75)
-
-            game.mainloop()
+            self.build_game()
+            self.start_game()
 
 
 def main():
     # with cProfile.Profile() as pr:
-    menu_renderer = WolfMenuRenderer("Alpha")
-    menu_renderer.run()
+    controller = WolfSessionController("Alpha")
+    controller.run()
 
     # pr.dump_stats("wolf.prof")
