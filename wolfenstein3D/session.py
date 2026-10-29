@@ -7,6 +7,7 @@ from wolfenstein3D.find_installation import WolfInstallationFinder
 import pygame
 from dataclasses import dataclass
 import cProfile
+import pygame_gui
 
 
 @dataclass
@@ -16,6 +17,7 @@ class WolfMenu:
     callbacks: list
     sel_count: int
     font: pygame.font.Font
+    labelsep: int = 25
 
 
 class WolfMenuNode:
@@ -66,41 +68,46 @@ class WolfMenuHandler:
         self.current = tree.root
         self.playersel = 0
 
-    def render_selections(self, selections: list[str], yoff=0, xoff=0):
+    def render_selections(self, selections: list[str], labely, xoff=0):
         rendered_surfs = [self.font.render(
             sel, True, (255, 255, 255), True if i == self.playersel else None)
             for i, sel in enumerate(selections)]
         selw = max(rendered_surfs, key=lambda s: s.get_width()).get_width()
         selh = sum(s.get_height() for s in rendered_surfs)
         selsurf_offset = [(self.scw - selw) // 2 + xoff,
-                          (self.sch - selh) // 2 + yoff]
+                          labely + self.current.menu.labelsep]
+        sely = selsurf_offset[1]
         selection_rect = pygame.Rect(
             *vec_sub((5, 5), selsurf_offset), *vec_mul((selw, selh), 1.1))
         pygame.draw.rect(self.display, (0, 0, 0), selection_rect, width=2)
         for surf in rendered_surfs:
             self.display.blit(surf, selsurf_offset)
             selsurf_offset[1] += surf.get_height()
+        return sely
 
-    def render_label(self, label: str, labelpos=None):
-        if labelpos is None:
-            labelpos = (self.scw - self.font.size(label)
-                        [0]) // 2, self.sch // 4
+    def render_label(self, label: str):
+        ly = self.sch // 4
+        labelpos = (self.scw - self.font.size(label)
+                    [0]) // 2, ly
         label_surf = self.font.render(label, True, (200, 200, 200))
         self.display.blit(label_surf, labelpos)
+        return ly + self.font.size(label)[1]
 
     def render_menu(self):
         self.display.fill(self.sesctl.BG_COLOR)
         self.font = self.current.menu.font
-        self.render_label(self.current.menu.label)
-        self.render_selections(self.current.menu.selections)
+        ly = self.render_label(self.current.menu.label)
+        self.render_selections(self.current.menu.selections,
+                               labely=ly)
+
         self.sesctl.render(clear=False)
 
     def transition_node(self, node):
         self.playersel = 0
         self.current = node
 
-    def handle_input(self):
-        for event in pygame.event.get():
+    def handle_input(self, events):
+        for event in events:
             if event.type == pygame.QUIT:
                 exit()
             elif event.type == pygame.KEYDOWN:
@@ -113,10 +120,16 @@ class WolfMenuHandler:
                     return self.playersel
 
     def wait_menu(self):
+        clock = pygame.time.Clock()
         choice = None
         while choice is None:
+            events = pygame.event.get()
+            dt = clock.tick(30)
             self.render_menu()
-            choice = self.handle_input()
+            choice = self.handle_input(events)
+            if self.current.menu.label.lower() == "options":
+                self.sesctl.handle_options(events, dt)
+
             pygame.display.flip()
         callback = self.current.menu.callbacks[choice]
         if not callable(callback):
@@ -125,7 +138,7 @@ class WolfMenuHandler:
             ready_to_play = False
             if self.current.is_leaf() and \
                     self.playersel != self.current.menu.sel_count-1:
-                # game ready to build
+                # game ready to build!
                 ready_to_play = True
             callback(self.sesctl, self.playersel)
 
@@ -149,7 +162,8 @@ class WolfSessionController:
                                    "Options"],
                                   [None, None],
                                   2,
-                                  ASSET_MANAGER.biggerfont)
+                                  ASSET_MANAGER.biggerfont,
+                                  labelsep=75)
 
         self.difficulty_menu = WolfMenu("How tough are you?",
                                         ["Can I play, Daddy?",
@@ -161,7 +175,53 @@ class WolfSessionController:
                                         4,
                                         FONT)
 
+        self.widget_off = (350, 180)
+        self.widget_hsep = 50
+        self.ui_manager = pygame_gui.UIManager(self.screen.get_size())
+        self.options_widgets = [
+            pygame_gui.elements.UICheckBox(
+                pygame.Rect(self.widget_off, (30, 30)), "Sound", self.ui_manager, initial_state=True),
+            pygame_gui.elements.UILabel(pygame.Rect(
+                vec_add(self.widget_off, (0, self.widget_hsep)), (140, 20)), "Raycaster ray count", self.ui_manager),
+            pygame_gui.elements.UIDropDownMenu(["160", "128", "80", "64", "32", "16", "10", "8", "4", "2"], "160",
+                                               pygame.Rect(
+                vec_add(self.widget_off, (0, self.widget_hsep*1.5)), (100, 25)), self.ui_manager
+            ),
+
+            pygame_gui.elements.UILabel(pygame.Rect(
+                vec_add(self.widget_off, (0, self.widget_hsep*2.5)), (140, 20)), "Field of view", self.ui_manager),
+            pygame_gui.elements.UIDropDownMenu(["54", "60", "90", "120"], "54",
+                                               pygame.Rect(
+                vec_add(self.widget_off, (0, self.widget_hsep*3)), (100, 25)), self.ui_manager
+            )
+        ]
+        self.raycount = 160
+        self.soundoff = False
+        self.fov = 54
+
         self.loader = GameMapsLoader()
+
+    def handle_options(self, events, dt):
+        self.ui_manager.draw_ui(self.screen)
+        self.ui_manager.update(dt)
+        for event in events:
+            if event.type in (
+                pygame.KEYDOWN,
+                pygame.KEYUP,
+                pygame.TEXTINPUT,
+                pygame.TEXTEDITING,
+            ):
+                continue
+            self.ui_manager.process_events(event)
+            if event.type == pygame_gui.UI_CHECK_BOX_CHECKED:
+                self.soundoff = False
+            elif event.type == pygame_gui.UI_CHECK_BOX_UNCHECKED:
+                self.soundoff = True
+            elif event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+                if event.ui_element == self.options_widgets[4]:
+                    self.fov = int(event.ui_element.selected_option[1])
+                elif event.ui_element == self.options_widgets[2]:
+                    self.raycount = int(event.ui_element.selected_option[1])
 
     def build_episode_node(self):
         def epsel_callback(sesctl, sel):
@@ -177,9 +237,9 @@ class WolfSessionController:
                                      font=FONT)
         self.node_ep = WolfMenuNode(
             self.episode_menu, None, [self.node_diff] * 4)
-        
+
     def build_options_subtree(self):
-        self.options_menu = WolfMenu("Options", [], [], 0, FONT)
+        self.options_menu = WolfMenu("Options", [], [], 0, FONT, labelsep=200)
         self.node_opts = WolfMenuNode(self.options_menu, None, [])
 
     def build_menu_tree(self) -> WolfMenuTree:
@@ -187,7 +247,8 @@ class WolfSessionController:
         self.build_episode_node()
         self.build_options_subtree()
         self.node_diff.parent = self.node_ep
-        self.root = WolfMenuNode(self.main_menu, None, [self.node_ep, self.node_opts])
+        self.root = WolfMenuNode(self.main_menu, None, [
+                                 self.node_ep, self.node_opts])
         self.node_ep.parent = self.root
         self.node_opts.parent = self.root
 
@@ -332,7 +393,8 @@ class WolfSessionController:
             f"Game starting with episode {self.episode.name} and difficulty {self.difficulty}")
         self.game = WolfGame(
             self.episode, self.difficulty,
-            self.screen, sound_off=False, framerate=75)
+            self.screen, sound_off=self.soundoff,
+            framerate=75, player_rays=self.raycount, player_fov=self.fov)
 
     def start_game(self):
         if getattr(self, "game", None) is None:

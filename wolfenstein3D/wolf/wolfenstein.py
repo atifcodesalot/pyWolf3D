@@ -51,12 +51,12 @@ class WolfGame:
     SWITCH_UP = 42
 
     def __init__(self, episode: WolfEpisode, difficulty: WolfDifficulty, root_display, framerate=60,
-                 sound_off=False, noclip=False, lvl_offset=0):
+                 sound_off=False, noclip=False, lvl_offset=0, player_rays=160, player_fov=50):
         self.episode = episode
         self.difficulty = difficulty
         self.begin_episode(lvl_offset)
 
-        self.player = WolfPlayer(self, ray_count=160, fov=54)
+        self.player = WolfPlayer(self, fov=player_fov, ray_count=player_rays)
         self.init_renderers(root_display)
 
         self.framerate = framerate
@@ -685,4 +685,6 @@ class WolfGame:
             beats -= 1
         self.ongoing = False
         self.sound_manager.stop_music()
+        pygame.mouse.set_visible(True)
+        pygame.event.set_grab(False)
         del self

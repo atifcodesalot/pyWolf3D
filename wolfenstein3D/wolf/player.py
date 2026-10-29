@@ -14,7 +14,7 @@ from math import acos, degrees
 class WolfPlayer(Observer):
     min_dist_actors = 6
     def __init__(self, game, fov=60,
-                 ray_count=256, health=100, weapon=WolfWeapon.PISTOL, ammo=10):
+                 ray_count=160, health=100, weapon=WolfWeapon.PISTOL, ammo=10):
         self.game = game
         map_ = self.game.wolfmap
         super().__init__(
