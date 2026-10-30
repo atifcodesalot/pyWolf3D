@@ -1,6 +1,6 @@
 
 
-from wolfenstein3D.wolf.assets import ASSET_MANAGER, Sprite
+from wolfenstein3D.wolf.assets import ASSET_MANAGER
 from wolfenstein3D.raycaster.aux_math import *
 from wolfenstein3D.wolf.game_objects import (
     WolfItem, WolfActorType, PJ_FIREBALL, PJ_SYRINGE, PJ_ROCKET)
@@ -100,6 +100,11 @@ class DyingState(ActorState):
         return col + self.heartbeats // self.hb_perframe
 
     def endcallback(self, game_ctx):
+        # if mecha hitler, spawn hitler
+        if self.actor.type == WolfActorType.MECHAHITLER:
+            act = self.actor
+            game_ctx.wolfmap.add_actor(
+                WolfActorType.HITLER, act.pos, act.look_dir, None)
         game_ctx.player.score += 100
         self.actor.flush_occupancy()
         self.actor.drop_item()
@@ -385,6 +390,11 @@ class ChaseState(ActorState):
         #
         self.decide_dir(game_ctx)
         self.committo_dest()
+
+        if self.actor.type == WolfActorType.MECHAHITLER:
+            stepsnd = SOUNDS["hitler"]["MECHSTEPSND.WAV"]
+            game_ctx.schedule_sound_effect(
+                stepsnd, origin=self.actor.pos, _time=1)
 
     def colnum(self):
         return super().colnum() + \
@@ -797,6 +807,7 @@ def pacman_ghost_recipe(gn): return ActorRecipe(
     death_sounds=list(SOUNDS["death"].values()),
     attack_sound=None,
     alert_sound=None,
+    # ghosts can't die
     health=1000000000000,
     range_=10,
     accuracy=1,
@@ -912,7 +923,7 @@ ACTOR_RECIPES = {
         hurt_offset=0,
         death_sounds=[SOUNDS["common"]["HITLERHASND.WAV"]],
         attack_sound=None,
-        alert_sound=SOUNDS["alert"]["TOT_HUNDSND.WAV"],
+        alert_sound=SOUNDS["hitler"]["TOT_HUNDSND.WAV"],
         health=15,
         range_=300,
         accuracy=1,
@@ -1031,6 +1042,48 @@ ACTOR_RECIPES = {
         attacks_twice=True,
         attack_callback=lambda self, game_ctx: self.throw_projectile(
             PJ_ROCKET(), 0.8, game_ctx)
+    ),
+
+    WolfActorType.HITLER: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["hitler"],
+        sprite_layout=(8, 7),
+        death_frames=8,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=7,
+        hurt_offset=0,
+        death_sounds=[SOUNDS["hitler"]["EVASND.WAV"]],
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["hitler"]["SCHEISTSND.WAV"],
+        health=800,
+        range_=150,
+        accuracy=1,
+        drop=None,
+        pace=0.25,
+        no_orientation=True,
+        boss=True,
+        can_auto=True
+    ),
+
+    WolfActorType.MECHAHITLER: ActorRecipe(
+        sprites=SPRITES["characters"]["boss"]["mechahitler"],
+        sprite_layout=(4, 7),
+        death_frames=3,
+        move_frames=4,
+        attack_frames=3,
+        dead_offset=3,
+        hurt_offset=0,
+        death_sounds=None,
+        attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
+        alert_sound=SOUNDS["hitler"]["TOT_HUNDSND.WAV"],
+        health=1000,
+        range_=150,
+        accuracy=1,
+        drop=None,
+        pace=0.15,
+        no_orientation=True,
+        boss=True,
+        can_auto=True
     ),
 
     WolfActorType.BLINKY: pacman_ghost_recipe("blinky"),
