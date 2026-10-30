@@ -197,7 +197,6 @@ class WolfMap:
         for act in self.get_actors():
             # hitler spawns after mechahitler dies
             if act.type == WolfActorType.HITLER:
-                print("it did the thing!")
                 self.remove_actor(act)
         for snap, act in zip(actsnaps, self.get_actors()):
             act.reload_snapshot(snap, self)
