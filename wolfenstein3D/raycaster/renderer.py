@@ -22,7 +22,8 @@ class DirectionLight:
 class RayRenderer:
     def __init__(self, raycaster: Raycaster,
                  pgsurface: pygame.Surface,
-                 topcolor, bottomcolor, wall_textures, scaler=12):
+                 topcolor, bottomcolor, wall_textures, scaler=12,
+                 ceil_texture=None, floor_texture=None):
         self.raycaster = raycaster
         self.pgsurface = pgsurface
         self.width, self.height = pgsurface.get_size()
@@ -41,6 +42,9 @@ class RayRenderer:
         self.wall_scaler = scaler
         self.sprite_scaler = self.wall_scaler 
         self.distbuff = []
+        
+        self.ceil_texture = ceil_texture
+        self.floor_texture = floor_texture
 
     def distance_to_height(self, dist, sprite=False):
         scaler = self.sprite_scaler if sprite else self.wall_scaler
@@ -130,7 +134,8 @@ class RayRenderer:
         self.distbuff = []
         self.visited = set()
         hh = self.height // 2
-        dirs = self.raycaster.observer.directions
+        dirs = self.raycaster.observer.directions.\
+            T.tolist()
         cast = 0
         for ray in dirs:
             coll = self.raycaster.raycast(ray, camera_pos)
@@ -142,6 +147,12 @@ class RayRenderer:
             chh = min(chh, hh)
             self.pgsurface.blit(column, (start, hh - chh))
             cast += 1
+            
+    def texture_ceiling(self):
+        pass
+    
+    def texture_floor(self):
+        pass
 
     def render(self, camera_pos, light: PointLight, *additional_sprites):
         self.render_walls(camera_pos, light)

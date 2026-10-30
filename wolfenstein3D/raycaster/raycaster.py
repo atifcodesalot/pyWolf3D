@@ -16,18 +16,18 @@ class Observer:
         self.fov = math.radians(fov)
         self.vp_length = math.tan(self.fov / 2)
         self.ray_count = ray_count
-        self.directions = []
         self.gap = self.fov / (self.ray_count - 1)
         self.update_directions()
 
+    # slow method, dont call in hot path
     def update_directions(self):
-        self.directions = []
+        self.directions = np.zeros((2, self.ray_count))
         left_ray = rotate_vector_angle(
-            self.look_dir, self.fov / -2).tolist()
+            self.look_dir, self.fov / -2)
         da = self.gap
         for i in range(self.ray_count):
             vec = rotate_vector_angle(left_ray, i*da)
-            self.directions.append(vec.tolist())
+            self.directions[:, i] = vec
 
     def to_this_space(self, pos):
         to_pos = vec_sub(self.pos, pos)
@@ -35,10 +35,10 @@ class Observer:
                 vec_dot(to_pos, self.look_dir))
 
     def rotate(self, angle):
-        rm = ROT_MATRIX(math.radians(angle))
-        self.look_dir = rm.dot(self.look_dir).tolist()
-        self.left = rm.dot(self.left).tolist()
-        self.update_directions()
+        rm = ROT_MATRIX_NP(math.radians(angle))
+        self.look_dir = vec_matrix_2(self.look_dir, rm)
+        self.left = vec_matrix_2(self.left, rm)
+        self.directions = rm.dot(self.directions)
 
     def translate(self, tvec):
         self.pos = vec_add(self.pos, tvec)
