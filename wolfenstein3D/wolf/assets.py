@@ -160,64 +160,92 @@ class WolfAssetManager:
 
         return adapted
 
+    def adapt_bosses(self, *sprites):
+        hans, gretel, schabbs, \
+            giftmacher, fettgesicht, hitler, mechahitler = sprites
+        hans_adapted = self.adapt_character_sprites(
+            move_frames=hans[:4], move_frame_amount=4,
+            death_frames=hans[8:12],
+            attack_frames=hans[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["hans"] = hans_adapted
+        gretel_adapted = self.adapt_character_sprites(
+            move_frames=gretel[:4], move_frame_amount=4,
+            death_frames=gretel[8:12],
+            attack_frames=gretel[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["gretel"] = gretel_adapted
+        schabbs_adapted = self.adapt_character_sprites(
+            move_frames=schabbs[:4], move_frame_amount=4,
+            death_frames=schabbs[8:12],
+            attack_frames=schabbs[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["schabbs"] = schabbs_adapted
+
+        self.sprites["projectiles"]["syringes"] = schabbs[12:]
+
+        giftmacher_adapted = self.adapt_character_sprites(
+            move_frames=giftmacher[:4], move_frame_amount=4,
+            death_frames=giftmacher[8:12],
+            attack_frames=giftmacher[4: 6], layout=[4, 7])
+        self.sprites["characters"]["boss"]["giftmacher"] = giftmacher_adapted
+
+        self.sprites["projectiles"]["rockets"] = giftmacher[12: 20]
+        self.sprites["projectiles"]["explosion"] = giftmacher[24: 27]
+
+        fettgesicht_adapted = self.adapt_character_sprites(
+            move_frames=fettgesicht[:4], move_frame_amount=4,
+            death_frames=fettgesicht[8:12],
+            attack_frames=fettgesicht[4: 8], layout=[4, 7])
+        self.sprites["characters"]["boss"]["fettgesicht"] = fettgesicht_adapted
+        
+        hitler_adapted = self.adapt_character_sprites(
+                    move_frames=hitler[:4], move_frame_amount=4,
+                    death_frames=hitler[8:] + [hitler[7],],
+                    attack_frames=hitler[4:7], layout=[8, 7]) # has 8 death frames
+        self.sprites["characters"]["boss"]["hitler"] = hitler_adapted
+        
+        mechahitler_adapted = self.adapt_character_sprites(
+                            move_frames=mechahitler[:4], move_frame_amount=4,
+                            death_frames=mechahitler[8:11] + [mechahitler[7],],
+                            attack_frames=mechahitler[4: 7], layout=[4, 7])
+        self.sprites["characters"]["boss"]["mechahitler"] = mechahitler_adapted
+
     def init_boss_sprites(self):
         self.sprites["characters"]["boss"] = {}
         # init hans grösse
         hans_sheet = Image.open(os.path.join(
             self.sprite_path, 'characters', 'boss', 'hansgrösse.png'))
-        hans_sprites = self.texmap_parse(hans_sheet,
+        hans = self.texmap_parse(hans_sheet,
                                          1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         gretel_sheet = Image.open(os.path.join(
             self.sprite_path, 'characters', 'boss', 'gretelgrösse.png'))
-        gretel_sprites = self.texmap_parse(gretel_sheet,
+        gretel = self.texmap_parse(gretel_sheet,
                                            1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         schabbs_sheet = Image.open(os.path.join(
             self.sprite_path, 'characters', 'boss', 'drschabbs.png'))
-        schabbs_sprites = self.texmap_parse(schabbs_sheet,
+        schabbs = self.texmap_parse(schabbs_sheet,
                                             1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         giftmacher_sheet = Image.open(os.path.join(
             self.sprite_path, 'characters', 'boss', 'giftmacher.png'))
-        giftmacher_sprites = self.texmap_parse(giftmacher_sheet,
+        giftmacher = self.texmap_parse(giftmacher_sheet,
                                                1, 1, 1, 1, 64, 64, Sprite, 1, 1)
         fettgesicht_sheet = Image.open(os.path.join(
             self.sprite_path, 'characters', 'boss', 'fettgesicht.png'))
-        fettgesicht_sprites = self.texmap_parse(fettgesicht_sheet,
+        fettgesicht = self.texmap_parse(fettgesicht_sheet,
                                                 1, 1, 1, 1, 64, 64, Sprite, 1, 1)
+        
+        hitler_sheet = Image.open(os.path.join(
+                    self.sprite_path, 'characters', 'boss', 'hitler.png'))
+        hitler = self.texmap_parse(hitler_sheet,
+                                           0, 0, 0, 0, 64, 64, Sprite)
+        
+        mechahitler_sheet = Image.open(os.path.join(
+                    self.sprite_path, 'characters', 'boss', 'mechahitler.png'))
+        mechahitler = self.texmap_parse(mechahitler_sheet,
+                                                0, 0, 0, 0, 64, 64, Sprite)
 
         # adapt below
-
-        hans_adapted = self.adapt_character_sprites(
-            move_frames=hans_sprites[:4], move_frame_amount=4,
-            death_frames=hans_sprites[8:12],
-            attack_frames=hans_sprites[4: 7], layout=[4, 7])
-        self.sprites["characters"]["boss"]["hans"] = hans_adapted
-        gretel_adapted = self.adapt_character_sprites(
-            move_frames=gretel_sprites[:4], move_frame_amount=4,
-            death_frames=gretel_sprites[8:12],
-            attack_frames=gretel_sprites[4: 7], layout=[4, 7])
-        self.sprites["characters"]["boss"]["gretel"] = gretel_adapted
-        schabbs_adapted = self.adapt_character_sprites(
-            move_frames=schabbs_sprites[:4], move_frame_amount=4,
-            death_frames=schabbs_sprites[8:12],
-            attack_frames=schabbs_sprites[4: 7], layout=[4, 7])
-        self.sprites["characters"]["boss"]["schabbs"] = schabbs_adapted
-
-        self.sprites["projectiles"]["syringes"] = schabbs_sprites[12:]
-
-        giftmacher_adapted = self.adapt_character_sprites(
-            move_frames=giftmacher_sprites[:4], move_frame_amount=4,
-            death_frames=giftmacher_sprites[8:12],
-            attack_frames=giftmacher_sprites[4: 7], layout=[4, 7])
-        self.sprites["characters"]["boss"]["giftmacher"] = giftmacher_adapted
-
-        self.sprites["projectiles"]["rockets"] = giftmacher_sprites[12: 20]
-        self.sprites["projectiles"]["explosion"] = giftmacher_sprites[24: 27]
-        
-        fettgesicht_adapted = self.adapt_character_sprites(
-                    move_frames=fettgesicht_sprites[:4], move_frame_amount=4,
-                    death_frames=fettgesicht_sprites[8:12],
-                    attack_frames=fettgesicht_sprites[4: 8], layout=[4, 7])
-        self.sprites["characters"]["boss"]["fettgesicht"] = fettgesicht_adapted
+        self.adapt_bosses(hans, gretel,
+                          schabbs, giftmacher, 
+                          fettgesicht, hitler, mechahitler)
 
     def init_character_sprites(self):
         self.sprites["characters"] = {}
