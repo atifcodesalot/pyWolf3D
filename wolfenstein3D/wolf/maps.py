@@ -150,12 +150,12 @@ class WolfMap:
         self.sprites: list[Sprite] = []
         self.sprite_lookup = {}
 
-        self.actors: dict[WolfDifficulty: list] = {}
+        self.actor_collection: dict[WolfDifficulty: list] = {}
         self.actor_lookup = {}
         self.actor_reserve_lookup = {}
 
         for diff in WolfDifficulty:
-            self.actors[diff] = []
+            self.actor_collection[diff] = []
 
         self.item_lookup: dict[tuple: WolfItemObj] = {}
         self.pushwalls: dict[tuple: WolfPushWall] = {}
@@ -194,9 +194,14 @@ class WolfMap:
         raw, actsnaps, itemsnap, spdsnap, spsnap, pws = snapshot
         self.raw = deepcopy(raw)
         self.actor_lookup.clear()
+        for act in self.get_actors():
+            # hitler spawns after mechahitler dies
+            if act.type == WolfActorType.HITLER:
+                print("it did the thing!")
+                self.remove_actor(act)
         for snap, act in zip(actsnaps, self.get_actors()):
             act.reload_snapshot(snap, self)
-            self.actor_lookup[self.to_block_pos(*act.pos)] = act
+            act.occupy_block(self.to_block_pos(*act.pos))
         self.item_lookup = itemsnap.copy()
         self.sprite_lookup = spdsnap.copy()
         self.sprites = spsnap.copy()
@@ -244,21 +249,26 @@ class WolfMap:
             return
         builder = ActorBuilder(self, actor_type, pos, look_dir, patrol)
         actor_obj = builder.build(ACTOR_RECIPES[actor_type])
-        if act_diff in [WolfDifficulty.BABY, WolfDifficulty.DONTHURTME]:
-            for k in self.actors:
-                self.actors[k].append(actor_obj)
+        if act_diff in [WolfDifficulty.BABY, WolfDifficulty.DONTHURTME, None]:
+            for diff in self.actor_collection:
+                self.actor_collection[diff].append(actor_obj)
         elif act_diff is WolfDifficulty.BRINGEM:
-            self.actors[WolfDifficulty.BRINGEM].append(actor_obj)
-            self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
+            self.actor_collection[WolfDifficulty.BRINGEM].append(actor_obj)
+            self.actor_collection[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
         else:
-            self.actors[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
+            self.actor_collection[WolfDifficulty.DEATHINCARNATE].append(actor_obj)
+            
+    def remove_actor(self, actor):
+        for coll in self.actor_collection.values():
+            if actor in coll:
+                coll.remove(actor)
 
     def init_actor_lookup(self):
         for act in self.get_actors():
             self.actor_lookup[tuple(act.pos)] = act
 
     def get_actors(self):
-        return self.actors[self.difficulty]
+        return self.actor_collection[self.difficulty]
 
     def actorsby_areas(self, *areas):
         def ffunc(act): return act.get_current_area(
