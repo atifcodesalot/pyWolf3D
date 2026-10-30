@@ -41,7 +41,7 @@ class RayRenderer:
         self.wall_textures = wall_textures
         self.wall_scaler = scaler // 2 * self.height
         self.sprite_scaler = self.wall_scaler * 2
-        self.distbuff = []
+        self.distbuff = [0] * rayc
         
         self.ceil_texture = ceil_texture
         self.floor_texture = floor_texture
@@ -131,16 +131,15 @@ class RayRenderer:
             self.draw_sprite(sprite)
 
     def render_walls(self, camera_pos, light):
-        self.distbuff = []
         self.visited = set()
         hh = self.height // 2
         dirs = self.raycaster.observer.directions.\
             T.tolist()
         cast = 0
-        for ray in dirs:
+        for i, ray in enumerate(dirs):
             coll = self.raycaster.raycast(ray, camera_pos)
             self.visited.update(coll[-1])
-            self.distbuff.append(coll[0])
+            self.distbuff[i] = coll[0]
             start = self.repeat * cast
             chh = self.distance_to_height(coll[0]) 
             column = self.get_wall_col(coll, chh*2)
