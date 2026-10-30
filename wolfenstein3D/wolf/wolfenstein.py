@@ -601,7 +601,7 @@ class WolfGame:
             self.floor_start()
         elif self.floor_fin:
             self.floor_end()
-        elif False:
+        elif self.player.is_dead():
             self.life_end()
 
     def floor_end(self):
