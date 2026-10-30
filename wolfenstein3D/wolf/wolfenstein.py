@@ -347,9 +347,10 @@ class WolfGame:
         pblock = self.player.get_current_block()
         ablock = self.wolfmap.to_block_pos(*actor.pos)
         d = euclidean_distance(pblock, ablock)
-        if actor.type is WolfActorType.SCHUTZSTAFFEL \
-                or actor.is_boss:
+        if actor.type is WolfActorType.SCHUTZSTAFFEL:
             d *= 2/3
+        elif actor.is_boss:
+            d *= 1/3
         chance = 0x100 - (0x10 // (1 + self.player.running.real)) * d
         diceroll = random.randint(0, 256)
         if chance < diceroll:
@@ -560,6 +561,9 @@ class WolfGame:
         self.clock.tick(self.framerate)
         pgevents = pygame.event.get()
         self.handle_actors()
+        # render everything
+        self.render_all()
+        #
         self.handle_player_requests()
         self.handle_events(pgevents)
         self.handle_game_events()
@@ -569,10 +573,6 @@ class WolfGame:
         self.handle_projectiles()
         self.handle_areas()
         self.sound_manager.handle_sound(self)
-        
-        # render everything
-        self.render_all()
-        #
 
     def get_music(self):
         mapid = self.wolfmap._id
