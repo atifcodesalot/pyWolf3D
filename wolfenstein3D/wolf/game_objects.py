@@ -252,6 +252,8 @@ class WolfActorType(Enum):
     CLYDE = 225
     PINKY = 226
     INKY = 227
+    
+    HITLER = 6666
 
 
 WEAPON_MULTIPLIER = 1.1
