@@ -558,9 +558,6 @@ class WolfGame:
     def heartbeat(self):
         self.heartbeats += 1
         self.clock.tick(self.framerate)
-        # render everything
-        self.render_all()
-        #
         pgevents = pygame.event.get()
         self.handle_actors()
         self.handle_player_requests()
@@ -572,6 +569,10 @@ class WolfGame:
         self.handle_projectiles()
         self.handle_areas()
         self.sound_manager.handle_sound(self)
+        
+        # render everything
+        self.render_all()
+        #
 
     def get_music(self):
         mapid = self.wolfmap._id
@@ -600,7 +601,7 @@ class WolfGame:
             self.floor_start()
         elif self.floor_fin:
             self.floor_end()
-        elif self.player.is_dead():
+        elif False:
             self.life_end()
 
     def floor_end(self):
