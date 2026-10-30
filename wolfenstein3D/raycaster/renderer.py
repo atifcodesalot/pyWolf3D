@@ -39,8 +39,8 @@ class RayRenderer:
 
         self.sprite_wh_ratio = 1 / self.repeat
         self.wall_textures = wall_textures
-        self.wall_scaler = scaler
-        self.sprite_scaler = self.wall_scaler 
+        self.wall_scaler = scaler // 2 * self.height
+        self.sprite_scaler = self.wall_scaler * 2
         self.distbuff = []
         
         self.ceil_texture = ceil_texture
@@ -49,7 +49,7 @@ class RayRenderer:
     def distance_to_height(self, dist, sprite=False):
         scaler = self.sprite_scaler if sprite else self.wall_scaler
         dist = dist if dist != 0 else 0.0001
-        return (self.height / dist) * scaler
+        return scaler / dist
 
     def lamberts_cosine(self, coll, light: PointLight):
         _, pos, vertical, _, _ = coll
@@ -142,7 +142,7 @@ class RayRenderer:
             self.visited.update(coll[-1])
             self.distbuff.append(coll[0])
             start = self.repeat * cast
-            chh = self.distance_to_height(coll[0]) // 2
+            chh = self.distance_to_height(coll[0]) 
             column = self.get_wall_col(coll, chh*2)
             chh = min(chh, hh)
             self.pgsurface.blit(column, (start, hh - chh))
