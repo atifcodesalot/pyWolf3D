@@ -192,12 +192,22 @@ class Wolf2DRenderer:
         root_display.blit(self.pgsurf, (0, 0))
         pygame.display.flip()
 
-    def render_gameover(self, root_display, chicken):
+    def render_gameover(self, root_display, beats, score=None, chicken=False, won=False):
+        display_text = "GAME OVER!"
+        if chicken:
+            display_text = "CHICKENED OUT!"
+        elif won:
+            display_text = "YOU WIN!"
         gameover = AM.biggerfont.render(
-            "GAME OVER!" if not chicken else "CHICKENED OUT!", True, "#04b5b7")
+            display_text, True, "#04b5b7")
         off = ((self.width - gameover.get_width())//2,
                (self.height - gameover.get_height())//2)
         self.pgsurf.fill(self.bgcolor)
         self.pgsurf.blit(gameover, off)
+        if beats < 800 and won:
+            scores = AM.biggerfont.render(
+            f"Final score: {score}", True, "#04b5b7")
+            self.pgsurf.blit(scores, ((self.width - scores.get_width())//2, off[1] + 50))
+            
         root_display.blit(self.pgsurf, (0, 0))
         pygame.display.flip()

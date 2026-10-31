@@ -105,6 +105,9 @@ class DyingState(ActorState):
             act = self.actor
             game_ctx.wolfmap.add_actor(
                 WolfActorType.HITLER, act.pos, act.look_dir, None)
+        elif self.actor.is_boss and game_ctx.wolfmap._id % 10 == 8:
+            if not game_ctx.episode._id in [0, 4]:
+                game_ctx.schedule_game_event(60, lambda g: setattr(g, "episode_fin", True))
         game_ctx.player.score += 100
         self.actor.flush_occupancy()
         self.actor.drop_item()
@@ -945,7 +948,7 @@ ACTOR_RECIPES = {
         death_sounds=[SOUNDS["hans"]["MUTTISND.WAV"]],
         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
         alert_sound=SOUNDS["hans"]["GUTENTAGSND.WAV"],
-        health=1200,
+        health=12,
         range_=150,
         accuracy=1,
         drop=WolfItem.GOLDKEY,
@@ -988,7 +991,7 @@ ACTOR_RECIPES = {
         death_sounds=[SOUNDS["schabbs"]["MEINGOTTSND.WAV"]],
         attack_sound=None,
         alert_sound=SOUNDS["schabbs"]["SCHABBSHASND.WAV"],
-        health=1000,
+        health=100,
         range_=150,
         accuracy=1,
         drop=None,
@@ -1076,7 +1079,7 @@ ACTOR_RECIPES = {
         death_sounds=None,
         attack_sound=SOUNDS["boss"]["BOSSFIRESND.WAV"],
         alert_sound=SOUNDS["hitler"]["TOT_HUNDSND.WAV"],
-        health=1000,
+        health=1200,
         range_=150,
         accuracy=1,
         drop=None,

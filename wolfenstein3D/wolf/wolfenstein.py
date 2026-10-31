@@ -82,9 +82,11 @@ class WolfGame:
         if sound_off:
             self.sound_manager.set_master(0)
 
+        # game state flags
         self.new_floor = False
         self.new_life = False
         self.floor_fin = False
+        self.episode_fin = False
         self.music_paused = False
 
         self.wait_between_states = 0.25
@@ -603,6 +605,8 @@ class WolfGame:
             self.floor_end()
         elif self.player.is_dead():
             self.life_end()
+        elif self.episode_fin:
+            self.episode_end()
 
     def floor_end(self):
         # in seconds
@@ -668,7 +672,7 @@ class WolfGame:
         time.sleep(self.wait_between_states)
         self.new_life = False
         if self.player.lives == 0:
-            return self.game_end()
+            return self.game_end(chicken=True)
         self.render_all()
         self.game_renderer.unfizzle(
             self.root_display, update_dest=self.renderer.game_off)
@@ -678,10 +682,17 @@ class WolfGame:
         pygame.event.clear()
         self.start_timer()
 
-    def game_end(self, chicken=False):
-        beats = 300
+    def episode_end(self):
+        # play glorious music
+        self.sound_manager.play_music(
+            "track7.wav", _dir="shareware")
+        self.renderer.fade(self.root_display, out=True)
+        self.game_end(beats=1000, won=True, score=self.player.score)
+        
+
+    def game_end(self, beats=300, **state):
         while beats != 0:
-            self.renderer.render_gameover(self.root_display, chicken=chicken)
+            self.renderer.render_gameover(self.root_display, beats, **state)
             self.clock.tick(self.framerate)
             beats -= 1
         self.ongoing = False
