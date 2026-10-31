@@ -541,10 +541,14 @@ class WolfGame:
             actor.tick(self, 1)
         # bandaid for the actor lookup bug
         # todo: fix it and remove this
-        mirror = self.wolfmap.actor_lookup.copy()
-        for pos in mirror:
-            if mirror[pos].is_dead():
+        mirror1 = self.wolfmap.actor_lookup.copy()
+        for pos in mirror1:
+            if mirror1[pos].is_dead():
                 del self.wolfmap.actor_lookup[pos]
+        mirror2 = self.wolfmap.actor_reserve_lookup.copy()
+        for pos in mirror2:
+            if mirror2[pos].is_dead():
+                del self.wolfmap.actor_reserve_lookup[pos]
 
     def render_game(self):
         if type(self.game_renderer.light) is PointLight:
