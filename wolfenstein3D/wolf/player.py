@@ -91,7 +91,7 @@ class WolfPlayer(Observer):
     def hits_actor(self, actor: Actor, sw):
         if (sp_sw := actor.current_sp.screen_width) is None:
             return False
-        htol = sp_sw+5
+        htol = sp_sw * (0.5 - 0.15)
         return htol > actor.hitpos(sw) > -htol
 
     def actors_too_close(self, pos, adj_actors):
