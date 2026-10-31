@@ -92,13 +92,13 @@ class RayRenderer:
         sprite.get_perp_dist(self.raycaster.observer)
 
         height_to_draw = self.distance_to_height(sprite.perp_dist, sprite=True)
-        if height_to_draw > 900:
+        if height_to_draw > 1000:
             return
         sch = self.height
         schh = sch // 2
         sprite.to_screen_pos(self)
         width_to_draw = height_to_draw * self.sprite_wh_ratio
-        sprite.screen_width = width_to_draw
+        sprite.screen_width = width_to_draw * self.repeat
 
         skip = sprite.width / width_to_draw
         visible_height = min(self.height, height_to_draw)
