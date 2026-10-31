@@ -3,11 +3,12 @@
 from PIL import Image
 import pygame
 
+MAGENTA = (255, 0, 255)
 
 class Texture:
-    def __init__(self, image: Image.Image, surf=None, converted=False, columns=None):  
+    def __init__(self, image: Image.Image, surf=None, converted=False, columns=None, colorkey=MAGENTA):  
 
-        self.image = image.convert("RGBA") if not converted else image
+        self.image = image.convert("RGB") if not converted else image
         
         self.width, self.height = image.size
         self.half_height = self.height // 2
@@ -15,8 +16,12 @@ class Texture:
         self.surface = pygame.image.frombytes(
             self.image.tobytes(),
             self.image.size,
-            "RGBA",
+            "RGB",
         ) if surf is None else surf
+        
+        if colorkey:
+            self.surface.set_alpha(None)
+            self.surface.set_colorkey(colorkey)
 
         self.columns = [
             self.surface.subsurface((x, 0, 1, self.height)).copy()
