@@ -486,8 +486,9 @@ class PatrolState(ChaseState):
                 self.waiting_door = False
         # continue to patrol
 
-    def seek_dest(self):
-        self.actor.move()
+    def seek_dest(self, move=True):
+        if move:
+            self.actor.move()
         self.mov_budget = max(self.mov_budget - self.actor.pace, 0)
 
     def budget_end(self, game_ctx):
@@ -508,17 +509,14 @@ class PatrolState(ChaseState):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
         front = self.actor.get_front_block()
-        if not (self.waiting_door or self.actor.occupied_by_other(front)):
-            self.seek_dest()
-        # bandaid
-        elif self.actor.type == WolfActorType.DOG:
-            self.seek_dest()
+        if not self.waiting_door:
+            move = not self.actor.occupied_by_other(front)
+            self.seek_dest(move=move)
         if self.mov_budget == 0:
             self.budget_end(game_ctx)
 
 # the prototype actor class
 # its specifics get built by its builder class
-
 
 class Actor:
     def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir, patrol=False):
