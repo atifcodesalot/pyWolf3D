@@ -107,9 +107,9 @@ class DyingState(ActorState):
                 WolfActorType.HITLER, act.pos, act.look_dir, None)
         elif self.actor.is_boss and game_ctx.wolfmap._id % 10 == 8:
             if not game_ctx.episode._id in [0, 4]:
-                game_ctx.schedule_game_event(60, lambda g: setattr(g, "episode_fin", True))
+                game_ctx.schedule_game_event(
+                    60, lambda g: setattr(g, "episode_fin", True))
         game_ctx.player.score += 100
-        self.actor.flush_occupancy()
         self.actor.drop_item()
 
 
@@ -233,7 +233,8 @@ class ChaseState(ActorState):
                                 [[1, 0], [1, -1], [0, -1]]]
 
         self.decide_dir(game_ctx)
-        self.dest_block = None
+        self.dest = None
+        self.destblock = None
         self.mov_budget = 0
         self.committo_dest()
 
@@ -362,21 +363,17 @@ class ChaseState(ActorState):
 
     def committo_dest(self):
         if self.stuck:
-            self.dest_block = None
+            self.dest = None
+            self.destblock = None
             return
-        if self.dest_block:
-            self.actor.reserve_block(self.dest_block)
-        ldir = self.actor.look_dir
-        w = self.actor.wolfmap.wall_width
-        self.mov_budget = w
-        if all(ldir):
-            # diagonal movement
-            self.mov_budget *= math.sqrt(2)
 
-        self.dest_block = vec_add(
-            self.actor.pos, vec_mul(vec_norm(ldir), self.mov_budget))
-        self.actor.occupy_block(
-            self.actor.wolfmap.to_block_pos(*self.dest_block))
+        ldir = self.actor.look_dir
+        ablock = self.actor.get_current_block()
+        self.destblock = vec_add(ablock, ldir)
+        self.dest = list(self.actor.wolfmap.to_real_pos(*self.destblock))
+
+        self.mov_budget = euclidean_distance(self.actor.pos, self.dest)
+        self.actor.reserve_block(self.destblock)
 
     def seek_dest(self):
         if not self.stuck:
@@ -387,9 +384,9 @@ class ChaseState(ActorState):
     def budget_end(self, game_ctx):
         # clamp to center
         if not self.stuck:
-            if self.dest_block is not None:
-                self.actor.pos = self.dest_block
-                self.actor.unreserve_block(self.dest_block)
+            if self.dest is not None:
+                self.actor.pos = self.dest.copy()
+                self.actor.unreserve_block(self.destblock)
         #
         self.decide_dir(game_ctx)
         self.committo_dest()
@@ -455,6 +452,7 @@ class PatrolState(ChaseState):
         self.gonna_alert = False
 
     def decide_dir(self, map_ctx):
+        self.stuck = None
         ablock = self.actor.get_current_block()
         if ablock not in map_ctx.patrol_lookup:
             return
@@ -464,36 +462,35 @@ class PatrolState(ChaseState):
             f"actor {self.actor.type}\
                 decided patrol direction: {self.actor.look_dir}, at pos: {ablock}")
 
-    def committo_dest(self):
-        ldir = self.actor.look_dir
-        w = self.actor.wolfmap.wall_width
-        self.mov_budget = w
-        if all(ldir):
-            # diagonal movement
-            self.mov_budget *= math.sqrt(2)
-
-        self.dest_block = vec_add(
-            self.actor.pos, vec_mul(vec_norm(ldir), self.mov_budget))
-
-    def think(self, game_ctx):
+    def check_alert(self, game_ctx):
         if not self.gonna_alert:
             if self.actor.hears_player(game_ctx):
                 self.gonna_alert = True
             elif self.actor.sees_player(game_ctx):
                 self.gonna_alert = True
+
+    def think(self, game_ctx):
+        self.check_alert(game_ctx)
         if self.waiting_door:
             if self.waiting_door.is_open():
                 self.waiting_door = False
         # continue to patrol
 
-    def seek_dest(self, move=True):
-        if move:
-            self.actor.move()
+    def committo_dest(self):
+        ldir = self.actor.look_dir
+        ablock = self.actor.get_current_block()
+        self.destblock = vec_add(ablock, ldir)
+        self.dest = list(self.actor.wolfmap.to_real_pos(*self.destblock))
+
+        self.mov_budget = euclidean_distance(self.actor.pos, self.dest)
+
+    def seek_dest(self):
+        self.actor.move()
         self.mov_budget = max(self.mov_budget - self.actor.pace, 0)
 
     def budget_end(self, game_ctx):
         # clamp to center
-        self.actor.pos = self.dest_block
+        self.actor.pos = self.dest
         #
         if self.gonna_alert:
             self.actor.alert(game_ctx, now=True)
@@ -509,14 +506,18 @@ class PatrolState(ChaseState):
         self.heartbeats = (self.heartbeats + 1) % self.lifetime
         self.move_off = self.heartbeats // self.hb_perframe
         front = self.actor.get_front_block()
-        if not self.waiting_door:
-            move = not self.actor.occupied_by_other(front)
-            self.seek_dest(move=move)
+        if not (self.waiting_door or self.actor.occupied_by_other(front)):
+            self.seek_dest()
+        else:
+            if self.gonna_alert:
+                self.actor.alert(game_ctx, now=True)
+                return
         if self.mov_budget == 0:
             self.budget_end(game_ctx)
 
 # the prototype actor class
 # its specifics get built by its builder class
+
 
 class Actor:
     def __init__(self, wolfmap, _type: WolfActorType, pos, look_dir, patrol=False):
@@ -524,6 +525,7 @@ class Actor:
         self.type = _type
         self.pos = list(pos)
         self.occupancy = set()
+        self.reserved = set()
         self.look_dir = look_dir
         self.left = [-self.look_dir[1], self.look_dir[0]]
         self.ticks_since_trans = 0
@@ -636,18 +638,15 @@ class Actor:
         bpos = tuple(block_pos)
         if bpos not in self.wolfmap.actor_reserve_lookup:
             self.wolfmap.actor_reserve_lookup[bpos] = self
+        self.reserved.add(bpos)
 
     def unreserve_block(self, block_pos):
         bpos = tuple(block_pos)
         if bpos in self.wolfmap.actor_reserve_lookup:
-            del self.wolfmap.actor_reserve_lookup[bpos]
-
-    def flush_occupancy(self):
-        mirror = self.occupancy.copy()
-        for bpos in mirror:
-            if bpos not in self.wolfmap.actor_lookup:
-                return
-            self.unoccupy_block(bpos)
+            if self.wolfmap.actor_reserve_lookup[bpos] is self:
+                del self.wolfmap.actor_reserve_lookup[bpos]
+        if bpos in self.reserved:
+            self.reserved.remove(bpos)
 
     def move(self):
         m = self.wolfmap
