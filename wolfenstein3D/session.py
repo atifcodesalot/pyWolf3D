@@ -183,7 +183,7 @@ class WolfSessionController:
                 pygame.Rect(self.widget_off, (30, 30)), "Sound", self.ui_manager, initial_state=True),
             pygame_gui.elements.UILabel(pygame.Rect(
                 vec_add(self.widget_off, (0, self.widget_hsep)), (140, 20)), "Raycaster ray count", self.ui_manager),
-            pygame_gui.elements.UIDropDownMenu(["160", "128", "80", "64", "32", "16", "10", "8", "4", "2"], "160",
+            pygame_gui.elements.UIDropDownMenu(["320", "160", "128", "80", "64", "32", "16", "10", "8", "4", "2"], "160",
                                                pygame.Rect(
                 vec_add(self.widget_off, (0, self.widget_hsep*1.5)), (100, 25)), self.ui_manager
             ),
